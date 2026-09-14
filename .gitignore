@@ -10,8 +10,9 @@ next-env.d.ts
 .env.*
 !.env.example
 
-# base de datos local
-data/
+# base de datos local: solo /data de la raíz (las carpetas data/ de las skills SÍ se versionan)
+/data/*
+!/data/.gitkeep
 *.db
 *.db-shm
 *.db-wal
