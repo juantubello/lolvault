@@ -54,6 +54,14 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
   (`/matches/by-puuid/{puuid}/ids`, después `/matches/{id}`).
 - Routing: cuentas de Argentina → plataforma **LAS (`la2`)**, región regional **`americas`**.
   ✅ Confirmado: todos juegan en LAS.
+- **Los nombres cambian, el `puuid` no.** El Riot ID se guarda separado (`riot_game_name` +
+  `riot_tag_line`) y **se edita desde Perfil**, porque los amigos se cambian el nombre seguido.
+  La cuenta de Riot se identifica por `riot_puuid`: si alguien cambia su Riot ID, se descarta
+  el `puuid` y se vuelve a resolver con account-v1 (si es la misma cuenta renombrada, Riot
+  devuelve el mismo). Las diferencias de mayúsculas no cuentan como cambio. Vaults y votos
+  apuntan a `users.id`, así que un cambio de nombre no pierde nada.
+- **SHOULD:** con el `puuid` resuelto, refrescar solo el nombre con
+  `account-v1 /accounts/by-puuid/{puuid}`, así se actualiza aunque nadie lo edite.
 - **Key:** registrar un producto **Personal API Key** en developer.riotgames.com. Riot la
   contempla para comunidades privadas chicas, no vence y tiene el mismo límite que la key de
   desarrollo (20 req/s y 100 req/2 min). La de desarrollo no sirve porque vence cada 24 h.
@@ -161,7 +169,7 @@ Son 4 destinos de primer nivel (la regla pide ≤5):
 | **Votaciones** | Propuestas abiertas (primero las que me faltan votar), con contador `2/3` y tiempo restante. Botón **+** en la nav bar para **Proponer vault**. |
 | **Vaults** | Vaults activos agrupados por jugador (foto del campeón + "quedan 3 días") e historial. |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
-| **Perfil** | Mi perfil, Riot ID, avatar, aviso legal de Riot. |
+| **Perfil** | Mi perfil, **editar nombre y Riot ID** (`/perfil/editar`), avatar, aviso legal de Riot. |
 
 **Proponer vault** abre un sheet: 1) jugador → 2) campeón (grilla con búsqueda) → 3) días →
 4) motivo (opcional) → confirmar. En desktop va en un modal centrado.

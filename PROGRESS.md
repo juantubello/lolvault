@@ -37,6 +37,11 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   (375px light), Perfil con nombre/email/Riot ID (375px dark), sidebar en 1440px. Sin errores
   de consola. La DB local `data/lolvault.db` tiene un usuario de prueba "Tester" (ignorada
   por git; se puede borrar sin problema).
+- 2026-09-14 — Editar perfil (`/perfil/editar`): nombre y Riot ID editables, porque los amigos
+  se cambian el nombre seguido. Formulario compartido con el onboarding
+  (`components/profile-form.tsx` + `features/profile/profile-form.ts`). Si cambia el Riot ID
+  (sin contar mayúsculas) se descarta `riot_puuid` para re-resolverlo. Tests contra SQLite en
+  memoria (15 tests). Verificado en navegador: renombrar → vuelve a Perfil con el ID nuevo.
 
 ### Siguiente
 1. Juan responde las preguntas abiertas restantes (§11 del plan).

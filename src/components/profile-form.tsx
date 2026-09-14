@@ -3,25 +3,43 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { completeOnboardingAction, type OnboardingState } from './actions';
+import {
+  DISPLAY_NAME_MAX_LENGTH,
+  type ProfileFormState,
+  type ProfileValues,
+} from '@/features/profile/profile-form';
 
-const initialState: OnboardingState = {};
+type ProfileAction = (
+  previousState: ProfileFormState,
+  formData: FormData,
+) => Promise<ProfileFormState>;
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
 
   return (
     <button className="primary-button" disabled={pending} type="submit">
-      {pending ? 'Guardando…' : 'Continuar'}
+      {pending ? 'Guardando…' : label}
     </button>
   );
 }
 
-export function OnboardingForm() {
-  const [state, formAction] = useActionState(completeOnboardingAction, initialState);
+/** Nombre + Riot ID. Lo usan el onboarding y "Editar perfil". */
+export function ProfileForm({
+  action,
+  initialValues,
+  riotHelp,
+  submitLabel,
+}: {
+  action: ProfileAction;
+  initialValues?: ProfileValues;
+  riotHelp: string;
+  submitLabel: string;
+}) {
+  const [state, formAction] = useActionState(action, { values: initialValues });
 
   return (
-    <form action={formAction} className="onboarding-form" noValidate>
+    <form action={formAction} className="profile-form" noValidate>
       {state.formError ? (
         <p className="form-alert" role="alert">
           {state.formError}
@@ -36,7 +54,7 @@ export function OnboardingForm() {
           autoComplete="name"
           defaultValue={state.values?.displayName}
           id="displayName"
-          maxLength={40}
+          maxLength={DISPLAY_NAME_MAX_LENGTH}
           name="displayName"
           placeholder="Cómo te dicen tus amigos"
           required
@@ -66,7 +84,7 @@ export function OnboardingForm() {
           type="text"
         />
         <p className="field-help" id="riotId-help">
-          Podés agregarlo más adelante desde Perfil.
+          {riotHelp}
         </p>
         {state.fieldErrors?.riotId ? (
           <p className="field-error" id="riotId-error">
@@ -75,7 +93,7 @@ export function OnboardingForm() {
         ) : null}
       </div>
 
-      <SubmitButton />
+      <SubmitButton label={submitLabel} />
     </form>
   );
 }

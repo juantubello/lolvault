@@ -256,10 +256,14 @@ button {
   line-height: 1.125rem;
 }
 
-.onboarding-form {
+.profile-form {
   display: grid;
   gap: 1.25rem;
   margin-top: 2rem;
+}
+
+.form-card .profile-form {
+  margin-top: 0;
 }
 
 .form-field {
@@ -436,13 +440,58 @@ button {
   line-height: 1.375rem;
 }
 
+.profile-row-link {
+  grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
+  color: var(--label);
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+.profile-row-link:active {
+  background: var(--fill-pressed);
+}
+
+.profile-row-link:focus-visible {
+  outline: 2px solid var(--tint);
+  outline-offset: -2px;
+}
+
+.profile-row-link > svg:last-child {
+  color: var(--label-3);
+}
+
+@media (hover: hover) {
+  .profile-row-link:hover {
+    background: var(--fill-pressed);
+  }
+}
+
+.screen-back {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.125rem;
+  margin-left: -0.5rem;
+  padding-right: 0.5rem;
+  color: var(--tint);
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  text-decoration: none;
+  transition: opacity var(--motion-press);
+}
+
+.screen-back:active {
+  opacity: 0.6;
+}
+
 @media (min-width: 48rem) {
   .screen {
     padding-right: 1.25rem;
     padding-left: 1.25rem;
   }
 
-  .onboarding-card {
+  .onboarding-card,
+  .form-card {
     padding: 2rem;
     border-radius: 1rem;
     background: var(--bg-cell);

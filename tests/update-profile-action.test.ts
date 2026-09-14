@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   getDb: vi.fn(),
   redirect: vi.fn(),
+  revalidatePath: vi.fn(),
   saveProfile: vi.fn(),
 }));
 
@@ -20,49 +21,50 @@ vi.mock('@/features/profile/profile.queries', () => ({
   saveProfile: mocks.saveProfile,
 }));
 
+vi.mock('next/cache', () => ({
+  revalidatePath: mocks.revalidatePath,
+}));
+
 vi.mock('next/navigation', () => ({
   redirect: mocks.redirect,
 }));
 
-import { completeOnboardingAction } from '@/app/onboarding/actions';
+import { updateProfileAction } from '@/app/(app)/perfil/editar/actions';
 
-describe('completeOnboardingAction', () => {
+describe('updateProfileAction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getDb.mockReturnValue(mocks.db);
     mocks.getCurrentUser.mockResolvedValue({ id: 17 });
   });
 
-  it('ignora cualquier userId del formulario y usa el usuario autenticado', async () => {
+  it('guarda el Riot ID nuevo solo para el usuario autenticado', async () => {
     const formData = new FormData();
     formData.set('userId', '999');
     formData.set('displayName', 'Invocador');
-    formData.set('riotId', 'Jugador#LAS');
+    formData.set('riotId', 'NombreNuevo#LAS');
 
-    await completeOnboardingAction({}, formData);
+    await updateProfileAction({}, formData);
 
-    expect(mocks.saveProfile).toHaveBeenCalledOnce();
-    expect(mocks.saveProfile).toHaveBeenCalledWith(mocks.db, 17, {
+    expect(mocks.saveProfile).toHaveBeenCalledExactlyOnceWith(mocks.db, 17, {
       displayName: 'Invocador',
-      riotGameName: 'Jugador',
+      riotGameName: 'NombreNuevo',
       riotTagLine: 'LAS',
     });
-    expect(mocks.saveProfile).not.toHaveBeenCalledWith(
-      mocks.db,
-      999,
-      expect.anything(),
-    );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith('/perfil');
+    expect(mocks.redirect).toHaveBeenCalledWith('/perfil');
   });
 
-  it('devuelve lo que escribió el usuario cuando falla la validación', async () => {
+  it('no guarda y conserva lo escrito si el Riot ID es inválido', async () => {
     const formData = new FormData();
     formData.set('displayName', 'Invocador');
-    formData.set('riotId', 'sinhashtag');
+    formData.set('riotId', 'malo');
 
-    const state = await completeOnboardingAction({}, formData);
+    const state = await updateProfileAction({}, formData);
 
     expect(state.fieldErrors?.riotId).toBeDefined();
-    expect(state.values).toEqual({ displayName: 'Invocador', riotId: 'sinhashtag' });
+    expect(state.values).toEqual({ displayName: 'Invocador', riotId: 'malo' });
     expect(mocks.saveProfile).not.toHaveBeenCalled();
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
-import { AtSign, Gamepad2 } from 'lucide-react';
+import { AtSign, ChevronRight, Gamepad2, Pencil } from 'lucide-react';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
@@ -42,6 +43,18 @@ export default async function ProfilePage() {
               <p>{riotId ?? 'Todavía no agregaste tu Riot ID.'}</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="grouped-section" aria-label="Editar perfil">
+        <div className="grouped-list">
+          <Link className="profile-row profile-row-link" href="/perfil/editar">
+            <Pencil aria-hidden="true" size={20} strokeWidth={2} />
+            <div>
+              <span>Editar nombre y Riot ID</span>
+            </div>
+            <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
+          </Link>
         </div>
       </section>
     </Screen>

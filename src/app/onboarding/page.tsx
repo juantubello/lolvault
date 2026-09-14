@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
+import { ProfileForm } from '@/components/profile-form';
 
-import { OnboardingForm } from './onboarding-form';
+import { completeOnboardingAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,11 @@ export default async function OnboardingPage() {
         <p className="onboarding-intro">
           Elegí cómo te van a ver tus amigos. El Riot ID es opcional por ahora.
         </p>
-        <OnboardingForm />
+        <ProfileForm
+          action={completeOnboardingAction}
+          riotHelp="Podés agregarlo más adelante desde Perfil."
+          submitLabel="Continuar"
+        />
       </section>
     </main>
   );

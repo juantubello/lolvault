@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
@@ -12,7 +13,7 @@ import {
 } from '@/features/profile/profile-form';
 import { saveProfile } from '@/features/profile/profile.queries';
 
-export async function completeOnboardingAction(
+export async function updateProfileAction(
   _previousState: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
@@ -24,9 +25,9 @@ export async function completeOnboardingAction(
   const result = validateProfile(values);
   if (!result.ok) return { fieldErrors: result.fieldErrors, values };
 
-  // Regla dura: el id sale de la sesión. Cualquier campo `userId` enviado por
-  // el cliente queda deliberadamente sin leer.
+  // Regla dura: solo se edita el perfil de la sesión, nunca un userId del form.
   saveProfile(getDb(), currentUser.id, result.profile);
 
-  redirect('/');
+  revalidatePath('/perfil');
+  redirect('/perfil');
 }
