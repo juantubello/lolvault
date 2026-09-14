@@ -1,0 +1,19 @@
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# env y secretos (RIOT_API_KEY, AUD tag de Access)
+.env
+.env.*
+!.env.example
+
+# base de datos local
+data/
+*.db
+*.db-shm
+*.db-wal
+
+.DS_Store
