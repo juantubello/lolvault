@@ -22,18 +22,24 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   ligada exclusivamente al usuario autenticado; Perfil muestra nombre y email actuales.
 - 2026-09-14 — PWA mínima (manifest, metadata iOS, ícono Apple generado), Docker multi-stage,
   compose limitado a `127.0.0.1:${LOLVAULT_PORT}:3000` y volumen `/data`.
-- 2026-09-14 — Verificados `tsc`, 3 archivos / 4 tests de Vitest, build de producción,
-  pragmas SQLite y render final de compose. El sandbox no permite abrir sockets (`listen
-  EPERM`), por lo que la comprobación HTTP de `/` → `/onboarding` queda para ejecutar fuera
-  del sandbox; la misma regla quedó cubierta por test unitario.
-- 2026-09-14 — Commit pendiente: el workspace permite editar archivos pero monta `.git`
-  como sólo lectura (`index.lock: Operation not permitted`).
+- 2026-09-14 — Verificados `tsc`, tests de Vitest, build de producción, pragmas SQLite y
+  render final de compose (Codex, dentro del sandbox).
+- 2026-09-14 — Verificado fuera del sandbox (Claude Code): `npm run dev -p 3001` aplica
+  migrations, `/` → 307 → `/onboarding` (200) sin errores de consola. Dev server en
+  `.claude/launch.json` de la raíz (`lolvault`, puerto 3001; PipiGym usa el 3000).
+- 2026-09-14 — Fase 1 versionada en commits chicos (`b2cd21c`…`af8c446`).
+- 2026-09-14 — Fix `.gitignore`: `data/` ignoraba también los `data/` de las skills (nunca
+  se habían commiteado). Ahora solo se ignora `/data/*` de la raíz.
+- 2026-09-14 — Fix onboarding (`9a977ef`): el reset de forms de React 19 vaciaba los inputs
+  cuando fallaba la validación. La acción devuelve `values` y el form los usa como
+  `defaultValue`; test de regresión agregado (5 tests).
+- 2026-09-14 — UI verificada en navegador: onboarding completo → Votaciones con tab bar
+  (375px light), Perfil con nombre/email/Riot ID (375px dark), sidebar en 1440px. Sin errores
+  de consola. La DB local `data/lolvault.db` tiene un usuario de prueba "Tester" (ignorada
+  por git; se puede borrar sin problema).
 
 ### Siguiente
-1. Fuera del sandbox, crear `.env.local` con `LOLVAULT_DEV_USER_EMAIL`, correr `npm run dev`
-   y confirmar que `/` responde redirigiendo a `/onboarding`.
-2. Versionar el árbol con commits chicos en español (el `.git` actual está sólo lectura).
-3. Juan responde las preguntas abiertas restantes (§11 del plan).
+1. Juan responde las preguntas abiertas restantes (§11 del plan).
 4. Fase 2 — Campeones: sincronización de Data Dragon y grilla con búsqueda.
 5. En paralelo, `homelab-infra`: puerto, compose, hostname, app de Access con los emails.
 
