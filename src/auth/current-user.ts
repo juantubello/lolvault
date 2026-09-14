@@ -1,18 +1,19 @@
 import { cache } from 'react';
 import { eq } from 'drizzle-orm';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 import { getDb, type Db } from '@/db/client';
 import { users, type User } from '@/db/schema';
 
 import { ACCESS_JWT_HEADER, readAccessJwtConfig, verifyAccessJwt } from './access-jwt';
-import { getDevIdentity } from './dev-identity';
+import { DEV_USER_COOKIE, getDevIdentity } from './dev-identity';
 import type { Identity } from './identity';
 
 /** Resuelve la identidad sin consultar la base, para mantenerla testeable. */
 export async function resolveIdentity(
   token: string | null | undefined,
   env: NodeJS.ProcessEnv = process.env,
+  devUserEmail?: string | null,
 ): Promise<Identity | null> {
   const config = readAccessJwtConfig(env);
 
@@ -21,7 +22,7 @@ export async function resolveIdentity(
     if (identity) return identity;
   }
 
-  return getDevIdentity(env);
+  return getDevIdentity(env, devUserEmail);
 }
 
 /** Find-or-create de una identidad previamente verificada. */
@@ -72,8 +73,12 @@ export function findOrCreateUser(db: Db, identity: Identity): User {
 
 /** Usuario de la request actual; React lo resuelve una vez por request. */
 export const getCurrentUser = cache(async (): Promise<User | null> => {
-  const headerList = await headers();
-  const identity = await resolveIdentity(headerList.get(ACCESS_JWT_HEADER));
+  const [headerList, cookieStore] = await Promise.all([headers(), cookies()]);
+  const identity = await resolveIdentity(
+    headerList.get(ACCESS_JWT_HEADER),
+    process.env,
+    cookieStore.get(DEV_USER_COOKIE)?.value,
+  );
   if (!identity) return null;
 
   return findOrCreateUser(getDb(), identity);

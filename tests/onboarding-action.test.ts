@@ -5,7 +5,12 @@ const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   getDb: vi.fn(),
   redirect: vi.fn(),
+  revalidatePath: vi.fn(),
   saveProfile: vi.fn(),
+}));
+
+vi.mock('next/cache', () => ({
+  revalidatePath: mocks.revalidatePath,
 }));
 
 vi.mock('@/auth/current-user', () => ({

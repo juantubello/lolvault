@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
@@ -28,5 +29,8 @@ export async function completeOnboardingAction(
   // el cliente queda deliberadamente sin leer.
   saveProfile(getDb(), currentUser.id, result.profile);
 
+  // El nombre se muestra también en layouts (ej. selector de dev): un redirect solo
+  // re-renderiza la página y dejaría el layout con el dato viejo.
+  revalidatePath('/', 'layout');
   redirect('/');
 }

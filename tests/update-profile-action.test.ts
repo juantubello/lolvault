@@ -51,7 +51,7 @@ describe('updateProfileAction', () => {
       riotGameName: 'NombreNuevo',
       riotTagLine: 'LAS',
     });
-    expect(mocks.revalidatePath).toHaveBeenCalledWith('/perfil');
+    expect(mocks.revalidatePath).toHaveBeenCalledWith('/', 'layout');
     expect(mocks.redirect).toHaveBeenCalledWith('/perfil');
   });
 

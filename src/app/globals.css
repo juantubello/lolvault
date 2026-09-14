@@ -606,3 +606,137 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Selector de usuario de desarrollo (no se renderiza en producción) */
+.dev-switcher {
+  position: fixed;
+  top: calc(0.5rem + env(safe-area-inset-top));
+  right: 0.75rem;
+  z-index: 60;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.dev-switcher summary {
+  display: flex;
+  width: fit-content;
+  max-width: 16rem;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  padding: 0 0.875rem;
+  border: 1px dashed var(--warning);
+  border-radius: 999px;
+  background: var(--bg-cell);
+  color: var(--warning);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.dev-switcher summary::-webkit-details-marker {
+  display: none;
+}
+
+.dev-switcher summary span,
+.dev-switcher ul small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dev-switcher-panel {
+  /* Anclado al borde derecho de la pastilla: si fluye desde su borde izquierdo, se sale de la pantalla en el teléfono. */
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(20rem, calc(100vw - 1.5rem));
+  padding: 0.75rem;
+  border-radius: 0.875rem;
+  background: var(--bg-cell);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+}
+
+.dev-switcher-title,
+.dev-switcher-new label {
+  margin: 0 0 0.5rem;
+  color: var(--label-2);
+}
+
+.dev-switcher ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dev-switcher ul button,
+.dev-switcher-reset {
+  display: grid;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: transparent;
+  color: var(--label);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dev-switcher ul button[aria-current="true"] {
+  background: var(--bg-cell-2);
+  color: var(--tint);
+}
+
+.dev-switcher ul small {
+  color: var(--label-2);
+  font-size: 0.75rem;
+}
+
+.dev-switcher ul button:active,
+.dev-switcher-reset:active {
+  background: var(--fill-pressed);
+}
+
+.dev-switcher-new {
+  display: grid;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 0.5px solid var(--separator);
+}
+
+.dev-switcher-new div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dev-switcher-new input {
+  min-width: 0;
+  min-height: 2.75rem;
+  flex: 1;
+  padding: 0 0.75rem;
+  border: 1px solid var(--separator);
+  border-radius: 0.625rem;
+  background: var(--bg-cell-2);
+  color: var(--label);
+  font-size: 1rem;
+}
+
+.dev-switcher-new button {
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: var(--tint-fill);
+  color: var(--on-tint);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dev-switcher-reset {
+  margin-top: 0.5rem;
+  color: var(--tint);
+}

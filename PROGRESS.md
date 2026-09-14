@@ -42,11 +42,19 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   (`components/profile-form.tsx` + `features/profile/profile-form.ts`). Si cambia el Riot ID
   (sin contar mayúsculas) se descarta `riot_puuid` para re-resolverlo. Tests contra SQLite en
   memoria (15 tests). Verificado en navegador: renombrar → vuelve a Perfil con el ID nuevo.
+- 2026-09-14 — Modo dev con selector de usuario: pastilla "Dev · <nombre>" arriba a la derecha
+  para entrar como un usuario existente o con un email nuevo (pasa por onboarding) y volver al de
+  `.env.local`. Sirve para probar votaciones de 3+ personas. Cookie `lolvault_dev_email` leída
+  solo en `dev-identity.ts`; en producción se ignora, la acción no hace nada y el selector no se
+  renderiza (tests). Fixes encontrados al probarlo: el panel se salía de la pantalla en 375px, y
+  el layout quedaba con el nombre viejo tras guardar el perfil (ahora `revalidatePath('/', 'layout')`).
+  22 tests. Uso en `CLAUDE.md` → Modo dev.
 
 ### Siguiente
 1. Juan responde las preguntas abiertas restantes (§11 del plan).
-4. Fase 2 — Campeones: sincronización de Data Dragon y grilla con búsqueda.
-5. En paralelo, `homelab-infra`: puerto, compose, hostname, app de Access con los emails.
+2. Revisión de código de la Fase 1 (sobre todo `src/auth/`) con el agente `code-reviewer`.
+3. Fase 2 — Campeones: sincronización de Data Dragon y grilla con búsqueda.
+4. En paralelo, `homelab-infra`: puerto, compose, hostname, app de Access con los emails.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

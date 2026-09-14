@@ -28,6 +28,7 @@ export async function updateProfileAction(
   // Regla dura: solo se edita el perfil de la sesión, nunca un userId del form.
   saveProfile(getDb(), currentUser.id, result.profile);
 
-  revalidatePath('/perfil');
+  // Layout incluido: el nombre también aparece fuera de la página de Perfil.
+  revalidatePath('/', 'layout');
   redirect('/perfil');
 }

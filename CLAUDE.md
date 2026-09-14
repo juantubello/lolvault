@@ -21,6 +21,20 @@ Next.js (App Router) · TypeScript · Tailwind · SQLite + Drizzle · PWA · Doc
 PipiGym. Auth con Cloudflare Access (módulos copiados de `../pipigym/src/auth/`).
 Campeones desde Data Dragon; partidas desde la Riot API (solo servidor).
 
+## Modo dev
+
+1. `.env.local` con `LOLVAULT_DEV_USER_EMAIL=<tu email>`: es el login sin Cloudflare.
+2. `npm run dev -- -p 3001`, o el server `lolvault` del `.claude/launch.json` de la raíz. Las
+   migrations se aplican solas.
+3. **Cambiar de usuario:** pastilla **"Dev · <nombre>"** arriba a la derecha → elegir un usuario
+   existente o escribir un **email nuevo** (ej. `amigo2@dev.local`, pasa por onboarding).
+   "Volver a …" regresa al email de `.env.local`. Así se prueban votaciones de 3+ personas.
+
+Todo pasa por `src/auth/dev-identity.ts` (cookie `lolvault_dev_email`), el único bypass
+autorizado. **En producción no existe:** con `NODE_ENV=production` o sin
+`LOLVAULT_DEV_USER_EMAIL`, la cookie se ignora, la acción no hace nada y el selector no se
+renderiza. Si la variable llega a producción, la app no arranca.
+
 ## Reglas duras (resumen, detalle en el plan §8)
 
 1. La identidad solo sale del JWT de Access. Ningún `userId` viene del cliente.
