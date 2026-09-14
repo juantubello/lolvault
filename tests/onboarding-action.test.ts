@@ -53,4 +53,16 @@ describe('completeOnboardingAction', () => {
       expect.anything(),
     );
   });
+
+  it('devuelve lo que escribió el usuario cuando falla la validación', async () => {
+    const formData = new FormData();
+    formData.set('displayName', 'Invocador');
+    formData.set('riotId', 'sinhashtag');
+
+    const state = await completeOnboardingAction({}, formData);
+
+    expect(state.fieldErrors?.riotId).toBeDefined();
+    expect(state.values).toEqual({ displayName: 'Invocador', riotId: 'sinhashtag' });
+    expect(mocks.saveOnboardingProfile).not.toHaveBeenCalled();
+  });
 });

@@ -34,6 +34,7 @@ export function OnboardingForm() {
           aria-describedby={state.fieldErrors?.displayName ? 'displayName-error' : undefined}
           aria-invalid={Boolean(state.fieldErrors?.displayName)}
           autoComplete="name"
+          defaultValue={state.values?.displayName}
           id="displayName"
           maxLength={40}
           name="displayName"
@@ -53,10 +54,11 @@ export function OnboardingForm() {
           Riot ID <span>Opcional</span>
         </label>
         <input
-          aria-describedby="riotId-help riotId-error"
+          aria-describedby={state.fieldErrors?.riotId ? 'riotId-help riotId-error' : 'riotId-help'}
           aria-invalid={Boolean(state.fieldErrors?.riotId)}
           autoCapitalize="none"
           autoCorrect="off"
+          defaultValue={state.values?.riotId}
           id="riotId"
           name="riotId"
           placeholder="gameName#tagLine"

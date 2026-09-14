@@ -12,6 +12,11 @@ export type OnboardingState = {
     riotId?: string;
   };
   formError?: string;
+  /** Lo que escribió el usuario, para no vaciar el form cuando falla la validación. */
+  values?: {
+    displayName: string;
+    riotId: string;
+  };
 };
 
 const RIOT_ID_PATTERN = /^([^#]{3,16})#([A-Za-z0-9]{3,5})$/;
@@ -46,13 +51,16 @@ export async function completeOnboardingAction(
   _previousState: OnboardingState,
   formData: FormData,
 ): Promise<OnboardingState> {
+  const displayName = formString(formData, 'displayName');
+  const riotIdInput = formString(formData, 'riotId');
+  const values = { displayName, riotId: riotIdInput };
+
   const currentUser = await getCurrentUser();
   if (!currentUser) {
-    return { formError: 'No pudimos verificar tu sesión. Recargá e intentá de nuevo.' };
+    return { formError: 'No pudimos verificar tu sesión. Recargá e intentá de nuevo.', values };
   }
 
-  const displayName = formString(formData, 'displayName');
-  const riotId = parseRiotId(formString(formData, 'riotId'));
+  const riotId = parseRiotId(riotIdInput);
   const fieldErrors: NonNullable<OnboardingState['fieldErrors']> = {};
 
   if (!displayName) {
@@ -62,8 +70,8 @@ export async function completeOnboardingAction(
   }
 
   if ('error' in riotId) fieldErrors.riotId = riotId.error;
-  if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
-  if ('error' in riotId) return { fieldErrors };
+  if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
+  if ('error' in riotId) return { fieldErrors, values };
 
   // Regla dura: el id sale de la sesión. Cualquier campo `userId` enviado por
   // el cliente queda deliberadamente sin leer.
