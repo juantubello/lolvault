@@ -1,0 +1,37 @@
+services:
+  lolvault:
+    build:
+      context: .
+    image: lolvault:latest
+    container_name: lolvault
+    restart: unless-stopped
+    user: "${LOLVAULT_UID:-1000}:${LOLVAULT_GID:-1000}"
+
+    ports:
+      - "127.0.0.1:${LOLVAULT_PORT:?falta LOLVAULT_PORT en el .env}:3000"
+
+    environment:
+      DATABASE_PATH: /data/lolvault.db
+      LOLVAULT_ACCESS_AUD: ${LOLVAULT_ACCESS_AUD:?falta LOLVAULT_ACCESS_AUD en el .env}
+
+    volumes:
+      - ./data:/data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
