@@ -53,7 +53,7 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
 - Flujo: Riot ID (`gameName#tagLine`) → **account-v1** → `puuid` → **match-v5**
   (`/matches/by-puuid/{puuid}/ids`, después `/matches/{id}`).
 - Routing: cuentas de Argentina → plataforma **LAS (`la2`)**, región regional **`americas`**.
-  **[CONFIRMAR]** que todos juegan en LAS.
+  ✅ Confirmado: todos juegan en LAS.
 - **Key:** registrar un producto **Personal API Key** en developer.riotgames.com. Riot la
   contempla para comunidades privadas chicas, no vence y tiene el mismo límite que la key de
   desarrollo (20 req/s y 100 req/2 min). La de desarrollo no sirve porque vence cada 24 h.
@@ -70,11 +70,11 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
 
 | Regla | Decisión |
 |---|---|
-| Qué bloquea | **Un campeón para un jugador** (el que jugó mal). **[CONFIRMAR]** que no es para todo el grupo. |
+| Qué bloquea | **Un campeón para un jugador** (el que jugó mal). El resto del grupo lo puede seguir usando. ✅ confirmado |
 | Duración | `days` se fija al proponer y **no se edita**. Opciones rápidas 1 / 3 / 7 días + valor libre de 1 a 30. **[CONFIRMAR]** |
 | Aprobación | `yes >= VAULT_APPROVALS_REQUIRED` (**3**). Constante en `src/config.ts`, no repartida por el código. |
-| Quién vota | Cualquier miembro, **menos el acusado**. **[CONFIRMAR]** |
-| El que propone | Su propuesta **cuenta como voto a favor** automático. **[CONFIRMAR]** |
+| Quién vota | Cualquier miembro, **menos el acusado**. ✅ confirmado |
+| El que propone | Su propuesta **cuenta como voto a favor** automático (se inserta en `vault_votes` al crear). ✅ confirmado |
 | Voto en contra | Existe. Si ya no es matemáticamente posible llegar a 3 votos a favor, la propuesta queda **rechazada**. |
 | Cambiar voto | Se puede mientras la propuesta esté abierta. |
 | Ventana de votación | **48 h** desde la creación. Si pasa sin llegar a 3, queda **expirada**. **[CONFIRMAR]** |
@@ -237,8 +237,9 @@ propuesta a una partida concreta.
 
 ## 11. Preguntas abiertas
 
-1. ¿El vault bloquea el campeón **solo al que jugó mal** o **a todo el grupo**?
-2. ¿El que propone cuenta como voto a favor? ¿El acusado puede votar en contra?
-3. ¿Cuánto tiempo queda abierta una votación (48 h)? ¿Días libres o solo 1/3/7?
-4. ¿Todos juegan en **LAS**?
-5. ¿Uno se puede autovaultear?
+Resueltas (2026-09-14): el vault es solo para el que jugó mal · proponer cuenta como voto a
+favor y el acusado no vota · todos en LAS.
+
+Quedan abiertas (no bloquean las fases 1-2):
+1. ¿Cuánto tiempo queda abierta una votación (48 h)? ¿Días libres o solo 1/3/7?
+2. ¿Uno se puede autovaultear?
