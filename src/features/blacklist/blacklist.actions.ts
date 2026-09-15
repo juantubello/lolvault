@@ -329,18 +329,23 @@ export async function cancelBlacklistProposalAction(
   }
 }
 
-export async function searchKnownPlayersAction(query: string): Promise<KnownPlayersActionResult> {
+export async function searchKnownPlayersAction(query: unknown): Promise<KnownPlayersActionResult> {
   const user = await currentMember();
   if (!user) return { suggestions: [], error: SESSION_ERROR_MESSAGE };
+  // Llega del cliente: puede no ser texto aunque el tipo diga string.
+  if (typeof query !== 'string' || query.length > 64) return { suggestions: [] };
   return { suggestions: searchKnownPlayers(getDb(), query, new Date()) };
 }
 
 /** Partidas de un Riot ID conocido o, sin Riot ID, las últimas de quien propone. */
 export async function loadBlacklistMatchesAction(
-  riotIdText: string,
+  riotIdText: unknown,
 ): Promise<BlacklistMatchesActionResult> {
   const user = await currentMember();
   if (!user) return { status: 'error', matches: [], message: SESSION_ERROR_MESSAGE };
+  if (typeof riotIdText !== 'string' || riotIdText.length > 64) {
+    return { status: 'invalid', matches: [], message: 'Ese Riot ID no es válido.' };
+  }
 
   const db = getDb();
   const now = new Date();

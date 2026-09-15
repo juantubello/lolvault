@@ -121,6 +121,18 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   Migration 0007. Notificaciones movidas arriba de Estadísticas en Perfil. Hecho por Claude (Codex sin
   cuota). Verificado en el navegador: switch persiste, aviso enviado y bloqueado hasta las 00:00. 190 tests.
 
+- 2026-09-15 — **Pendientes pre-deploy + revisión de código.** Tests del JWT de Access con tokens
+  firmados (AUD/issuer/vencido/otra clave/alg none), `(app)/error.tsx` con aviso de sesión vencida
+  ("Se cortó la conexión" → Recargar), `global-error.tsx` y `not-found.tsx`. La revisión (agente
+  code-reviewer) no encontró bloqueantes; se arreglaron: manifest servido por route handler y linkeado
+  con `crossOrigin="use-credentials"` + `apple-mobile-web-app-capable` (detrás de Access el navegador
+  no lo leía), grupo incompleto ya no rechaza votaciones para siempre, tope total de 20 s a OP.GG y 10 s
+  a Data Dragon, al cambiar el Riot ID se borra el caché de la cuenta anterior, re-vinculación por
+  email sin distinguir mayúsculas, validación de tipos en dos Server Actions y runbook (clone público,
+  solo One-time PIN, app de Access Bypass para manifest/íconos). 213 tests.
+  - Pendiente menor: los fixtures de OP.GG conservan ids de partida y datos de perfil que permiten
+    reconocer la cuenta real (ya están en el historial público).
+
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 2. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.

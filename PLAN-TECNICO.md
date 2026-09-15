@@ -94,7 +94,7 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
 | Quién vota | Cualquier miembro, **menos el acusado**. ✅ confirmado |
 | El que propone | Su propuesta **cuenta como voto a favor** automático (se inserta en `vault_votes` al crear), **salvo que se esté autovaulteando**. ✅ confirmado |
 | Autovault | **Permitido.** Sin voto automático: hacen falta 3 votos de los demás. ✅ confirmado |
-| Voto en contra | Existe. Si ya no es matemáticamente posible llegar a 3 votos a favor, la propuesta queda **rechazada**. |
+| Voto en contra | Existe. Si ya no es matemáticamente posible llegar a 3 votos a favor, la propuesta queda **rechazada**. **Excepción grupo incompleto:** si hay menos votantes posibles que el umbral (p. ej. el día del deploy, con pocos registrados) no se rechaza: queda abierta para los que se sumen y, si nadie llega, vence a las 48 h. |
 | Cambiar voto | Se puede mientras la propuesta esté abierta. |
 | Ventana de votación | **48 h** desde la creación, o antes si el vault ya habría terminado (`closes_at = min(created + 48 h, ends_at)`). Si pasa sin llegar a 3, queda **vencida**. ✅ confirmado |
 | Inicio del vault | Arranca en "desde", o **al aprobarse** si eso pasa después. Termina siempre en "hasta". ✅ confirmado |
@@ -120,7 +120,7 @@ fechas ni campeón.
 | Qué se agrega | Un **nombre** libre (obligatorio, lo que recordamos) y un **Riot ID** opcional (`gameName#tagLine`). Motivo obligatorio (280). Partida adjunta opcional. |
 | Aprobación | `yes >= BLACKLIST_APPROVALS_REQUIRED` (**2**) en `config.ts`. **Quien propone suma su voto** (igual que en vaults), así que alcanza con un amigo más. |
 | Quién vota | Cualquier miembro (no hay acusado dentro del grupo). Cambiar voto mientras está abierta. |
-| Rechazo / vencimiento | Rechazada cuando ya no se puede llegar a 2; vencida a las **48 h** (`VOTING_WINDOW_MS`). Cancelar: solo quien propone, abierta. |
+| Rechazo / vencimiento | Rechazada cuando ya no se puede llegar a 2 (salvo grupo incompleto, igual que en vaults); vencida a las **48 h** (`VOTING_WINDOW_MS`). Cancelar: solo quien propone, abierta. |
 | Sacar de la lista | Votación `kind = 'remove'` con las mismas reglas (2 a favor). Al aprobarse se setea `removed_at` en la entrada. Una sola abierta por entrada. |
 | Duplicados | Una sola entrada vigente y una sola propuesta abierta por Riot ID (sin distinguir mayúsculas) o, si no tiene Riot ID, por nombre normalizado. |
 | Estado | Derivado de timestamps, igual que vaults: vigente = `add` aprobada y sin `removed_at`. |

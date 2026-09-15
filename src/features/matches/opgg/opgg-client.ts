@@ -2,6 +2,8 @@ import { MatchProviderError } from '@/features/matches/types';
 
 const DEFAULT_ENDPOINT = 'https://mcp-api.op.gg/mcp';
 const DEFAULT_TIMEOUT_MS = 15_000;
+/** Tope de una llamada completa (initialize + notificación + tools/call + reintento de sesión). */
+const DEFAULT_TOTAL_TIMEOUT_MS = 20_000;
 
 type JsonObject = Record<string, unknown>;
 
@@ -9,6 +11,7 @@ type OpggClientOptions = {
   endpoint?: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
+  totalTimeoutMs?: number;
 };
 
 class SessionExpiredError extends Error {
@@ -114,6 +117,7 @@ export function createOpggClient(options: OpggClientOptions = {}): {
   const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
   const fetchFn = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const totalTimeoutMs = options.totalTimeoutMs ?? DEFAULT_TOTAL_TIMEOUT_MS;
   let nextId = 1;
   let sessionId: string | null = null;
   let initializeInFlight: Promise<void> | null = null;
@@ -191,7 +195,7 @@ export function createOpggClient(options: OpggClientOptions = {}): {
     await initializeInFlight;
   }
 
-  async function callTool(name: string, args: Record<string, unknown>): Promise<string> {
+  async function callToolOnce(name: string, args: Record<string, unknown>): Promise<string> {
     await ensureSession();
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -235,6 +239,25 @@ export function createOpggClient(options: OpggClientOptions = {}): {
     }
 
     throw unavailable('No se pudo ejecutar la herramienta de OP.GG');
+  }
+
+  /**
+   * Cada POST tiene su timeout, pero una llamada en frío hace varios: sin un tope total, una
+   * página que espera a OP.GG podía quedar colgada hasta que Cloudflare corta (524 a los 100 s).
+   */
+  async function callTool(name: string, args: Record<string, unknown>): Promise<string> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(unavailable(`OP.GG no respondió en ${Math.round(totalTimeoutMs / 1000)} s`)),
+        totalTimeoutMs,
+      );
+    });
+    try {
+      return await Promise.race([callToolOnce(name, args), deadline]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   return { callTool };

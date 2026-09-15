@@ -8,7 +8,10 @@ const DDRAGON_URL = 'https://ddragon.leagueoflegends.com';
 const CHAMPIONS_LOCALE = 'es_AR';
 const RECHECK_MS = 24 * 60 * 60 * 1000;
 
-type FetchFn = (url: string) => Promise<Response>;
+type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
+
+/** La home espera este sync si la tabla está vacía: no puede colgarse si Data Dragon no responde. */
+const DDRAGON_TIMEOUT_MS = 10_000;
 
 type DdragonChampion = {
   id: string;
@@ -23,7 +26,7 @@ export function championImageUrl(version: string, imageFile: string): string {
 }
 
 async function getJson<T>(fetchFn: FetchFn, url: string): Promise<T> {
-  const response = await fetchFn(url);
+  const response = await fetchFn(url, { signal: AbortSignal.timeout(DDRAGON_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`Data Dragon respondió ${response.status} para ${url}`);
   return (await response.json()) as T;
 }

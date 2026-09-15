@@ -34,6 +34,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     // Extensiones del navegador (ej. LanguageTool: data-lt-installed) tocan <html> antes de React.
     // Solo silencia atributos de este elemento; los errores de hydration de la app se siguen viendo.
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Detrás de Cloudflare Access el manifest necesita la cookie: sin use-credentials el
+            navegador lo pide sin ella, recibe el redirect al login y la PWA no se instala. */}
+        <link crossOrigin="use-credentials" href="/manifest.webmanifest" rel="manifest" />
+        <meta content="yes" name="apple-mobile-web-app-capable" />
+      </head>
       <body>
         {children}
         <DevUserSwitcher />

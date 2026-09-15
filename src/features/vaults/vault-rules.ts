@@ -77,6 +77,10 @@ export type VoteTally = {
 export function voteOutcome({ yes, no, eligibleVoters }: VoteTally): 'approved' | 'rejected' | 'open' {
   if (yes >= VAULT_APPROVALS_REQUIRED) return 'approved';
 
+  // Grupo incompleto (menos votantes posibles que el umbral): no se rechaza, porque los que se
+  // registren después también pueden votar. Si nadie llega, vence sola a las 48 h.
+  if (eligibleVoters < VAULT_APPROVALS_REQUIRED) return 'open';
+
   const pending = Math.max(eligibleVoters - yes - no, 0);
   return yes + pending < VAULT_APPROVALS_REQUIRED ? 'rejected' : 'open';
 }

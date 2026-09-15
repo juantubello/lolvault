@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 
 import { getDb, type Db } from '@/db/client';
@@ -46,10 +46,16 @@ export function findOrCreateUser(db: Db, identity: Identity): User {
 
   // Si cambia el proveedor de Access, el sub puede cambiar. Re-vincular por
   // email conserva el historial sin codificar una allowlist dentro de la app.
-  const byEmail = db.select().from(users).where(eq(users.email, identity.email)).get();
+  // Solo es seguro porque Access verifica el email (One-time PIN). No agregar a la app de Access
+  // proveedores que no verifiquen emails: ver docs/RUNBOOK-DEPLOY.md §1.7.
+  const byEmail = db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = ${identity.email.toLowerCase()}`)
+    .get();
   if (byEmail) {
     console.warn(
-      `[auth] Re-vinculando usuario ${byEmail.id} a una nueva identidad de Access.`,
+      `[auth] Re-vinculando usuario ${byEmail.id} a una nueva identidad de Access (antes ${byEmail.externalIdentity}, ahora ${identity.externalIdentity}).`,
     );
     return db
       .update(users)

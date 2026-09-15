@@ -53,7 +53,7 @@ describe('sync de campeones de Data Dragon', () => {
   });
 
   it('consulta versiones y champion.json e inserta los campeones', async () => {
-    const fetchFn = vi.fn(async (url: string) => {
+    const fetchFn = vi.fn(async (url: string, _init?: RequestInit) => {
       if (url.endsWith('/api/versions.json')) return jsonResponse(['16.18.1']);
       return jsonResponse(championPayload('16.18.1'));
     });
@@ -63,10 +63,9 @@ describe('sync de campeones de Data Dragon', () => {
       count: 2,
       updated: true,
     });
-    expect(fetchFn).toHaveBeenCalledWith(`${BASE_URL}/api/versions.json`);
+    expect(fetchFn).toHaveBeenCalledWith(`${BASE_URL}/api/versions.json`, expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(fetchFn).toHaveBeenCalledWith(
-      `${BASE_URL}/cdn/16.18.1/data/es_AR/champion.json`,
-    );
+      `${BASE_URL}/cdn/16.18.1/data/es_AR/champion.json`, expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(db.select().from(champions).all()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'Ahri', key: 103, name: 'Ahri', version: '16.18.1' }),
@@ -76,7 +75,7 @@ describe('sync de campeones de Data Dragon', () => {
   });
 
   it('si la versión no cambió no vuelve a pedir champion.json', async () => {
-    const fetchFn = vi.fn(async (url: string) => {
+    const fetchFn = vi.fn(async (url: string, _init?: RequestInit) => {
       if (url.endsWith('/api/versions.json')) return jsonResponse(['16.18.1']);
       return jsonResponse(championPayload('16.18.1'));
     });
@@ -89,12 +88,12 @@ describe('sync de campeones de Data Dragon', () => {
       updated: false,
     });
     expect(fetchFn).toHaveBeenCalledTimes(1);
-    expect(fetchFn).toHaveBeenCalledWith(`${BASE_URL}/api/versions.json`);
+    expect(fetchFn).toHaveBeenCalledWith(`${BASE_URL}/api/versions.json`, expect.objectContaining({ signal: expect.any(AbortSignal) }));
   });
 
   it('con una versión nueva actualiza por upsert sin duplicar filas', async () => {
     let version = '16.18.1';
-    const fetchFn = vi.fn(async (url: string) => {
+    const fetchFn = vi.fn(async (url: string, _init?: RequestInit) => {
       if (url.endsWith('/api/versions.json')) return jsonResponse([version]);
       return jsonResponse(championPayload(version));
     });
@@ -125,7 +124,7 @@ describe('sync de campeones de Data Dragon', () => {
   });
 
   it('lanza si falla champion.json', async () => {
-    const fetchFn = vi.fn(async (url: string) => {
+    const fetchFn = vi.fn(async (url: string, _init?: RequestInit) => {
       if (url.endsWith('/api/versions.json')) return jsonResponse(['16.18.1']);
       return jsonResponse({ error: 'caído' }, 500);
     });

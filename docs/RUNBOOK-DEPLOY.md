@@ -54,16 +54,11 @@ docker run --rm node:22-bookworm-slim node -e "fetch('https://ddragon.leagueofle
 
 ### 1.1 Traer el repo
 
-El repo todavía no tiene remoto. Primero, desde la Mac y parado en la raíz de LolVault:
+El repo ya está en GitHub y es **público** (no tiene secretos: el `.env` y `data/` están
+gitignoreados). En el homelab alcanza con clonar por HTTPS, sin credenciales:
 
 ```bash
-gh repo create juantubello/lolvault --private --source=. --push
-```
-
-Después, en el homelab:
-
-```bash
-git clone git@github.com:juantubello/lolvault.git ~/lolvault
+git clone https://github.com/juantubello/lolvault.git ~/lolvault
 cd ~/lolvault
 ```
 
@@ -203,11 +198,32 @@ En el dashboard de Zero Trust (`one.dash.cloudflare.com`, team `pipiscats`):
 2. **Application name:** `lolvault`.
 3. **Session Duration:** `1 month`.
 4. **Public hostname:** subdominio `lolvault`, dominio `casapipis.net`, path vacío.
-5. **Identity provider:** One-time PIN por email.
+5. **Identity provider:** One-time PIN por email, **y solo ese**. La app re-vincula cuentas por
+   email si cambia el `sub` de Access; eso es seguro únicamente con proveedores que verifican el
+   email. No agregues un OIDC/SAML genérico a esta app.
 6. **Policy:** nombre `Amigos LolVault`, Action `Allow`, Include → `Emails` → cargar
    los emails de todos los amigos autorizados. Los emails reales viven solamente en
    Access: no se copian al repo, al runbook ni al `.env`.
 7. Guardar.
+
+8. **Archivos públicos de la PWA (recomendado):** creá una segunda Self-hosted Application
+   `lolvault-public`, mismo hostname, con estos paths y una policy con Action **Bypass**,
+   Include → `Everyone`:
+   `manifest.webmanifest`, `icons/*`, `brand/*`, `icon.png`, `apple-icon.png`.
+   Son solo el manifest y los íconos (no hay datos). iOS y Android los piden al instalar la app
+   y, si Access los redirige al login, el ícono puede quedar genérico o "Agregar a inicio" abre
+   una pestaña de Safari en vez de la app. La app igual pide el manifest con credenciales, así
+   que esto es un refuerzo.
+
+Verificación desde cualquier máquina (sin login):
+
+```bash
+curl -sI https://lolvault.casapipis.net/manifest.webmanifest | head -3   # con Bypass: 200 y application/manifest+json
+curl -sI https://lolvault.casapipis.net/ | head -3                       # sin login: 302 a pipiscats.cloudflareaccess.com
+```
+
+En el iPhone: Safari → Compartir → **Agregar a inicio** y abrir desde el ícono: **no** tiene que
+verse la barra de Safari. Si se ve, la app no se instaló como PWA y no va a poder activar push.
 
 Entrá a la app recién creada → **Overview** → *Application Audience (AUD) Tag* y copiá
 la cadena. LolVault valida el JWT contra el team domain fijo y contra este AUD específico;

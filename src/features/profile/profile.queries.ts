@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import type { Db } from '@/db/client';
-import { users } from '@/db/schema';
+import { playerMatches, playerStatsSync, users } from '@/db/schema';
 
 import type { ProfileInput } from './profile-form';
 
@@ -30,8 +30,17 @@ export function saveProfile(db: Db, userId: number, profile: ProfileInput): void
     riotKey(current?.riotGameName ?? null, current?.riotTagLine ?? null) !==
     riotKey(profile.riotGameName, profile.riotTagLine);
 
-  db.update(users)
-    .set(riotChanged ? { ...profile, riotPuuid: null } : profile)
-    .where(eq(users.id, userId))
-    .run();
+  db.transaction((tx) => {
+    tx.update(users)
+      .set(riotChanged ? { ...profile, riotPuuid: null } : profile)
+      .where(eq(users.id, userId))
+      .run();
+    if (riotChanged) {
+      // El historial y el perfil cacheados eran de la cuenta anterior: si el Riot ID nuevo está mal
+      // escrito, no tienen que seguir mostrándose (ni poder adjuntarse) bajo el ID nuevo. Las fotos
+      // de partidas ya adjuntas viven en cada propuesta y no se tocan.
+      tx.delete(playerMatches).where(eq(playerMatches.userId, userId)).run();
+      tx.delete(playerStatsSync).where(eq(playerStatsSync.userId, userId)).run();
+    }
+  });
 }

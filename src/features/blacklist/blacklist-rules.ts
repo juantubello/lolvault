@@ -44,6 +44,9 @@ export function blacklistVoteOutcome({
   eligibleVoters,
 }: BlacklistVoteTally): 'approved' | 'rejected' | 'open' {
   if (yes >= BLACKLIST_APPROVALS_REQUIRED) return 'approved';
+  // Grupo incompleto: no se rechaza para siempre; los que se registren después pueden votar.
+  if (eligibleVoters < BLACKLIST_APPROVALS_REQUIRED) return 'open';
+
   const pending = Math.max(eligibleVoters - yes - no, 0);
   return yes + pending < BLACKLIST_APPROVALS_REQUIRED ? 'rejected' : 'open';
 }

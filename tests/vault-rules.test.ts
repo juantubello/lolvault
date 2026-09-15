@@ -88,3 +88,15 @@ describe('closesAtFor', () => {
     expect(closesAtFor(t0, new Date(t0.getTime() + 24 * H))).toEqual(new Date(t0.getTime() + 24 * H));
   });
 });
+
+describe('voteOutcome con el grupo incompleto', () => {
+  it('no rechaza para siempre si hay menos votantes posibles que el umbral', () => {
+    // Día del deploy: solo 3 registrados y A propone a C → pueden votar 2.
+    expect(voteOutcome({ yes: 2, no: 0, eligibleVoters: 2 })).toBe('open');
+    expect(voteOutcome({ yes: 1, no: 1, eligibleVoters: 2 })).toBe('open');
+  });
+
+  it('con el grupo completo sigue rechazando cuando ya no se llega', () => {
+    expect(voteOutcome({ yes: 1, no: 1, eligibleVoters: 3 })).toBe('rejected');
+  });
+});

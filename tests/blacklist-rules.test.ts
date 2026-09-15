@@ -56,3 +56,10 @@ describe('reglas de black list', () => {
     expect(validateBlacklistRiotId('')).toEqual({ ok: true, riotId: null });
   });
 });
+
+describe('black list con el grupo incompleto', () => {
+  it('con un solo miembro la propuesta queda abierta en vez de rechazarse', () => {
+    expect(blacklistVoteOutcome({ yes: 1, no: 0, eligibleVoters: 1 })).toBe('open');
+    expect(blacklistVoteOutcome({ yes: 0, no: 2, eligibleVoters: 2 })).toBe('rejected');
+  });
+});
