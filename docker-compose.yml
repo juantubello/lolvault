@@ -34,6 +34,10 @@ services:
       # lolvault → Overview). Sin esto no valida ningún JWT y no entra nadie.
       # El team domain (pipiscats.cloudflareaccess.com) está fijo en src/auth/access-jwt.ts.
       LOLVAULT_ACCESS_AUD: ${LOLVAULT_ACCESS_AUD:?falta LOLVAULT_ACCESS_AUD en el .env (AUD tag de la app de Access — ver docs/RUNBOOK-DEPLOY.md)}
+      # Web Push es opcional: sin el trío completo la app sigue funcionando y Perfil lo informa.
+      LOLVAULT_VAPID_PUBLIC_KEY: ${LOLVAULT_VAPID_PUBLIC_KEY:-}
+      LOLVAULT_VAPID_PRIVATE_KEY: ${LOLVAULT_VAPID_PRIVATE_KEY:-}
+      LOLVAULT_VAPID_SUBJECT: ${LOLVAULT_VAPID_SUBJECT:-}
       # LOLVAULT_DEV_USER_EMAIL NO se pasa a propósito, ni vacía: es el bypass de login de
       # desarrollo. Con NODE_ENV=production la app se niega a arrancar si la ve.
 

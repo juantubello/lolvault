@@ -35,6 +35,25 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
+/** Suscripciones Web Push por navegador/dispositivo, siempre ligadas a un usuario autenticado. */
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    deviceLabel: text('device_label').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    lastSuccessAt: integer('last_success_at', { mode: 'timestamp_ms' }),
+    failureCount: integer('failure_count').notNull().default(0),
+  },
+  (table) => [index('push_subscriptions_user_idx').on(table.userId)],
+);
+
 export const vaultProposals = sqliteTable(
   'vault_proposals',
   {
@@ -254,3 +273,4 @@ export type VaultProposal = typeof vaultProposals.$inferSelect;
 export type VaultVote = typeof vaultVotes.$inferSelect;
 export type BlacklistProposal = typeof blacklistProposals.$inferSelect;
 export type BlacklistVote = typeof blacklistVotes.$inferSelect;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;

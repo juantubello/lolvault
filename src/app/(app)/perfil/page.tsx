@@ -3,13 +3,17 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
+import { getDb } from '@/db/client';
 import { Suspense } from 'react';
 
 import { AppLogo } from '@/components/app-logo';
 import { PlayerStatsLoading, PlayerStatsSection } from '@/components/matches/player-stats-section';
+import { PushNotifications } from '@/components/push-notifications';
 import { Screen } from '@/components/screen';
 import { UserAvatar } from '@/components/user-avatar';
 import { avatarUrl } from '@/features/profile/avatar-url';
+import { readPushConfig } from '@/features/push/push-config';
+import { listPushDeviceViews } from '@/features/push/push-subscriptions';
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -19,6 +23,8 @@ export default async function ProfilePage() {
     user.riotGameName && user.riotTagLine
       ? `${user.riotGameName}#${user.riotTagLine}`
       : null;
+  const pushConfig = readPushConfig();
+  const pushDevices = listPushDeviceViews(getDb(), user.id);
 
   return (
     <Screen
@@ -53,6 +59,12 @@ export default async function ProfilePage() {
       <Suspense fallback={<PlayerStatsLoading />}>
         <PlayerStatsSection isSelf user={user} />
       </Suspense>
+
+      <PushNotifications
+        enabled={pushConfig.enabled}
+        initialDevices={pushDevices}
+        publicKey={pushConfig.publicKey}
+      />
 
       <footer className="about-footer" aria-labelledby="about-heading">
         <AppLogo size={72} />

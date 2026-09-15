@@ -91,6 +91,11 @@ cat > .env <<'EOF'
 LOLVAULT_ACCESS_AUD=
 LOLVAULT_PORT=3025
 
+# Web Push (opcionales; ver §2.1). Sin las tres, las notificaciones quedan deshabilitadas.
+LOLVAULT_VAPID_PUBLIC_KEY=
+LOLVAULT_VAPID_PRIVATE_KEY=
+LOLVAULT_VAPID_SUBJECT=
+
 # Solo si `id jpft` NO dio uid/gid 1000:
 #LOLVAULT_UID=1001
 #LOLVAULT_GID=1001
@@ -250,6 +255,47 @@ requieren internet desde el contenedor.
 Si vence la sesión de Access, una Server Action puede recibir el HTML del login de
 Cloudflare en vez de la respuesta esperada. Recargá la PWA o la página y volvé a entrar.
 
+### 2.1 Notificaciones push
+
+Las claves VAPID se generan **una sola vez**. Desde un checkout con dependencias instaladas:
+
+```bash
+npm run vapid:generate
+```
+
+También se pueden generar con la imagen ya construida en el homelab:
+
+```bash
+docker compose run --rm lolvault node -e "const w=require('web-push');const k=w.generateVAPIDKeys();console.log('LOLVAULT_VAPID_PUBLIC_KEY='+k.publicKey);console.log('LOLVAULT_VAPID_PRIVATE_KEY='+k.privateKey)"
+```
+
+Copiá el par al `.env`, elegí un mail de contacto para el subject y recreá el contenedor:
+
+```dotenv
+LOLVAULT_VAPID_PUBLIC_KEY=<public key>
+LOLVAULT_VAPID_PRIVATE_KEY=<private key>
+LOLVAULT_VAPID_SUBJECT=mailto:tu-email@example.com
+```
+
+```bash
+docker compose up -d --force-recreate
+```
+
+No rotes esas claves en un deploy normal: cambiar el par invalida todas las suscripciones y
+cada amigo tendría que activar el dispositivo de nuevo. Si falta cualquiera de las tres
+variables, LolVault sigue funcionando y Perfil muestra que push está deshabilitado.
+
+Requisitos operativos:
+
+- El contenedor necesita salida HTTPS hacia los servicios Web Push de Apple y Google, además
+  de la salida que ya usa para OP.GG y Data Dragon.
+- En iPhone se necesita iOS 16.4 o posterior y LolVault instalada con Safari → Compartir →
+  Agregar a inicio. El permiso se pide desde Perfil al tocar “Activar en este dispositivo”.
+- En macOS/Chrome se puede probar en `localhost`; en producción el origen público debe seguir
+  servido por HTTPS.
+- Después de activar, usá “Enviar prueba” en Perfil. Un endpoint que responda 404/410 se elimina
+  automáticamente; otros errores quedan registrados en `failure_count` para diagnóstico.
+
 ---
 
 ## 3. Deploy de una versión nueva
@@ -403,6 +449,8 @@ tail -5 ~/lolvault/data/backups/backup.log
 | El build tarda mucho o el homelab se pone lento | El i3 tiene 2 núcleos y el build de Next es pesado. | No buildear en paralelo con PipiGym ni con otro stack. |
 | `port is already allocated` al levantar | Otro proceso tomó 3025. | `sudo ss -ltnp \| grep 3025`; resolver el conflicto antes de seguir. |
 | Cambió `.env` pero la app sigue usando el valor anterior | `up -d` no siempre recrea por un cambio de entorno. | `docker compose up -d --force-recreate`. |
+| Perfil dice que push está deshabilitado | Falta una variable VAPID o tiene un formato inválido. | Revisar las tres variables del §2.1 con `docker compose config` y recrear el contenedor. No generar un par nuevo si ya existe uno en uso. |
+| La prueba push falla en todos los dispositivos | El contenedor no llega al servicio push, el permiso fue revocado o el endpoint venció. | Revisar salida HTTPS de Docker, permisos del navegador y logs `[push]`. Los endpoints 404/410 se limpian solos y deben activarse otra vez. |
 
 ### Comandos de diagnóstico
 

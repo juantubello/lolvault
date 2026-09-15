@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/auth/current-user';
 import { BLACKLIST_NAME_MAX_LENGTH, BLACKLIST_REASON_MAX_LENGTH } from '@/config';
 import { getDb, type Db } from '@/db/client';
-import { matchDetails, matchParticipants, playerMatches, users } from '@/db/schema';
+import { blacklistProposals, matchDetails, matchParticipants, playerMatches, users } from '@/db/schema';
 import { championImagesByKey } from '@/features/champions/champion-images';
 import { getFriendProfile } from '@/features/friends/friends.queries';
 import { queueLabel } from '@/features/matches/format';
@@ -16,6 +16,12 @@ import { matchOutcome } from '@/features/matches/player-summary';
 import { getMatchProvider } from '@/features/matches/provider';
 import { SESSION_ERROR_MESSAGE } from '@/features/profile/profile-form';
 import type { RiotId } from '@/features/matches/types';
+import { dispatchPushAfter } from '@/features/push/push-dispatch';
+import {
+  blacklistApprovedEvent,
+  blacklistProposalCreatedEvent,
+} from '@/features/push/push-events';
+import { listMembers } from '@/features/vaults/vaults.queries';
 
 import {
   cancelBlacklistProposal,
@@ -207,6 +213,17 @@ export async function createBlacklistProposalAction(
       new Date(),
       attachment,
     );
+    dispatchPushAfter(
+      db,
+      blacklistProposalCreatedEvent({
+        proposalId: createdId,
+        kind: 'add',
+        memberIds: listMembers(db).map((member) => member.id),
+        proposerUserId: user.id,
+        proposerName: user.displayName ?? 'Sin nombre',
+        playerName: values.playerName,
+      }),
+    );
     refreshApp();
     return { createdId };
   } catch (error) {
@@ -233,7 +250,26 @@ export async function requestBlacklistRemovalAction(
   }
 
   try {
-    createRemoveProposal(getDb(), user.id, entryId, reason || null, new Date());
+    const db = getDb();
+    const createdId = createRemoveProposal(db, user.id, entryId, reason || null, new Date());
+    const proposal = db
+      .select({ playerName: blacklistProposals.playerName })
+      .from(blacklistProposals)
+      .where(eq(blacklistProposals.id, createdId))
+      .get();
+    if (proposal) {
+      dispatchPushAfter(
+        db,
+        blacklistProposalCreatedEvent({
+          proposalId: createdId,
+          kind: 'remove',
+          memberIds: listMembers(db).map((member) => member.id),
+          proposerUserId: user.id,
+          proposerName: user.displayName ?? 'Sin nombre',
+          playerName: proposal.playerName,
+        }),
+      );
+    }
     refreshApp();
     return { done: true };
   } catch (error) {
@@ -252,7 +288,22 @@ export async function blacklistVoteAction(
   if (!proposalId || (value !== 'yes' && value !== 'no')) return { error: 'Voto inválido.' };
 
   try {
-    castBlacklistVote(getDb(), user.id, proposalId, value, new Date());
+    const db = getDb();
+    const outcome = castBlacklistVote(db, user.id, proposalId, value, new Date());
+    if (outcome === 'approved') {
+      const proposal = db
+        .select({
+          kind: blacklistProposals.kind,
+          proposerUserId: blacklistProposals.proposerUserId,
+          playerName: blacklistProposals.playerName,
+        })
+        .from(blacklistProposals)
+        .where(eq(blacklistProposals.id, proposalId))
+        .get();
+      if (proposal) {
+        dispatchPushAfter(db, blacklistApprovedEvent({ proposalId, ...proposal }));
+      }
+    }
     refreshApp();
     return { done: true };
   } catch (error) {

@@ -254,8 +254,10 @@ miembros, con caché `immutable` (una foto nueva es otra URL).
 
 **Proponer vault** abre un sheet (`<dialog>`): jugador → campeón (grilla con búsqueda sin tildes) →
 desde / hasta → motivo (obligatorio, 280) → confirmar. En desktop, modal centrado.
-**Aviso de votación pendiente:** hoy dentro de la app (sección primero + badge). **Push** queda
-para cuando esté en el homelab con HTTPS (SHOULD).
+**Aviso de votación pendiente:** dentro de la app (sección primero + badge) y por **Web Push
+con VAPID**, ya implementado. Cada suscripción pertenece al usuario autenticado; sin las tres
+variables VAPID la función queda deshabilitada sin afectar el resto de la app. En iOS requiere
+16.4+ y abrir la PWA instalada desde la pantalla de inicio.
 
 Design system: [`design-system/lolvault/MASTER.md`](./design-system/lolvault/MASTER.md).
 

@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, vaults, black list, perfiles con foto e historial de partidas (OP.GG) verificados
+## Estado: votaciones, vaults, black list, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -107,11 +107,16 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   badge en el detalle de partida. El badge de navegación suma ambos tipos de voto pendiente. El
   pie de las tarjetas de votación ahora envuelve nombres largos en vez de truncarlos. Helpers de
   presentación cubiertos en `blacklist-ui.test.ts`; typecheck, 165 tests y build verificados.
+- 2026-09-15 — **Notificaciones Web Push con VAPID.** Suscripciones por usuario y dispositivo,
+  configuración opcional solo del servidor, service worker sin caché offline, estado y gestión
+  accesible desde Perfil. Avisos de propuestas y aprobaciones de vault/lift/black list se envían
+  con `after()`; endpoints 404/410 se limpian y otros fallos se contabilizan. Migration 0006,
+  script de claves y runbook de deploy incluidos. Typecheck, 182 tests y build verificados.
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-2. Push notifications de votación pendiente (requiere HTTPS → después del deploy).
-3. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+2. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+3. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
 4. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
 5. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
 
