@@ -317,14 +317,11 @@ revisado a mano.
 Detección de violaciones vía match-v5 · estadísticas ("el más vaulteado") · vincular una
 propuesta a una partida concreta.
 
-## 10. Deploy (resumen: lo detalla `homelab-infra`)
+## 10. Deploy
 
-- Puerto: libre en el host, bind `127.0.0.1:<puerto>:3000`. Verificar con `ss -ltnp` antes de elegir.
-- Ingress: sumar `lolvault.casapipis.net` en `/etc/cloudflared/config.yml` **antes** del
-  `http_status:404`, más `route dns` y reinicio (runbook en `../CLAUDE.md`).
-- Access: app self-hosted `lolvault` con policy "Amigos LolVault" y los emails. Copiar el
-  **AUD tag** al `.env`.
-- Backup: `VACUUM INTO` diario desde cron del host, igual que PipiGym.
+El procedimiento completo de primer deploy, actualizaciones, rollback, Cloudflare Tunnel +
+Access, backups de SQLite y fotos, y troubleshooting está en
+[`docs/RUNBOOK-DEPLOY.md`](./docs/RUNBOOK-DEPLOY.md).
 
 ## 11. Preguntas abiertas
 

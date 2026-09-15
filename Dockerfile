@@ -4,6 +4,13 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# better-sqlite3 es nativo: si no hay binario precompilado para esta versión de Node y
+# arquitectura, npm lo compila con node-gyp (python3 + make + g++). Solo en esta etapa:
+# el runner copia el .node ya compilado y no lleva el toolchain.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
