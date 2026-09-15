@@ -13,6 +13,7 @@ function user(overrides: Partial<User> = {}): User {
     riotTagLine: null,
     riotPuuid: null,
     avatarChampionId: null,
+    avatarUpdatedAt: null,
     createdAt: new Date(0),
     ...overrides,
   };

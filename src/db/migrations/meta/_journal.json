@@ -22,6 +22,13 @@
       "when": 1789431789263,
       "tag": "0002_vault_dates_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789438294435,
+      "tag": "0003_user_avatar",
+      "breakpoints": true
     }
   ]
 }

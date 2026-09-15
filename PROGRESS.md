@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: Fases 1–3 implementadas y verificadas (votaciones + vaults)
+## Estado: Fases 1–3 + foto de perfil implementadas y verificadas
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -60,13 +60,20 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   drizzle-kit generaba el copy de la tabla con columnas nuevas y fallaba siempre.
   Tests de integración de queries y Data Dragon escritos por **Codex** (26), 64 tests en total.
   Verificado en navegador con 4 usuarios de dev: proponer → 1/3 → votos → aprobado → vigente.
+- 2026-09-14 — **Foto de perfil.** "Agregar / Cambiar foto" y "Quitar" en Editar perfil; se ve en
+  Perfil y en los chips de jugador de "Proponer vault". Recorte y achicado a JPEG 256×256 en el
+  cliente (1,2 MB → ~4 KB en la prueba), `/data/avatars/<id>.jpg` con escritura atómica, ruta
+  `/avatars/<id>?v=…` solo para miembros. Migration 0003 (`users.avatar_updated_at`). Tests de
+  storage y acciones (73 en total). Verificado en navegador: subir, ver, quitar y 404 posteriores.
+  Nota: al quitar, el navegador que ya la vio puede seguir teniendo la URL vieja en caché, pero la
+  app deja de referenciarla y el servidor responde 404.
 
 ### Siguiente
-1. **Foto de perfil** (pedido de Juan): subir desde el teléfono, achicar en el cliente, guardar en `/data`.
-2. Revisión de código (`code-reviewer`), sobre todo `src/auth/` y `features/vaults/`.
-3. Push notifications de votación pendiente (requiere HTTPS → después del deploy).
-4. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-5. Riot API: última partida por amigo (cuando llegue la Personal API Key).
+1. Revisión de código (`code-reviewer`), sobre todo `src/auth/`, `features/vaults/` y la ruta de avatares.
+2. Push notifications de votación pendiente (requiere HTTPS → después del deploy).
+3. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+4. Riot API: última partida por amigo (cuando llegue la Personal API Key).
+5. Pestaña Amigos (hoy placeholder): lista con foto, Riot ID y vaults de cada uno.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

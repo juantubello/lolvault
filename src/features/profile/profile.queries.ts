@@ -10,6 +10,11 @@ function riotKey(gameName: string | null, tagLine: string | null): string | null
   return gameName && tagLine ? `${gameName}#${tagLine}`.toLocaleLowerCase('en-US') : null;
 }
 
+/** Marca (o limpia con null) la foto de perfil del usuario autenticado. */
+export function setAvatarUpdatedAt(db: Db, userId: number, updatedAt: Date | null): void {
+  db.update(users).set({ avatarUpdatedAt: updatedAt }).where(eq(users.id, userId)).run();
+}
+
 /** La identidad se resuelve antes: esta query siempre recibe el id autenticado. */
 export function saveProfile(db: Db, userId: number, profile: ProfileInput): void {
   const current = db

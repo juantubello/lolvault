@@ -12,6 +12,7 @@ import type { Db } from '@/db/client';
 import * as schema from '@/db/schema';
 import { champions, users, vaultProposals, vaultVotes, type VaultProposal } from '@/db/schema';
 import { championImageUrl } from '@/features/champions/ddragon-sync';
+import { avatarUrl } from '@/features/profile/avatar-url';
 
 import type { ProposalInput } from './proposal-form';
 import { addDays } from './vault-dates';
@@ -39,7 +40,7 @@ export class VaultRuleError extends Error {
   }
 }
 
-export type Member = { id: number; displayName: string };
+export type Member = { id: number; displayName: string; avatarUrl: string | null };
 
 export type VoteValue = 'yes' | 'no';
 
@@ -53,11 +54,15 @@ function asVault(row: VaultProposal): VaultProposal & VaultTimeline {
 /** Miembros = usuarios con el onboarding completo. Lista del grupo, no dato privado. */
 export function listMembers(db: Queryable): Member[] {
   return db
-    .select({ id: users.id, displayName: users.displayName })
+    .select({ id: users.id, displayName: users.displayName, avatarUpdatedAt: users.avatarUpdatedAt })
     .from(users)
     .where(isNotNull(users.displayName))
     .all()
-    .map(({ id, displayName }) => ({ id, displayName: displayName ?? '' }))
+    .map(({ id, displayName, avatarUpdatedAt }) => ({
+      id,
+      displayName: displayName ?? '',
+      avatarUrl: avatarUrl({ id, avatarUpdatedAt }),
+    }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
 }
 

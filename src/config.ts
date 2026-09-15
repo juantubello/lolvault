@@ -8,5 +8,10 @@ export const VAULT_REASON_MAX_LENGTH = 280;
 
 export const APP_TIME_ZONE = 'America/Argentina/Buenos_Aires';
 
+/** Foto de perfil: se achica en el teléfono a un cuadrado de este lado antes de subir. */
+export const AVATAR_SIZE_PX = 256;
+/** Tope del archivo ya achicado (un JPEG de 256 px pesa ~30 KB). */
+export const AVATAR_MAX_BYTES = 512 * 1024;
+
 export const RIOT_PLATFORM = 'la2';
 export const RIOT_REGION = 'americas';

@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
+import { AvatarPicker } from '@/components/avatar-picker';
 import { ProfileForm } from '@/components/profile-form';
 import { Screen } from '@/components/screen';
+import { avatarUrl } from '@/features/profile/avatar-url';
 import { formatRiotId } from '@/features/profile/profile-form';
 
 import { updateProfileAction } from './actions';
@@ -15,6 +17,7 @@ export default async function EditProfilePage() {
 
   return (
     <Screen back={{ href: '/perfil', label: 'Perfil' }} title="Editar perfil">
+      <AvatarPicker avatarUrl={avatarUrl(user)} name={user.displayName} />
       <section className="form-card" aria-label="Nombre y Riot ID">
         <ProfileForm
           action={updateProfileAction}

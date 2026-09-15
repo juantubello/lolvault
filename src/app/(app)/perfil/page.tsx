@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
 import { Screen } from '@/components/screen';
+import { UserAvatar } from '@/components/user-avatar';
+import { avatarUrl } from '@/features/profile/avatar-url';
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -17,9 +19,7 @@ export default async function ProfilePage() {
   return (
     <Screen title="Perfil">
       <section className="profile-hero" aria-label="Tu identidad">
-        <div className="profile-avatar" aria-hidden="true">
-          {user.displayName.charAt(0).toLocaleUpperCase('es-AR')}
-        </div>
+        <UserAvatar name={user.displayName} size="md" src={avatarUrl(user)} />
         <div>
           <h2>{user.displayName}</h2>
           <p>{user.email}</p>
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
           <Link className="profile-row profile-row-link" href="/perfil/editar">
             <Pencil aria-hidden="true" size={20} strokeWidth={2} />
             <div>
-              <span>Editar nombre y Riot ID</span>
+              <span>Editar foto, nombre y Riot ID</span>
             </div>
             <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
           </Link>

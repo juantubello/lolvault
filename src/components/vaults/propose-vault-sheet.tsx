@@ -10,6 +10,8 @@ import type { ProposalFormState } from '@/features/vaults/proposal-form';
 import { createProposalAction } from '@/features/vaults/vaults.actions';
 import type { Member } from '@/features/vaults/vaults.queries';
 
+import { UserAvatar } from '../user-avatar';
+
 /** "Kai'Sa" → "kaisa", "Nunu y Willump" → "nunuywillump": buscar sin tildes ni símbolos. */
 function searchKey(value: string): string {
   return value
@@ -109,6 +111,7 @@ export function ProposeVaultSheet({
                       value={member.id}
                     />
                     <span>
+                      <UserAvatar name={member.displayName} size="sm" src={member.avatarUrl} />
                       {member.displayName}
                       {member.id === viewerId ? ' (vos)' : ''}
                     </span>

@@ -116,6 +116,7 @@ users
   riot_tag_line      TEXT
   riot_puuid         TEXT                   -- se resuelve con account-v1 (SHOULD)
   avatar_champion_id TEXT REFERENCES champions(id)
+  avatar_updated_at  INTEGER                -- foto en <dir de la DB>/avatars/<id>.jpg; versiona la URL
   created_at         INTEGER NOT NULL
 
 champions                                     -- espejo de Data Dragon
@@ -182,7 +183,12 @@ Son 4 destinos de primer nivel (la regla pide ≤5):
 | **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. Botón **+ Proponer** junto al título. |
 | **Vaults** | Vigentes (programados y activos) con **"Pedir que se levante"**, y terminados (cumplidos y levantados). |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
-| **Perfil** | Mi perfil, **editar nombre y Riot ID** (`/perfil/editar`), avatar, aviso legal de Riot. |
+| **Perfil** | Mi perfil con **foto**, **editar foto, nombre y Riot ID** (`/perfil/editar`), aviso legal de Riot. |
+
+**Foto de perfil:** se elige en el teléfono, se recorta al centro y se achica a JPEG 256×256 en
+el cliente (canvas, sin librerías en el server). Server Action valida sesión, firma JPEG y 512 KB;
+escribe atómico en `/data/avatars/<id>.jpg`. `/avatars/<id>?v=<avatar_updated_at>` la sirve solo a
+miembros, con caché `immutable` (una foto nueva es otra URL).
 
 **Proponer vault** abre un sheet (`<dialog>`): jugador → campeón (grilla con búsqueda sin tildes) →
 desde / hasta → motivo (obligatorio, 280) → confirmar. En desktop, modal centrado.

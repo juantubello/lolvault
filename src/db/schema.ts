@@ -27,6 +27,8 @@ export const users = sqliteTable('users', {
   riotTagLine: text('riot_tag_line'),
   riotPuuid: text('riot_puuid'),
   avatarChampionId: text('avatar_champion_id').references(() => champions.id),
+  /** Cuándo subió su foto de perfil (null = sin foto). Versiona la URL para el caché. */
+  avatarUpdatedAt: integer('avatar_updated_at', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
