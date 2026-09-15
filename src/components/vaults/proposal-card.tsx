@@ -1,6 +1,8 @@
+import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
-import { MatchSnapshot } from '@/components/matches/match-snapshot';
+import { matchOutcome } from '@/features/matches/player-summary';
 import { formatDateRange, formatTimeLeft } from '@/features/vaults/vault-dates';
 import type { VotingStatus } from '@/features/vaults/vault-rules';
 import { cancelProposalAction } from '@/features/vaults/vaults.actions';
@@ -22,14 +24,18 @@ const STATUS: Record<VotingStatus, { label: string; tone: 'neutral' | 'vault' | 
 export function ProposalCardView({
   card,
   now,
-  championImages,
 }: {
   card: ProposalCard;
   now: Date;
-  championImages: Map<number, string>;
 }) {
   const isLift = card.kind === 'lift';
   const matchTarget = card.match?.teams.flatMap((team) => team.participants).find((participant) => participant.isTarget);
+  const matchTeam = matchTarget
+    ? card.match?.teams.find((team) => team.participants.includes(matchTarget))
+    : undefined;
+  const attachedOutcome = card.match && matchTeam
+    ? matchOutcome({ durationSeconds: card.match.durationSeconds, win: matchTeam.win })
+    : null;
   const dates = card.startsAt && card.endsAt ? formatDateRange(card.startsAt, card.endsAt) : null;
   const status =
     isLift && card.status === 'approved' ? { label: 'Levantado', tone: 'vault' as const } : STATUS[card.status];
@@ -78,18 +84,21 @@ export function ProposalCardView({
       {card.reason ? <p className="proposal-reason">“{card.reason}”</p> : null}
 
       {card.match ? (
-        <details className="match-attachment">
-          <summary>
+        <Link
+          className="match-attachment"
+          href={`/partidas/${encodeURIComponent(card.match.matchId)}?jugador=${card.target.id}&desde=votaciones`}
+        >
+          <span>
             <span className="match-attachment-label">Partida adjunta</span>
             {matchTarget ? (
               <span className="match-attachment-summary">
                 {matchTarget.championName} · {matchTarget.kills}/{matchTarget.deaths}/{matchTarget.assists} ·{' '}
-                {matchTarget.result === 'WIN' ? 'Victoria' : 'Derrota'}
+                {attachedOutcome?.label ?? (matchTarget.result === 'WIN' ? 'Victoria' : 'Derrota')}
               </span>
             ) : null}
-          </summary>
-          <MatchSnapshot championImages={championImages} detail={card.match} />
-        </details>
+          </span>
+          <ChevronRight aria-hidden="true" size={18} strokeWidth={2} />
+        </Link>
       ) : null}
 
       {card.status === 'open' ? (

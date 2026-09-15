@@ -95,6 +95,12 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   "Vault desde X" si está programado). `listInForceVaultsByChampionKey` cruza el `key` numérico de
   Data Dragon con el `championId` de OP.GG; textos y tonos compartidos con las tarjetas de Vaults
   en `features/vaults/vault-labels.ts`. Verificado en el navegador (375px). 126 tests.
+- 2026-09-15 — **Detalle completo de partida.** Las filas recientes y las partidas adjuntas
+  navegan a `/partidas/[matchId]?jugador=…`, con back seguro a Perfil/Amigos/Votaciones. La ruta
+  resuelve historial + `match_details` + snapshot de propuesta y tolera una caída de OP.GG. Vista
+  iOS agrupada con resumen por equipos, tarjeta del jugador foco, stats ampliadas de visión y
+  multikill, filas de los dos equipos sin tabla horizontal y miembros LolVault vinculados por
+  Riot ID (nunca por `puuid`). Sin migración: los campos viven en el JSON. 139 tests.
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.

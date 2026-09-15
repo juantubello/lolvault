@@ -26,6 +26,7 @@ export function PlayerStatsPanel({
   vaultsByChampion,
   now,
   isSelf,
+  userId,
 }: {
   stats: PlayerStats;
   championImages: Map<number, string>;
@@ -33,6 +34,7 @@ export function PlayerStatsPanel({
   vaultsByChampion: Map<number, ChampionVault>;
   now: Date;
   isSelf: boolean;
+  userId: number;
 }) {
   if (stats.status === 'no-riot-id') {
     return (
@@ -196,7 +198,13 @@ export function PlayerStatsPanel({
           <h3 className="stats-subtitle">Partidas recientes</h3>
           <ul className="stats-list">
             {stats.matches.map((match) => (
-              <MatchRow imageUrl={championImages.get(match.championId)} key={match.matchId} match={match} now={now} />
+              <MatchRow
+                imageUrl={championImages.get(match.championId)}
+                key={match.matchId}
+                match={match}
+                now={now}
+                userId={userId}
+              />
             ))}
           </ul>
         </>

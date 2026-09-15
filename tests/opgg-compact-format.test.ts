@@ -34,6 +34,20 @@ describe('formato compacto de OP.GG', () => {
     expect(parseCompact('class Empty: values\nEmpty([])')).toEqual({ values: [] });
   });
 
+  it('conserva las estadísticas ampliadas del detalle', () => {
+    const parsed = parseCompact(fixture('detail.txt')) as {
+      data: { game_detail: { teams: { participants: { stats: Record<string, unknown> }[] }[] } };
+    };
+    const stats = parsed.data.game_detail.teams[0]?.participants[0]?.stats;
+
+    expect(stats).toMatchObject({
+      vision_wards_bought_in_game: 0,
+      ward_place: 11,
+      largest_multi_kill: 2,
+      largest_killing_spree: 3,
+    });
+  });
+
   it('informa la aridad incorrecta', () => {
     expect(() => parseCompact('class Pair: left,right\nPair(1)'))
       .toThrowError(/Cantidad de valores inválida.*Pair/);

@@ -51,6 +51,14 @@ export type MatchParticipant = {
   damageDealt: number;
   damageTaken: number;
   goldEarned: number;
+  /** Centinelas de control comprados; ausente en snapshots guardados con el formato anterior. */
+  controlWardsBought?: number;
+  /** Centinelas colocados; ausente en snapshots guardados con el formato anterior. */
+  wardsPlaced?: number;
+  /** Mayor cantidad de kills en un multikill. */
+  largestMultiKill?: number;
+  /** Mayor racha de kills sin morir. */
+  largestKillingSpree?: number;
   result: string;
   opScore: number | null;
   opScoreRank: number | null;

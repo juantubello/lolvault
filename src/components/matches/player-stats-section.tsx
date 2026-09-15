@@ -20,6 +20,7 @@ export async function PlayerStatsSection({ user, isSelf }: { user: StatsUser; is
       isSelf={isSelf}
       now={now}
       stats={stats}
+      userId={user.id}
       vaultsByChampion={listInForceVaultsByChampionKey(db, user.id, now)}
     />
   );

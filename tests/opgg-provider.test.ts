@@ -25,7 +25,7 @@ const detailFields = [
   'data.game_detail.teams[].key',
   'data.game_detail.teams[].game_stat.{champion_kill,gold_earned,is_win}',
   'data.game_detail.teams[].participants[].{champion_id,champion_name,is_target,position,team_key}',
-  'data.game_detail.teams[].participants[].stats.{assist,champion_level,death,kill,minion_kill,neutral_minion_kill,op_score,op_score_rank,result,total_damage_dealt_to_champions,total_damage_taken}',
+  'data.game_detail.teams[].participants[].stats.{assist,champion_level,death,gold_earned,kill,largest_killing_spree,largest_multi_kill,minion_kill,neutral_minion_kill,op_score,op_score_rank,result,total_damage_dealt_to_champions,total_damage_taken,vision_wards_bought_in_game,ward_place}',
   'data.game_detail.teams[].participants[].summoner.{game_name,puuid,tagline}',
 ];
 
@@ -87,7 +87,13 @@ describe('proveedor de partidas OP.GG', () => {
     expect(detail.teams.find((team) => team.key === 'BLUE')?.participants)
       .toEqual(expect.arrayContaining([expect.objectContaining({ championName: 'Darius' })]));
     expect(detail.playedAt).toBe('2026-09-14T21:51:50.000Z');
-    expect(participants.find((participant) => participant.isTarget)?.goldEarned).toBe(14099);
+    expect(participants.find((participant) => participant.isTarget)).toMatchObject({
+      goldEarned: 14099,
+      controlWardsBought: 0,
+      wardsPlaced: 11,
+      largestMultiKill: 2,
+      largestKillingSpree: 3,
+    });
     expect(callTool).toHaveBeenCalledWith('lol_get_summoner_game_detail', {
       region: 'LAS',
       lang: 'en_US',

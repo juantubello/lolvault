@@ -28,7 +28,7 @@ const DETAIL_FIELDS = [
   'data.game_detail.teams[].key',
   'data.game_detail.teams[].game_stat.{champion_kill,gold_earned,is_win}',
   'data.game_detail.teams[].participants[].{champion_id,champion_name,is_target,position,team_key}',
-  'data.game_detail.teams[].participants[].stats.{assist,champion_level,death,kill,minion_kill,neutral_minion_kill,op_score,op_score_rank,result,total_damage_dealt_to_champions,total_damage_taken}',
+  'data.game_detail.teams[].participants[].stats.{assist,champion_level,death,gold_earned,kill,largest_killing_spree,largest_multi_kill,minion_kill,neutral_minion_kill,op_score,op_score_rank,result,total_damage_dealt_to_champions,total_damage_taken,vision_wards_bought_in_game,ward_place}',
   'data.game_detail.teams[].participants[].summoner.{game_name,puuid,tagline}',
 ];
 
@@ -98,6 +98,15 @@ function nullableNumberField(object: JsonObject, key: string, path: string): num
   if (value === null) return null;
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new ResponseShapeError(`${path}.${key} debe ser un número o null`);
+  }
+  return value;
+}
+
+function optionalNumberField(object: JsonObject, key: string, path: string): number | undefined {
+  if (!Object.hasOwn(object, key) || object[key] === null) return undefined;
+  const value = object[key];
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new ResponseShapeError(`${path}.${key} debe ser un número`);
   }
   return value;
 }
@@ -194,6 +203,10 @@ function mapParticipant(value: unknown, path: string): MatchParticipant {
     damageDealt: numberField(stats, 'total_damage_dealt_to_champions', `${path}.stats`),
     damageTaken: numberField(stats, 'total_damage_taken', `${path}.stats`),
     goldEarned: goldValue,
+    controlWardsBought: optionalNumberField(stats, 'vision_wards_bought_in_game', `${path}.stats`),
+    wardsPlaced: optionalNumberField(stats, 'ward_place', `${path}.stats`),
+    largestMultiKill: optionalNumberField(stats, 'largest_multi_kill', `${path}.stats`),
+    largestKillingSpree: optionalNumberField(stats, 'largest_killing_spree', `${path}.stats`),
     result: stringField(stats, 'result', `${path}.stats`),
     opScore: nullableNumberField(stats, 'op_score', `${path}.stats`),
     opScoreRank: nullableNumberField(stats, 'op_score_rank', `${path}.stats`),

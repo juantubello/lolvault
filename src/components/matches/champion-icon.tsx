@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-const SIZES = { sm: 28, md: 40 } as const;
+const SIZES = { sm: 28, md: 40, lg: 64 } as const;
 
 /** Foto de campeón (Data Dragon) o la inicial si todavía no está sincronizado. Decorativa. */
 export function ChampionIcon({
