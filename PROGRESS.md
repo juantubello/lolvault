@@ -72,6 +72,9 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   Filtros en la URL (`/vaults?jugador=2&estado=todos&q=yas`). Con "Todos" se agrupa por jugador;
   las tarjetas muestran la foto del jugador sobre la del campeón. Terminados ahora es historial
   completo. Lógica pura en `features/vaults/vault-filters.ts` (82 tests).
+- 2026-09-14 — **"Por expirar" en Vaults.** Nueva opción del control segmentado: vigentes cuyo
+  último día es hoy o mañana (fecha argentina, `VAULT_EXPIRING_DAYS = 2`), ordenados por el que
+  termina primero. Las tarjetas dicen "termina hoy / mañana" en naranja. 86 tests.
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`), sobre todo `src/auth/`, `features/vaults/` y la ruta de avatares.

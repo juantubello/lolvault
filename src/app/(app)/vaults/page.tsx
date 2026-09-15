@@ -21,11 +21,11 @@ import { listMembers, listVaults, type VaultCard } from '@/features/vaults/vault
 
 export const dynamic = 'force-dynamic';
 
-function CardList({ cards }: { cards: VaultCard[] }) {
+function CardList({ cards, now }: { cards: VaultCard[]; now: Date }) {
   return (
     <div className="proposal-list">
       {cards.map((card) => (
-        <VaultCardView card={card} key={card.id} />
+        <VaultCardView card={card} key={card.id} now={now} />
       ))}
     </div>
   );
@@ -41,10 +41,11 @@ export default async function VaultsPage({
 
   const db = getDb();
   const members = listMembers(db);
-  const vaults = listVaults(db, new Date());
+  const now = new Date();
+  const vaults = listVaults(db, now);
   const filters = parseVaultFilters(await searchParams, new Set(members.map((member) => member.id)));
 
-  const cards = filterVaults(vaults, filters);
+  const cards = filterVaults(vaults, filters, now);
   const inForceByPlayer = countByPlayer(vaults.inForce);
   const selectedPlayer = members.find((member) => member.id === filters.playerId) ?? null;
   const statusLabel = STATUS_FILTERS.find((option) => option.value === filters.status)?.label ?? '';
@@ -114,7 +115,7 @@ export default async function VaultsPage({
             >
               {option.label}
               <span className="segmented-count">
-                {filterVaults(vaults, { ...filters, status: option.value }).length}
+                {filterVaults(vaults, { ...filters, status: option.value }, now).length}
               </span>
             </Link>
           ))}
@@ -164,7 +165,7 @@ export default async function VaultsPage({
               {cards.length} {cards.length === 1 ? 'vault' : 'vaults'}
             </span>
           </h2>
-          <CardList cards={cards} />
+          <CardList cards={cards} now={now} />
         </section>
       ) : (
         groupByPlayer(cards, members).map(({ member, cards: playerCards }) => (
@@ -176,7 +177,7 @@ export default async function VaultsPage({
                 {playerCards.length} {playerCards.length === 1 ? 'vault' : 'vaults'}
               </span>
             </h2>
-            <CardList cards={playerCards} />
+            <CardList cards={playerCards} now={now} />
           </section>
         ))
       )}

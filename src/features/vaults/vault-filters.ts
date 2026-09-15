@@ -2,11 +2,14 @@
  * Filtros de la pestaña Vaults. Viven en la URL (`/vaults?jugador=2&estado=todos&q=yas`): así
  * funcionan "atrás", compartir el link y el render en el servidor, sin estado en el cliente.
  */
+import { VAULT_EXPIRING_DAYS } from '@/config';
 import { searchKey } from '@/features/champions/search-key';
 
+import { daysBetween, startOfLocalDay, toLocalDateString } from './vault-dates';
+import { isVaultInForce } from './vault-rules';
 import type { Member, VaultCard } from './vaults.queries';
 
-export type VaultStatusFilter = 'vigentes' | 'terminados' | 'todos';
+export type VaultStatusFilter = 'vigentes' | 'por-expirar' | 'terminados' | 'todos';
 
 export type VaultFilters = {
   playerId: number | null;
@@ -16,10 +19,12 @@ export type VaultFilters = {
 
 export const STATUS_FILTERS: { value: VaultStatusFilter; label: string }[] = [
   { value: 'vigentes', label: 'Vigentes' },
+  { value: 'por-expirar', label: 'Por expirar' },
   { value: 'terminados', label: 'Terminados' },
   { value: 'todos', label: 'Todos' },
 ];
 
+const STATUS_VALUES = new Set<string>(STATUS_FILTERS.map((option) => option.value));
 const QUERY_MAX_LENGTH = 40;
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -31,11 +36,11 @@ function first(value: string | string[] | undefined): string | undefined {
 /** Cualquier valor desconocido cae en el default: la URL nunca rompe la pantalla. */
 export function parseVaultFilters(params: SearchParams, memberIds: ReadonlySet<number>): VaultFilters {
   const playerId = Number(first(params.jugador));
-  const status = first(params.estado);
+  const status = first(params.estado) ?? '';
 
   return {
     playerId: Number.isInteger(playerId) && memberIds.has(playerId) ? playerId : null,
-    status: status === 'terminados' || status === 'todos' ? status : 'vigentes',
+    status: STATUS_VALUES.has(status) ? (status as VaultStatusFilter) : 'vigentes',
     query: (first(params.q) ?? '').trim().slice(0, QUERY_MAX_LENGTH),
   };
 }
@@ -55,19 +60,31 @@ export function hasActiveFilters(filters: VaultFilters): boolean {
   return vaultsHref(filters) !== '/vaults';
 }
 
+/** Días que le quedan contando hoy (hora argentina): 1 = termina hoy, 2 = termina mañana. */
+export function daysLeft(card: Pick<VaultCard, 'endsAt'>, now: Date): number {
+  const today = startOfLocalDay(toLocalDateString(now)) ?? now;
+  return daysBetween(today, card.endsAt);
+}
+
+export function isExpiringSoon(card: Pick<VaultCard, 'endsAt' | 'status'>, now: Date): boolean {
+  return isVaultInForce(card.status) && daysLeft(card, now) <= VAULT_EXPIRING_DAYS;
+}
+
 export function filterVaults(
   vaults: { inForce: VaultCard[]; past: VaultCard[] },
   filters: VaultFilters,
+  now: Date,
 ): VaultCard[] {
-  const pool =
-    filters.status === 'vigentes'
-      ? vaults.inForce
-      : filters.status === 'terminados'
-        ? vaults.past
-        : [...vaults.inForce, ...vaults.past];
+  const pools: Record<VaultStatusFilter, () => VaultCard[]> = {
+    vigentes: () => vaults.inForce,
+    // inForce ya viene ordenado por fecha de fin: el que termina primero, arriba.
+    'por-expirar': () => vaults.inForce.filter((card) => isExpiringSoon(card, now)),
+    terminados: () => vaults.past,
+    todos: () => [...vaults.inForce, ...vaults.past],
+  };
   const key = searchKey(filters.query);
 
-  return pool.filter(
+  return pools[filters.status]().filter(
     (card) =>
       (filters.playerId === null || card.target.id === filters.playerId) &&
       (!key || searchKey(card.champion.name).includes(key)),

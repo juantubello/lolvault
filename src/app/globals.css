@@ -967,6 +967,10 @@ button {
   color: var(--vault);
 }
 
+.status-badge[data-tone="warning"] {
+  color: var(--warning);
+}
+
 .status-badge[data-tone="danger"] {
   color: var(--danger);
 }
@@ -1405,9 +1409,10 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* 4 opciones: cada columna toma el ancho de su texto para que nada salte de línea a 375 px. */
 .segmented {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, auto);
   gap: 0.125rem;
   padding: 0.125rem;
   border-radius: 0.625rem;
@@ -1420,9 +1425,11 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
+  padding: 0 0.375rem;
   border-radius: 0.5rem;
   color: var(--label);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
   font-weight: 500;
   text-decoration: none;
   transition: background-color var(--motion-press);

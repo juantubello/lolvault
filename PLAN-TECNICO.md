@@ -181,7 +181,7 @@ Son 4 destinos de primer nivel (la regla pide ≤5):
 | Tab | Contenido |
 |---|---|
 | **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. Botón **+ Proponer** junto al título. |
-| **Vaults** | Vigentes (programados y activos) con **"Pedir que se levante"**, y terminados (cumplidos y levantados). |
+| **Vaults** | Filtros en la URL: fila de jugadores con foto, **Vigentes · Por expirar · Terminados · Todos** y búsqueda por campeón. "Por expirar" = vigentes que terminan hoy o mañana (`VAULT_EXPIRING_DAYS`). Con "Todos" agrupa por jugador. Vigentes con **"Pedir que se levante"**. |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
 | **Perfil** | Mi perfil con **foto**, **editar foto, nombre y Riot ID** (`/perfil/editar`), aviso legal de Riot. |
 

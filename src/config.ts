@@ -5,6 +5,8 @@ export const VAULT_MAX_DAYS = 30;
 /** Hasta cuántos días en el futuro puede arrancar un vault propuesto. */
 export const VAULT_MAX_START_AHEAD_DAYS = 30;
 export const VAULT_REASON_MAX_LENGTH = 280;
+/** "Por expirar": vigentes a los que les quedan como mucho estos días contando hoy (2 = hoy o mañana). */
+export const VAULT_EXPIRING_DAYS = 2;
 
 export const APP_TIME_ZONE = 'America/Argentina/Buenos_Aires';
 
