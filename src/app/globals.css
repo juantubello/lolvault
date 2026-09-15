@@ -229,26 +229,41 @@ button {
   padding: 1.5rem 1rem;
 }
 
-.app-mark {
-  display: grid;
-  width: 4rem;
-  height: 4rem;
-  place-items: center;
-  margin-bottom: 1.25rem;
-  border-radius: 1rem;
-  background: var(--tint-fill);
-  color: var(--on-tint);
-  font-size: 1.375rem;
-  font-weight: 700;
-  letter-spacing: -0.05em;
+/* Logo: radio de ícono de app iOS (~22 %) y hairline para que no se funda con el fondo oscuro. */
+.app-logo {
+  flex: none;
+  border-radius: 22%;
+  box-shadow: 0 0 0 0.5px var(--separator);
+  object-fit: cover;
 }
 
-.app-mark-small {
-  width: 2.75rem;
-  height: 2.75rem;
+.app-logo-hero {
+  width: 6rem;
+  height: 6rem;
+  margin-bottom: 1.25rem;
+}
+
+.about-footer {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  padding: 0 1rem 1rem;
+  text-align: center;
+}
+
+.about-footer h2 {
   margin: 0;
-  border-radius: 0.75rem;
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.about-footer p {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
 }
 
 .eyebrow {

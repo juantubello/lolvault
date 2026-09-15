@@ -4,6 +4,8 @@ import { CircleUserRound, LockKeyhole, Users, Vote, type LucideIcon } from 'luci
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { AppLogo } from './app-logo';
+
 type Destination = {
   href: string;
   label: string;
@@ -66,9 +68,7 @@ export function AppNavigation({ pendingVotes }: { pendingVotes: number }) {
     <>
       <aside className="sidebar" aria-label="Navegación principal">
         <div className="sidebar-brand">
-          <div className="app-mark app-mark-small" aria-hidden="true">
-            LV
-          </div>
+          <AppLogo size={44} />
           <span>LolVault</span>
         </div>
         <nav className="sidebar-list">

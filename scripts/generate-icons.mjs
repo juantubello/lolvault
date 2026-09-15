@@ -28,6 +28,10 @@ await square(512, 'public/icons/icon-512.png');
 await square(180, 'src/app/apple-icon.png');
 await square(64, 'src/app/icon.png');
 
+// Logo dentro de la app (sidebar, onboarding, Acerca de): WebP liviano, 2x del mayor tamaño usado.
+await mkdir('public/brand', { recursive: true });
+await sharp(cropped).resize(192, 192).webp({ quality: 82 }).toFile('public/brand/logo-192.webp');
+
 // Maskable (Android): el contenido tiene que entrar en el círculo seguro del 80 %.
 const inner = Math.round(512 * 0.8);
 await sharp({ create: { width: 512, height: 512, channels: 3, background: BACKGROUND } })
