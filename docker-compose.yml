@@ -1,3 +1,14 @@
+# LolVault — un solo contenedor: Next standalone + SQLite (y fotos de perfil) en ./data.
+# Se publica por el túnel de Cloudflare (casapipis-tunnel) como lolvault.casapipis.net,
+# detrás de Cloudflare Access. Nunca por el router.
+# Deploy, rollback y backups: docs/RUNBOOK-DEPLOY.md
+#
+# HTTPS y "/api": Cloudflare termina HTTPS y el túnel le habla HTTP al loopback. A diferencia
+# de finance (frontend + backend .NET detrás de nginx con /api), acá no hay backend aparte:
+# Server Actions, /avatars, manifest e íconos son del mismo origen y con rutas relativas, así
+# que no hay mixed content ni hace falta nginx. OP.GG y Data Dragon se llaman desde el
+# servidor por HTTPS (el contenedor necesita salida a internet).
+
 services:
   lolvault:
     build:
@@ -5,29 +16,39 @@ services:
     image: lolvault:latest
     container_name: lolvault
     restart: unless-stopped
+
+    # uid:gid del dueño de ./data en el host (`id -u jpft` / `id -g jpft`). Si no coincide,
+    # SQLite muere con SQLITE_CANTOPEN y las fotos de perfil no se pueden guardar.
     user: "${LOLVAULT_UID:-1000}:${LOLVAULT_GID:-1000}"
 
     ports:
-      - "127.0.0.1:${LOLVAULT_PORT:?falta LOLVAULT_PORT en el .env}:3000"
+      # SOLO loopback. "3025:3000" a secas publicaría en 0.0.0.0: cualquiera en la LAN
+      # entraría sin pasar por Cloudflare Access, y la identidad sale del JWT de Access.
+      - "127.0.0.1:${LOLVAULT_PORT:-3025}:3000"
 
     environment:
+      # NODE_ENV=production, PORT=3000 y NEXT_TELEMETRY_DISABLED=1 vienen de la imagen.
       DATABASE_PATH: /data/lolvault.db
-      LOLVAULT_ACCESS_AUD: ${LOLVAULT_ACCESS_AUD:?falta LOLVAULT_ACCESS_AUD en el .env}
+      TZ: America/Argentina/Buenos_Aires
+      # AUD tag de la app de Access `lolvault` (Zero Trust → Access → Applications →
+      # lolvault → Overview). Sin esto no valida ningún JWT y no entra nadie.
+      # El team domain (pipiscats.cloudflareaccess.com) está fijo en src/auth/access-jwt.ts.
+      LOLVAULT_ACCESS_AUD: ${LOLVAULT_ACCESS_AUD:?falta LOLVAULT_ACCESS_AUD en el .env (AUD tag de la app de Access — ver docs/RUNBOOK-DEPLOY.md)}
+      # LOLVAULT_DEV_USER_EMAIL NO se pasa a propósito, ni vacía: es el bypass de login de
+      # desarrollo. Con NODE_ENV=production la app se niega a arrancar si la ve.
 
     volumes:
+      # Todo el estado vive en el host: lolvault.db (+ -wal/-shm), backups/ y avatars/.
+      # La imagen se puede borrar y reconstruir sin perder nada.
       - ./data:/data
 
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))",
-        ]
+      # Solo comprueba que escuche: toda ruta real exige el JWT de Access. Sin curl en la imagen.
+      test: ["CMD", "node", "-e", "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
+      # El arranque hace backup + migrations (+ backfill de jugadores) antes de escuchar.
       start_period: 40s
 
     logging:
