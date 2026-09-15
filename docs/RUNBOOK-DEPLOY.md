@@ -30,7 +30,6 @@ ss -ltn | grep 3025 || echo "3025 libre"       # esperado: "3025 libre"
 id jpft                                          # anotar uid y gid; normalmente 1000:1000
 df -h                                            # esperado: ningún filesystem necesario cerca del 100%
 docker ps                                        # esperado: Docker responde y los stacks actuales están sanos
-command -v sqlite3 || echo "falta sqlite3 (lo necesita el backup del host)"
 docker run --rm node:22-bookworm-slim node -e "fetch('https://ddragon.leagueoflegends.com/api/versions.json').then(r=>console.log(r.status))"
                                                   # esperado: 200
 ```
@@ -40,8 +39,6 @@ docker run --rm node:22-bookworm-slim node -e "fetch('https://ddragon.leagueofle
   acordados para usar 3025.
 - **Si `id jpft` no da uid/gid 1000:** guardá los valores reales en el `.env` como
   `LOLVAULT_UID` y `LOLVAULT_GID` (paso 1.3).
-- **Si falta `sqlite3`:** instalalo con `sudo apt install -y sqlite3`. El contenedor no
-  lo necesita; el cron del host sí.
 - **Si la prueba de Data Dragon no imprime 200:** arreglá DNS/salida HTTPS de Docker
   antes de desplegar. LolVault necesita internet desde el contenedor para Data Dragon
   y OP.GG.
@@ -384,7 +381,7 @@ chown "$(id -u):$(id -g)" data/lolvault.db
 
 docker compose start
 docker compose logs --tail 50 lolvault                 # aplica migrations faltantes
-sqlite3 data/lolvault.db 'PRAGMA integrity_check;'     # esperado: ok
+docker compose exec -T lolvault node -e "const D=require('better-sqlite3');const d=new D('/data/lolvault.db',{readonly:true});console.log(d.pragma('integrity_check',{simple:true}))"   # esperado: ok
 ```
 
 Un backup `pre-migrate-*.db` se restaura exactamente igual: cambia solo la ruta del
@@ -423,7 +420,6 @@ docker compose start
 Instalación del cron, una sola vez:
 
 ```bash
-sudo apt install -y sqlite3          # si faltaba
 chmod +x ~/lolvault/docs/backup-lolvault.sh
 crontab -e                           # como jpft, NO como root
 ```
@@ -490,5 +486,5 @@ El paso 0 queda como checklist operativo del primer deploy:
 - [ ] **uid/gid de `jpft`** reflejados en los defaults o en `.env`.
 - [ ] **Espacio en disco** suficiente.
 - [ ] **Docker** sano y sin builds pesados concurrentes.
-- [ ] **`sqlite3`** instalado para el cron del host.
+- [ ] **Sin `sqlite3` en el host:** el backup usa el SQLite del contenedor (tiene que estar corriendo).
 - [ ] **Salida HTTPS desde Docker** hacia Data Dragon; OP.GG usa la misma salida.

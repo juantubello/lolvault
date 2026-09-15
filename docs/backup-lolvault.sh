@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Backup diario de LolVault. Corre en el HOST (cron de jpft), no adentro del
-# contenedor, y no hace falta frenar nada.
+# Backup diario de LolVault. Lo dispara el cron del HOST (jpft), pero la copia de
+# la base la hace SQLite ADENTRO del contenedor `lolvault` (node + better-sqlite3
+# ya vienen en la imagen): en el host no hace falta instalar sqlite3 ni frenar nada.
 #
 # Por qué VACUUM INTO y no `cp lolvault.db backup.db`:
 # la base corre en WAL, así que en cualquier momento parte de los datos
@@ -11,10 +12,9 @@
 # tomando el lock que corresponda, sin frenar al contenedor.
 #
 # Las fotos de perfil no viven en SQLite: si existe data/avatars/, también se
-# guarda un tar.gz de esa carpeta.
+# guarda un tar.gz de esa carpeta (tar del host, sobre el bind mount).
 #
 # Instalación (una vez):
-#   sudo apt install -y sqlite3
 #   chmod +x /home/jpft/lolvault/docs/backup-lolvault.sh
 #   crontab -e            # como jpft, NO como root
 #   27 4 * * * /home/jpft/lolvault/docs/backup-lolvault.sh >> /home/jpft/lolvault/data/backups/backup.log 2>&1
@@ -30,9 +30,11 @@ DB="$DATA_DIR/lolvault.db"
 AVATARS_DIR="$DATA_DIR/avatars"
 DEST="$DATA_DIR/backups"
 RETENTION_DAYS=14
+CONTAINER="${LOLVAULT_CONTAINER:-lolvault}"
 
 STAMP="$(date +%F)"
-DB_OUT="$DEST/lolvault-$STAMP.db"
+DB_NAME="lolvault-$STAMP.db"
+DB_OUT="$DEST/$DB_NAME"
 DB_TMP="$DB_OUT.part"
 AVATARS_OUT="$DEST/avatars-$STAMP.tar.gz"
 AVATARS_TMP="$AVATARS_OUT.part"
@@ -44,28 +46,44 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if ! command -v sqlite3 >/dev/null 2>&1; then
-  log "ERROR: falta el cliente sqlite3 en el host. Instalarlo: sudo apt install -y sqlite3"
-  exit 1
-fi
-
 if [[ ! -f "$DB" ]]; then
   log "ERROR: no existe la base $DB (¿el contenedor arrancó alguna vez?)"
   exit 1
 fi
 
+if [[ -z "$(docker ps --filter "name=^${CONTAINER}$" --filter status=running -q)" ]]; then
+  log "ERROR: el contenedor $CONTAINER no está corriendo; sin él no se puede hacer el VACUUM INTO."
+  exit 1
+fi
+
 mkdir -p "$DEST"
 
-# VACUUM INTO falla si el destino existe. Se escribe a .part y se renombra, así
-# el backup del día se puede rehacer y nunca queda un archivo incompleto con
-# nombre de backup válido.
-rm -f "$DB_TMP"
-# .timeout evita fallar enseguida si el contenedor tiene la base tomada.
-sqlite3 "$DB" ".timeout 10000" "VACUUM INTO '$DB_TMP';"
-mv -f "$DB_TMP" "$DB_OUT"
+# Adentro del contenedor ./data es /data. VACUUM INTO falla si el destino existe:
+# se escribe a .part y se renombra, así nunca queda un archivo incompleto con nombre
+# de backup válido. Después se abre la copia y se corre integrity_check.
+# shellcheck disable=SC2016 # el JS va literal; las rutas entran como argumentos.
+INTEGRITY="$(docker exec -w /app "$CONTAINER" node -e '
+  const fs = require("node:fs");
+  const Database = require("better-sqlite3");
+  const [source, tmp, out] = process.argv.slice(1);
+  fs.rmSync(tmp, { force: true });
+  const db = new Database(source);
+  try {
+    db.pragma("busy_timeout = 10000");
+    db.prepare("VACUUM INTO ?").run(tmp);
+  } finally {
+    db.close();
+  }
+  fs.renameSync(tmp, out);
+  const copy = new Database(out, { readonly: true });
+  try {
+    console.log(copy.pragma("integrity_check", { simple: true }));
+  } finally {
+    copy.close();
+  }
+' /data/lolvault.db "/data/backups/$DB_NAME.part" "/data/backups/$DB_NAME")"
 
 # Un backup que no se puede abrir no es un backup.
-INTEGRITY="$(sqlite3 "$DB_OUT" 'PRAGMA integrity_check;' | head -1)"
 if [[ "$INTEGRITY" != "ok" ]]; then
   log "ERROR: el backup $DB_OUT no pasa integrity_check ($INTEGRITY). Se deja para inspeccionar."
   exit 1
