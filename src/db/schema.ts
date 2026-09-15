@@ -1,5 +1,13 @@
 import { sql } from 'drizzle-orm';
-import { check, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  type AnySQLiteColumn,
+  check,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core';
 
 export const champions = sqliteTable('champions', {
   id: text('id').primaryKey(),
@@ -26,6 +34,10 @@ export const vaultProposals = sqliteTable(
   'vault_proposals',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    /** 'vault' = vaultear un campeón · 'lift' = levantar antes de tiempo un vault aprobado. */
+    kind: text('kind', { enum: ['vault', 'lift'] }).notNull().default('vault'),
+    /** Solo en 'lift': el vault que se quiere levantar. */
+    vaultId: integer('vault_id').references((): AnySQLiteColumn => vaultProposals.id),
     targetUserId: integer('target_user_id')
       .notNull()
       .references(() => users.id),
@@ -35,20 +47,27 @@ export const vaultProposals = sqliteTable(
     championId: text('champion_id')
       .notNull()
       .references(() => champions.id),
-    days: integer('days').notNull(),
+    /** Solo en 'vault': 00:00 (hora AR) de "desde". */
+    startsAt: integer('starts_at', { mode: 'timestamp_ms' }),
+    /** Solo en 'vault': 00:00 del día siguiente a "hasta" (exclusivo). */
+    endsAt: integer('ends_at', { mode: 'timestamp_ms' }),
     reason: text('reason'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     closesAt: integer('closes_at', { mode: 'timestamp_ms' }).notNull(),
     approvedAt: integer('approved_at', { mode: 'timestamp_ms' }),
-    vaultEndsAt: integer('vault_ends_at', { mode: 'timestamp_ms' }),
+    rejectedAt: integer('rejected_at', { mode: 'timestamp_ms' }),
     cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
+    /** Solo en 'vault': cuándo lo levantó una votación 'lift' aprobada. */
+    liftedAt: integer('lifted_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
-    check('vault_proposals_days_check', sql`${table.days} BETWEEN 1 AND 30`),
+    check('vault_proposals_kind_check', sql`${table.kind} IN ('vault', 'lift')`),
     check(
-      'vault_proposals_different_users_check',
-      sql`${table.targetUserId} <> ${table.proposerUserId}`,
+      'vault_proposals_shape_check',
+      sql`(${table.kind} = 'vault' AND ${table.vaultId} IS NULL AND ${table.startsAt} IS NOT NULL AND ${table.endsAt} IS NOT NULL AND ${table.endsAt} > ${table.startsAt}) OR (${table.kind} = 'lift' AND ${table.vaultId} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.liftedAt} IS NULL)`,
     ),
+    index('vault_proposals_target_champion_idx').on(table.targetUserId, table.championId),
+    index('vault_proposals_vault_idx').on(table.vaultId),
   ],
 );
 

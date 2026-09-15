@@ -5,11 +5,14 @@ import type { ReactNode } from 'react';
 export function Screen({
   title,
   back,
+  action,
   children,
 }: {
   title: string;
   /** Pantalla de segundo nivel: botón "‹ Anterior" estilo iOS arriba del título. */
   back?: { href: string; label: string };
+  /** Acción principal a la derecha del título (ej. "Proponer"). */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -21,7 +24,10 @@ export function Screen({
             <span>{back.label}</span>
           </Link>
         ) : null}
-        <h1>{title}</h1>
+        <div className="screen-title-row">
+          <h1>{title}</h1>
+          {action}
+        </div>
       </header>
       {children}
     </div>

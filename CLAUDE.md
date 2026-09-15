@@ -26,7 +26,7 @@ Campeones desde Data Dragon; partidas desde la Riot API (solo servidor).
 1. `.env.local` con `LOLVAULT_DEV_USER_EMAIL=<tu email>`: es el login sin Cloudflare.
 2. `npm run dev -- -p 3001`, o el server `lolvault` del `.claude/launch.json` de la raíz. Las
    migrations se aplican solas.
-3. **Cambiar de usuario:** pastilla **"Dev · <nombre>"** arriba a la derecha → elegir un usuario
+3. **Cambiar de usuario:** pastilla **"Dev · <nombre>"** abajo a la derecha → elegir un usuario
    existente o escribir un **email nuevo** (ej. `amigo2@dev.local`, pasa por onboarding).
    "Volver a …" regresa al email de `.env.local`. Así se prueban votaciones de 3+ personas.
 

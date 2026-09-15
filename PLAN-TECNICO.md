@@ -1,14 +1,14 @@
 # LolVault — Plan técnico
 
 > **Fuente de verdad del proyecto.** Si algo de acá cambia, se cambia acá primero.
-> Las decisiones marcadas **[CONFIRMAR]** son defaults razonables que Juan todavía no validó.
+> Todas las decisiones de reglas están confirmadas por Juan (2026-09-14).
 
 ## 0. Qué es
 
 App privada para un grupo de **~5-6 amigos** que juegan League of Legends juntos.
 Cuando alguien juega mal con un campeón, cualquiera del grupo propone un **vault**: ese
-jugador no puede usar ese campeón durante **N días** (N se fija al proponer). El vault se
-aplica si llega a **3 votos a favor**.
+jugador no puede usar ese campeón **desde / hasta** las fechas propuestas. El vault se
+aplica si llega a **3 votos a favor**, y se puede **levantar** antes con otra votación de 3.
 
 - **PWA mobile-first estilo iOS clásico**, instalable en el iPhone, y **responsive a desktop**.
 - Corre en el homelab, publicada por el Cloudflare Tunnel existente, detrás de **Cloudflare
@@ -83,19 +83,22 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
 | Regla | Decisión |
 |---|---|
 | Qué bloquea | **Un campeón para un jugador** (el que jugó mal). El resto del grupo lo puede seguir usando. ✅ confirmado |
-| Duración | `days` se fija al proponer y **no se edita**. Opciones rápidas 1 / 3 / 7 días + valor libre de 1 a 30. **[CONFIRMAR]** |
+| Fechas | Se proponen **desde** y **hasta** (fechas calendario en hora argentina, "hasta" inclusivo). Desde hoy hasta +30 días, duración máxima 30 días. No se editan. ✅ confirmado |
 | Aprobación | `yes >= VAULT_APPROVALS_REQUIRED` (**3**). Constante en `src/config.ts`, no repartida por el código. |
 | Quién vota | Cualquier miembro, **menos el acusado**. ✅ confirmado |
-| El que propone | Su propuesta **cuenta como voto a favor** automático (se inserta en `vault_votes` al crear). ✅ confirmado |
+| El que propone | Su propuesta **cuenta como voto a favor** automático (se inserta en `vault_votes` al crear), **salvo que se esté autovaulteando**. ✅ confirmado |
+| Autovault | **Permitido.** Sin voto automático: hacen falta 3 votos de los demás. ✅ confirmado |
 | Voto en contra | Existe. Si ya no es matemáticamente posible llegar a 3 votos a favor, la propuesta queda **rechazada**. |
 | Cambiar voto | Se puede mientras la propuesta esté abierta. |
-| Ventana de votación | **48 h** desde la creación. Si pasa sin llegar a 3, queda **expirada**. **[CONFIRMAR]** |
-| Inicio del vault | Cuando se alcanza el 3.er voto: `vault_ends_at = approved_at + days`. |
+| Ventana de votación | **48 h** desde la creación, o antes si el vault ya habría terminado (`closes_at = min(created + 48 h, ends_at)`). Si pasa sin llegar a 3, queda **vencida**. ✅ confirmado |
+| Inicio del vault | Arranca en "desde", o **al aprobarse** si eso pasa después. Termina siempre en "hasta". ✅ confirmado |
 | Duplicados | Una sola propuesta abierta y un solo vault activo por (jugador, campeón). |
-| Cancelar | Solo el que propone, y solo mientras está abierta. |
+| Cancelar | Solo el que propone, y solo mientras está abierta. Sin votación. |
+| **Levantar un vault** | Un vault vigente (programado o activo) se puede **levantar antes de tiempo** con otra votación (`kind = 'lift'`) con las mismas reglas: 3 a favor, 48 h, el vaulteado no vota, quien lo pide suma su voto salvo que sea el vaulteado. Una sola abierta por vault. Al aprobarse se setea `lifted_at` en el vault. ✅ confirmado |
 
-**Los estados se derivan de timestamps, nunca de un cron.** "Expirada" es `now > closes_at`
-sin aprobación. "Vault activo" es `approved_at IS NOT NULL AND now < vault_ends_at`. Así no
+**Los estados se derivan de timestamps, nunca de un cron** (`features/vaults/vault-rules.ts`).
+"Vencida" es `now >= closes_at` sin aprobación. "Vault activo" es aprobado, no levantado y
+`max(starts_at, approved_at) <= now < ends_at`. Así no
 queda nada colgado si el contenedor se reinicia (misma idea que la regla 5 de PipiGym).
 
 **Votar es transaccional:** insertar/actualizar el voto y recalcular el estado en la misma
@@ -123,19 +126,25 @@ champions                                     -- espejo de Data Dragon
   image_file  TEXT NOT NULL  -- "Ahri.png"
   version     TEXT NOT NULL
 
-vault_proposals
+vault_proposals                               -- votaciones: vaultear ('vault') o levantar ('lift')
   id               INTEGER PK
+  kind             TEXT NOT NULL DEFAULT 'vault' CHECK (kind IN ('vault','lift'))
+  vault_id         INTEGER REFERENCES vault_proposals(id)  -- solo 'lift'
   target_user_id   INTEGER NOT NULL REFERENCES users(id)
-  proposer_user_id INTEGER NOT NULL REFERENCES users(id)
+  proposer_user_id INTEGER NOT NULL REFERENCES users(id)   -- puede ser = target (autovault)
   champion_id      TEXT    NOT NULL REFERENCES champions(id)
-  days             INTEGER NOT NULL CHECK (days BETWEEN 1 AND 30)
-  reason           TEXT                      -- "0/11/2 con Yasuo, sin comentarios"
+  starts_at        INTEGER          -- solo 'vault': 00:00 AR de "desde"
+  ends_at          INTEGER          -- solo 'vault': 00:00 AR del día siguiente a "hasta" (exclusivo)
+  reason           TEXT
   created_at       INTEGER NOT NULL
-  closes_at        INTEGER NOT NULL          -- created_at + 48h
+  closes_at        INTEGER NOT NULL -- min(created_at + 48 h, ends_at del vault)
   approved_at      INTEGER
-  vault_ends_at    INTEGER                   -- approved_at + days
+  rejected_at      INTEGER          -- se setea en el voto que hace imposible llegar a 3
   cancelled_at     INTEGER
-  CHECK (target_user_id <> proposer_user_id) -- [CONFIRMAR] ¿uno se puede autovaultear?
+  lifted_at        INTEGER          -- solo 'vault': lo levantó un 'lift' aprobado
+  CHECK de forma: 'vault' ⇒ vault_id NULL, starts_at/ends_at NOT NULL y ends_at > starts_at
+                  'lift'  ⇒ vault_id NOT NULL, sin fechas, lifted_at NULL
+  INDEX (target_user_id, champion_id) · INDEX (vault_id)
 
 vault_votes
   proposal_id   INTEGER NOT NULL REFERENCES vault_proposals(id) ON DELETE CASCADE
@@ -170,13 +179,15 @@ Son 4 destinos de primer nivel (la regla pide ≤5):
 
 | Tab | Contenido |
 |---|---|
-| **Votaciones** | Propuestas abiertas (primero las que me faltan votar), con contador `2/3` y tiempo restante. Botón **+** en la nav bar para **Proponer vault**. |
-| **Vaults** | Vaults activos agrupados por jugador (foto del campeón + "quedan 3 días") e historial. |
+| **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. Botón **+ Proponer** junto al título. |
+| **Vaults** | Vigentes (programados y activos) con **"Pedir que se levante"**, y terminados (cumplidos y levantados). |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
 | **Perfil** | Mi perfil, **editar nombre y Riot ID** (`/perfil/editar`), avatar, aviso legal de Riot. |
 
-**Proponer vault** abre un sheet: 1) jugador → 2) campeón (grilla con búsqueda) → 3) días →
-4) motivo (opcional) → confirmar. En desktop va en un modal centrado.
+**Proponer vault** abre un sheet (`<dialog>`): jugador → campeón (grilla con búsqueda sin tildes) →
+desde / hasta → motivo (obligatorio, 280) → confirmar. En desktop, modal centrado.
+**Aviso de votación pendiente:** hoy dentro de la app (sección primero + badge). **Push** queda
+para cuando esté en el homelab con HTTPS (SHOULD).
 
 Design system: [`design-system/lolvault/MASTER.md`](./design-system/lolvault/MASTER.md).
 
@@ -252,6 +263,7 @@ propuesta a una partida concreta.
 Resueltas (2026-09-14): el vault es solo para el que jugó mal · proponer cuenta como voto a
 favor y el acusado no vota · todos en LAS.
 
-Quedan abiertas (no bloquean las fases 1-2):
-1. ¿Cuánto tiempo queda abierta una votación (48 h)? ¿Días libres o solo 1/3/7?
-2. ¿Uno se puede autovaultear?
+Resueltas también (2026-09-14): fechas desde/hasta (arranca al aprobarse si es después de "desde"),
+ventana de 48 h, autovault permitido, y se puede levantar un vault con otra votación de 3 votos.
+
+No quedan preguntas abiertas.
