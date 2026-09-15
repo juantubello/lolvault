@@ -31,7 +31,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="es">
+    // Extensiones del navegador (ej. LanguageTool: data-lt-installed) tocan <html> antes de React.
+    // Solo silencia atributos de este elemento; los errores de hydration de la app se siguen viendo.
+    <html lang="es" suppressHydrationWarning>
       <body>
         {children}
         <DevUserSwitcher />
