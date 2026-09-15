@@ -89,6 +89,12 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
     aviso, propuesta con partida adjunta y foto coincidente con OP.GG. 122 tests.
   - Nota de pruebas: en el navegador automatizado los clics dentro del sheet (scroll anidado) caían
     desfasados; con `click()` sobre el elemento funciona. No es un bug de la app.
+- 2026-09-15 — **Label de campeón vaulteado en las estadísticas.** En Perfil y Amigos → detalle,
+  "Campeones de las últimas partidas" y "Temporada · ranked" marcan con un candado los campeones
+  con vault vigente de ese jugador ("Vaulteado · hasta X", "termina hoy/mañana" en naranja, o
+  "Vault desde X" si está programado). `listInForceVaultsByChampionKey` cruza el `key` numérico de
+  Data Dragon con el `championId` de OP.GG; textos y tonos compartidos con las tarjetas de Vaults
+  en `features/vaults/vault-labels.ts`. Verificado en el navegador (375px). 126 tests.
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.

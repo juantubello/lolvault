@@ -16,7 +16,7 @@
   --danger: #d70015;
   --success: #248a3d;
   --warning: #c93400;
-  --vault: #8a6d1f;
+  --vault: #7d6219;
   --bar-bg: color-mix(in srgb, var(--bg-cell) 82%, transparent);
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -2009,4 +2009,12 @@ button {
 .match-numbers .match-meta,
 .match-numbers .match-kda {
   white-space: nowrap;
+}
+
+/* Etiqueta "Vaulteado" en las listas de campeones del perfil */
+.champion-vault-badge {
+  max-width: 100%;
+  margin-top: 0.25rem;
+  /* Envuelve en vez de cortar: con zoom o texto grande "termina hoy" tiene que seguir visible. */
+  white-space: normal;
 }

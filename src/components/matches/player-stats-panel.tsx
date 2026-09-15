@@ -2,6 +2,7 @@ import { Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 
 import { EmptyState } from '@/components/empty-state';
+import { ChampionVaultBadge } from '@/components/vaults/champion-vault-badge';
 import {
   formatAverage,
   formatDateTime,
@@ -14,6 +15,7 @@ import {
 } from '@/features/matches/format';
 import type { PlayerStats } from '@/features/matches/player-stats';
 import { kdaRatio, summarizeMatches } from '@/features/matches/player-summary';
+import type { ChampionVault } from '@/features/vaults/vaults.queries';
 
 import { ChampionIcon } from './champion-icon';
 import { MatchRow } from './match-row';
@@ -21,11 +23,14 @@ import { MatchRow } from './match-row';
 export function PlayerStatsPanel({
   stats,
   championImages,
+  vaultsByChampion,
   now,
   isSelf,
 }: {
   stats: PlayerStats;
   championImages: Map<number, string>;
+  /** Vaults vigentes del jugador por `key` de campeón: se marcan en sus listas de campeones. */
+  vaultsByChampion: Map<number, ChampionVault>;
   now: Date;
   isSelf: boolean;
 }) {
@@ -130,6 +135,7 @@ export function PlayerStatsPanel({
                         {champion.games} {champion.games === 1 ? 'partida' : 'partidas'} · {champion.wins} V{' '}
                         {champion.losses} D
                       </p>
+                      <ChampionVaultBadge now={now} vault={vaultsByChampion.get(champion.championId)} />
                     </div>
                     <div className="stat-row-numbers">
                       <p className="stat-row-value">{formatPercent(champion.winRate)}</p>
@@ -173,6 +179,7 @@ export function PlayerStatsPanel({
                       <p className="stat-row-meta">
                         {champion.games} partidas · {champion.wins} V {champion.losses} D
                       </p>
+                      <ChampionVaultBadge now={now} vault={vaultsByChampion.get(champion.championId)} />
                     </div>
                     <div className="stat-row-numbers">
                       <p className="stat-row-value">{formatPercent(champion.games ? champion.wins / champion.games : 0)}</p>

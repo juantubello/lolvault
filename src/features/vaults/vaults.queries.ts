@@ -395,6 +395,36 @@ export function countPendingVotes(db: Db, viewerUserId: number, now: Date): numb
   return listVotingBoard(db, viewerUserId, now).pending.length;
 }
 
+export type ChampionVault = {
+  vaultId: number;
+  status: 'scheduled' | 'active';
+  startsAt: Date;
+  endsAt: Date;
+};
+
+/**
+ * Vaults vigentes (programados o activos) de un jugador, indexados por el `key` numérico del
+ * campeón: es el `champion_id` que devuelve OP.GG, así se cruzan con sus estadísticas.
+ */
+export function listInForceVaultsByChampionKey(db: Db, userId: number, now: Date): Map<number, ChampionVault> {
+  const keyByChampionId = new Map(
+    db
+      .select({ id: champions.id, key: champions.key })
+      .from(champions)
+      .all()
+      .flatMap((row) => (row.key === null ? [] : [[row.id, row.key] as const])),
+  );
+
+  const byKey = new Map<number, ChampionVault>();
+  for (const card of listVaults(db, now).inForce) {
+    const key = keyByChampionId.get(card.champion.id);
+    if (card.target.id !== userId || key === undefined) continue;
+    if (card.status !== 'scheduled' && card.status !== 'active') continue;
+    byKey.set(key, { vaultId: card.id, status: card.status, startsAt: card.startsAt, endsAt: card.endsAt });
+  }
+  return byKey;
+}
+
 export type VaultCard = {
   id: number;
   status: VaultStatus;

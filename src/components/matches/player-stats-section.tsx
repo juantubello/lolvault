@@ -2,6 +2,7 @@ import { getDb } from '@/db/client';
 import { championImagesByKey } from '@/features/champions/champion-images';
 import { loadPlayerStats } from '@/features/matches/player-stats';
 import { getMatchProvider } from '@/features/matches/provider';
+import { listInForceVaultsByChampionKey } from '@/features/vaults/vaults.queries';
 
 import { PlayerStatsPanel } from './player-stats-panel';
 
@@ -13,7 +14,15 @@ export async function PlayerStatsSection({ user, isSelf }: { user: StatsUser; is
   const now = new Date();
   const stats = await loadPlayerStats(db, getMatchProvider(), user, now);
 
-  return <PlayerStatsPanel championImages={championImagesByKey(db)} isSelf={isSelf} now={now} stats={stats} />;
+  return (
+    <PlayerStatsPanel
+      championImages={championImagesByKey(db)}
+      isSelf={isSelf}
+      now={now}
+      stats={stats}
+      vaultsByChampion={listInForceVaultsByChampionKey(db, user.id, now)}
+    />
+  );
 }
 
 export function PlayerStatsLoading() {
