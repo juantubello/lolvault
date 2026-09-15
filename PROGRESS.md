@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, vaults, perfiles con foto e historial de partidas (OP.GG) verificados
+## Estado: votaciones, vaults, black list, perfiles con foto e historial de partidas (OP.GG) verificados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -101,6 +101,12 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   iOS agrupada con resumen por equipos, tarjeta del jugador foco, stats ampliadas de visión y
   multikill, filas de los dos equipos sin tabla horizontal y miembros LolVault vinculados por
   Riot ID (nunca por `puuid`). Sin migración: los campos viven en el JSON. 139 tests.
+- 2026-09-15 — **UI completa de Black list.** Quinto destino responsive, lista vigente con
+  búsqueda e historial colapsable, alta con autocompletado accesible sobre jugadores conocidos y
+  partida opcional, votaciones mezcladas con las de vaults, acciones de sacar/cancelar/votar y
+  badge en el detalle de partida. El badge de navegación suma ambos tipos de voto pendiente. El
+  pie de las tarjetas de votación ahora envuelve nombres largos en vez de truncarlos. Helpers de
+  presentación cubiertos en `blacklist-ui.test.ts`; typecheck, 165 tests y build verificados.
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.

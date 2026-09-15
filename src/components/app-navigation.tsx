@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleUserRound, LockKeyhole, Users, Vote, type LucideIcon } from 'lucide-react';
+import { Ban, CircleUserRound, LockKeyhole, Users, Vote, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -15,6 +15,7 @@ type Destination = {
 const destinations: Destination[] = [
   { href: '/', label: 'Votaciones', icon: Vote },
   { href: '/vaults', label: 'Vaults', icon: LockKeyhole },
+  { href: '/black-list', label: 'Black list', icon: Ban },
   { href: '/amigos', label: 'Amigos', icon: Users },
   { href: '/perfil', label: 'Perfil', icon: CircleUserRound },
 ];
@@ -52,7 +53,7 @@ function NavigationItems({
             </span>
           ) : null}
         </span>
-        <span>{label}</span>
+        <span className="nav-label">{label}</span>
         {badge ? (
           <span className="sr-only">
             , {badge} {badge === 1 ? 'votación pendiente' : 'votaciones pendientes'}

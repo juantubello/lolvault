@@ -2,12 +2,18 @@ import { Vote } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
+import { BlacklistProposalCardView } from '@/components/blacklist/blacklist-proposal-card';
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { ProposalCardView } from '@/components/vaults/proposal-card';
 import { ProposeVaultSheet } from '@/components/vaults/propose-vault-sheet';
 import { VAULT_MAX_START_AHEAD_DAYS } from '@/config';
 import { getDb } from '@/db/client';
+import { mergeVotingCards, type MergedVotingCard } from '@/features/blacklist/blacklist-ui';
+import {
+  listBlacklistVotingBoard,
+  type BlacklistProposalCard,
+} from '@/features/blacklist/blacklist.queries';
 import { listChampionOptions } from '@/features/champions/champions.queries';
 import { ensureChampions } from '@/features/champions/ddragon-sync';
 import { addDays, toLocalDateString } from '@/features/vaults/vault-dates';
@@ -23,7 +29,7 @@ function Section({
 }: {
   id: string;
   title: string;
-  cards: ProposalCard[];
+  cards: MergedVotingCard<ProposalCard, BlacklistProposalCard>[];
   now: Date;
 }) {
   if (cards.length === 0) return null;
@@ -32,9 +38,9 @@ function Section({
     <section aria-labelledby={id} className="grouped-section">
       <h2 id={id}>{title}</h2>
       <div className="proposal-list">
-        {cards.map((card) => (
-          <ProposalCardView card={card} key={card.id} now={now} />
-        ))}
+        {cards.map((item) => item.type === 'vault'
+          ? <ProposalCardView card={item.card} key={`vault-${item.card.id}`} now={now} />
+          : <BlacklistProposalCardView card={item.card} key={`blacklist-${item.card.id}`} now={now} />)}
       </div>
     </section>
   );
@@ -55,7 +61,11 @@ export default async function VotingPage() {
   }
 
   const board = listVotingBoard(db, user.id, now);
-  const isEmpty = board.pending.length + board.open.length + board.recent.length === 0;
+  const blacklistBoard = listBlacklistVotingBoard(db, user.id, now);
+  const pending = mergeVotingCards(board.pending, blacklistBoard.pending, 'oldest');
+  const open = mergeVotingCards(board.open, blacklistBoard.open, 'newest');
+  const recent = mergeVotingCards(board.recent, blacklistBoard.recent, 'newest');
+  const isEmpty = pending.length + open.length + recent.length === 0;
   const today = toLocalDateString(now);
 
   return (
@@ -73,14 +83,14 @@ export default async function VotingPage() {
     >
       {isEmpty ? (
         <EmptyState
-          description="Cuando alguien proponga un vault, vas a poder votarlo desde acá. Tocá “Proponer” para arrancar."
+          description="Cuando alguien proponga un vault o un cambio en la black list, vas a poder votarlo desde acá."
           icon={Vote}
           title="Nadie jugó tan mal todavía. Por ahora."
         />
       ) : null}
-      <Section cards={board.pending} id="pending-heading" now={now} title="Te falta votar" />
-      <Section cards={board.open} id="open-heading" now={now} title="En votación" />
-      <Section cards={board.recent} id="recent-heading" now={now} title="Resueltas" />
+      <Section cards={pending} id="pending-heading" now={now} title="Te falta votar" />
+      <Section cards={open} id="open-heading" now={now} title="En votación" />
+      <Section cards={recent} id="recent-heading" now={now} title="Resueltas" />
     </Screen>
   );
 }

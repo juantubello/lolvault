@@ -7,6 +7,13 @@ import { getCurrentUser } from '@/auth/current-user';
 import { BLACKLIST_NAME_MAX_LENGTH, BLACKLIST_REASON_MAX_LENGTH } from '@/config';
 import { getDb, type Db } from '@/db/client';
 import { matchDetails, matchParticipants, playerMatches, users } from '@/db/schema';
+import { championImagesByKey } from '@/features/champions/champion-images';
+import { getFriendProfile } from '@/features/friends/friends.queries';
+import { queueLabel } from '@/features/matches/format';
+import { toMatchOptions } from '@/features/matches/match-options';
+import { loadPlayerStats } from '@/features/matches/player-stats';
+import { matchOutcome } from '@/features/matches/player-summary';
+import { getMatchProvider } from '@/features/matches/provider';
 import { SESSION_ERROR_MESSAGE } from '@/features/profile/profile-form';
 import type { RiotId } from '@/features/matches/types';
 
@@ -19,7 +26,9 @@ import {
   type BlacklistMatchAttachment,
 } from './blacklist.queries';
 import { riotIdKey, validateBlacklistRiotId } from './blacklist-rules';
+import { formatKnownPlayerMatch } from './blacklist-ui';
 import {
+  listMatchesWithPlayer,
   searchKnownPlayers,
   type KnownPlayerSuggestion,
 } from './known-players';
@@ -47,6 +56,24 @@ export type BlacklistActionResult = {
 export type KnownPlayersActionResult = {
   suggestions: KnownPlayerSuggestion[];
   error?: string;
+};
+
+export type BlacklistMatchOption = {
+  matchId: string;
+  championName: string;
+  imageUrl: string | null;
+  kills: number;
+  deaths: number;
+  assists: number;
+  resultLabel: string;
+  resultTone: 'win' | 'loss' | 'neutral';
+  meta: string;
+};
+
+export type BlacklistMatchesActionResult = {
+  status: 'ok' | 'invalid' | 'error';
+  matches: BlacklistMatchOption[];
+  message: string | null;
 };
 
 async function currentMember() {
@@ -255,4 +282,66 @@ export async function searchKnownPlayersAction(query: string): Promise<KnownPlay
   const user = await currentMember();
   if (!user) return { suggestions: [], error: SESSION_ERROR_MESSAGE };
   return { suggestions: searchKnownPlayers(getDb(), query, new Date()) };
+}
+
+/** Partidas de un Riot ID conocido o, sin Riot ID, las últimas de quien propone. */
+export async function loadBlacklistMatchesAction(
+  riotIdText: string,
+): Promise<BlacklistMatchesActionResult> {
+  const user = await currentMember();
+  if (!user) return { status: 'error', matches: [], message: SESSION_ERROR_MESSAGE };
+
+  const db = getDb();
+  const now = new Date();
+  const parsed = validateBlacklistRiotId(riotIdText);
+  if (!parsed.ok) return { status: 'invalid', matches: [], message: parsed.error };
+
+  if (parsed.riotId) {
+    const images = championImagesByKey(db);
+    const matches = listMatchesWithPlayer(db, parsed.riotId)
+      .slice(0, 10)
+      .map((match) => {
+        const outcome = matchOutcome({
+          durationSeconds: match.durationSeconds,
+          win: match.result === 'WIN',
+        });
+        return {
+          matchId: match.matchId,
+          championName: match.championName,
+          imageUrl: images.get(match.championId) ?? null,
+          kills: match.kills,
+          deaths: match.deaths,
+          assists: match.assists,
+          resultLabel: outcome.label,
+          resultTone: outcome.tone,
+          meta: `${queueLabel(match.queue)} · ${formatKnownPlayerMatch(
+            match.members,
+            user.id,
+            match.playedAt,
+            now,
+          )}`,
+        };
+      });
+    return {
+      status: 'ok',
+      matches,
+      message: matches.length > 0 ? null : 'No encontramos partidas cacheadas con ese Riot ID.',
+    };
+  }
+
+  const profile = getFriendProfile(db, user.id);
+  if (!profile) return { status: 'error', matches: [], message: SESSION_ERROR_MESSAGE };
+  const stats = await loadPlayerStats(db, getMatchProvider(), profile, now);
+  if (stats.status === 'no-riot-id') {
+    return {
+      status: 'ok',
+      matches: [],
+      message: 'No cargaste tu Riot ID; podés proponer sin adjuntar una partida.',
+    };
+  }
+  return {
+    status: 'ok',
+    matches: toMatchOptions(stats.matches, championImagesByKey(db), now),
+    message: stats.error,
+  };
 }

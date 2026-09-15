@@ -55,8 +55,9 @@ export function performanceBadge(
 }
 
 /** Destinos cerrados: ningún valor arbitrario del query string se convierte en URL. */
-export function matchBackHref(currentUserId: number, focusUserId: number, fromVoting: boolean): string {
-  if (fromVoting) return '/';
+export function matchBackHref(currentUserId: number, focusUserId: number, source: string | null): string {
+  if (source === 'votaciones') return '/';
+  if (source === 'black-list') return '/black-list';
   return currentUserId === focusUserId ? '/perfil' : `/amigos/${focusUserId}`;
 }
 

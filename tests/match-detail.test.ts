@@ -54,9 +54,11 @@ describe('detalle de partida', () => {
   });
 
   it('construye el back solo desde destinos permitidos', () => {
-    expect(matchBackHref(4, 4, false)).toBe('/perfil');
-    expect(matchBackHref(4, 9, false)).toBe('/amigos/9');
-    expect(matchBackHref(4, 9, true)).toBe('/');
+    expect(matchBackHref(4, 4, null)).toBe('/perfil');
+    expect(matchBackHref(4, 9, null)).toBe('/amigos/9');
+    expect(matchBackHref(4, 9, 'votaciones')).toBe('/');
+    expect(matchBackHref(4, 9, 'black-list')).toBe('/black-list');
+    expect(matchBackHref(4, 9, 'https://ejemplo.test')).toBe('/amigos/9');
   });
 
   it('encuentra miembros por gameName#tag sin distinguir mayúsculas y nunca necesita puuid', () => {

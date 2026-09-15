@@ -302,20 +302,56 @@ export function cancelBlacklistProposal(
 export type BlacklistMatchSummary = {
   provider: string;
   matchId: string;
+  memberId: number | null;
   playedAt: Date;
   queue: string;
   durationSeconds: number;
+  target: {
+    championName: string;
+    kills: number;
+    deaths: number;
+    assists: number;
+  } | null;
 };
 
-function matchSummary(proposal: BlacklistProposal): BlacklistMatchSummary | null {
+function matchSummary(db: Queryable, proposal: BlacklistProposal): BlacklistMatchSummary | null {
   const snapshot = proposal.matchSnapshot;
   if (!proposal.matchProvider || !proposal.matchId || !snapshot) return null;
+  const member = db
+    .select({ id: users.id })
+    .from(schema.playerMatches)
+    .innerJoin(users, eq(users.id, schema.playerMatches.userId))
+    .where(
+      and(
+        eq(schema.playerMatches.provider, proposal.matchProvider),
+        eq(schema.playerMatches.matchId, proposal.matchId),
+        isNotNull(users.displayName),
+      ),
+    )
+    .get();
+  const riotId = proposal.riotGameName && proposal.riotTagLine
+    ? { gameName: proposal.riotGameName, tagLine: proposal.riotTagLine }
+    : null;
+  const target = riotId
+    ? snapshot.teams
+        .flatMap((team) => team.participants)
+        .find((participant) => riotIdKey(participant) === riotIdKey(riotId))
+    : undefined;
   return {
     provider: proposal.matchProvider,
     matchId: proposal.matchId,
+    memberId: member?.id ?? null,
     playedAt: new Date(snapshot.playedAt),
     queue: snapshot.queue,
     durationSeconds: snapshot.durationSeconds,
+    target: target
+      ? {
+          championName: target.championName,
+          kills: target.kills,
+          deaths: target.deaths,
+          assists: target.assists,
+        }
+      : null,
   };
 }
 
@@ -372,7 +408,7 @@ export function listBlacklist(
         addedAt: entry.approvedAt,
         removedAt: entry.removedAt,
         reason: entry.reason,
-        match: matchSummary(entry),
+        match: matchSummary(db, entry),
         removeProposalOpen: removals.some(
           (proposal) =>
             proposal.entryId === entry.id && blacklistVotingStatus(proposal, now) === 'open',
@@ -396,6 +432,7 @@ export function listBlacklist(
 
 export type BlacklistProposalCard = {
   id: number;
+  createdAt: Date;
   kind: 'add' | 'remove';
   entryId: number | null;
   status: BlacklistVotingStatus;
@@ -464,6 +501,7 @@ export function listBlacklistVotingBoard(
     const status = blacklistVotingStatus(proposal, now);
     return {
       id: proposal.id,
+      createdAt: proposal.createdAt,
       kind: proposal.kind,
       entryId: proposal.entryId,
       status,
@@ -474,7 +512,7 @@ export function listBlacklistVotingBoard(
           : null,
       proposer: { id: proposal.proposerUserId, name: row.proposerName ?? 'Sin nombre' },
       reason: proposal.reason,
-      match: matchSummary(source),
+      match: matchSummary(db, source),
       closesAt: proposal.closesAt,
       yes: proposalVotes.filter((vote) => vote.value === 'yes').length,
       no: proposalVotes.filter((vote) => vote.value === 'no').length,

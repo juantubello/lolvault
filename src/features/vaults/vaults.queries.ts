@@ -281,6 +281,7 @@ export function cancelProposal(db: Db, userId: number, proposalId: number, now: 
 
 export type ProposalCard = {
   id: number;
+  createdAt: Date;
   kind: 'vault' | 'lift';
   status: VotingStatus;
   target: { id: number; name: string };
@@ -357,6 +358,7 @@ export function listVotingBoard(db: Db, viewerUserId: number, now: Date): Voting
 
     return {
       id: proposal.id,
+      createdAt: proposal.createdAt,
       kind: proposal.kind,
       status,
       target: { id: proposal.targetUserId, name: row.targetName ?? 'Sin nombre' },

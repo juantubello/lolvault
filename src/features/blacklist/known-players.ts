@@ -124,6 +124,7 @@ export type KnownPlayerMatch = {
   matchId: string;
   playedAt: Date;
   queue: string;
+  durationSeconds: number;
   championId: number;
   championName: string;
   kills: number;
@@ -164,6 +165,7 @@ export function listMatchesWithPlayer(db: Db, riotId: RiotId): KnownPlayerMatch[
       matchId: row.matchId,
       playedAt: row.playedAt,
       queue: row.data.queue,
+      durationSeconds: row.data.durationSeconds,
       championId: participant.championId,
       championName: participant.championName,
       kills: participant.kills,

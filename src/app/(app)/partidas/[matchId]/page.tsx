@@ -7,7 +7,8 @@ import { EmptyState } from '@/components/empty-state';
 import { MatchDetailView } from '@/components/matches/match-detail-view';
 import { Screen } from '@/components/screen';
 import { getDb, type Db } from '@/db/client';
-import { matchDetails, playerMatches, vaultProposals } from '@/db/schema';
+import { blacklistProposals, matchDetails, playerMatches, vaultProposals } from '@/db/schema';
+import { findActiveBlacklistByRiotIds } from '@/features/blacklist/blacklist.queries';
 import { championImagesByKey } from '@/features/champions/champion-images';
 import { getFriendProfile, listFriendProfiles } from '@/features/friends/friends.queries';
 import { matchBackHref } from '@/features/matches/match-detail';
@@ -67,6 +68,15 @@ async function resolveDetail(
     .get();
   if (proposal?.snapshot) return { detail: proposal.snapshot, historyMatchFound: Boolean(historyMatch) };
 
+  const blacklistProposal = db
+    .select({ snapshot: blacklistProposals.matchSnapshot })
+    .from(blacklistProposals)
+    .where(and(eq(blacklistProposals.matchId, matchId), isNotNull(blacklistProposals.matchSnapshot)))
+    .get();
+  if (blacklistProposal?.snapshot) {
+    return { detail: blacklistProposal.snapshot, historyMatchFound: Boolean(historyMatch) };
+  }
+
   return { detail: null, historyMatchFound: Boolean(historyMatch) };
 }
 
@@ -90,9 +100,15 @@ export default async function MatchDetailPage({
   const player = getFriendProfile(db, playerId);
   if (!player) notFound();
 
-  const fromVoting = first(query.desde) === 'votaciones';
-  const backHref = matchBackHref(currentUser.id, player.id, fromVoting);
-  const backLabel = fromVoting ? 'Votaciones' : player.id === currentUser.id ? 'Perfil' : player.displayName;
+  const source = first(query.desde) ?? null;
+  const backHref = matchBackHref(currentUser.id, player.id, source);
+  const backLabel = source === 'votaciones'
+    ? 'Votaciones'
+    : source === 'black-list'
+      ? 'Black list'
+      : player.id === currentUser.id
+        ? 'Perfil'
+        : player.displayName;
   const resolved = await resolveDetail(db, matchId, player);
   if (!resolved.detail && !resolved.historyMatchFound) notFound();
 
@@ -108,6 +124,12 @@ export default async function MatchDetailPage({
           detail={resolved.detail}
           focusUser={player}
           members={listFriendProfiles(db)}
+          activeBlacklist={findActiveBlacklistByRiotIds(
+            db,
+            resolved.detail.teams.flatMap((team) =>
+              team.participants.map(({ gameName, tagLine }) => ({ gameName, tagLine })),
+            ),
+          )}
         />
       ) : (
         <EmptyState

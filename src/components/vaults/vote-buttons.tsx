@@ -7,8 +7,18 @@ import { voteAction, type ActionResult } from '@/features/vaults/vaults.actions'
 
 const initialState: ActionResult = {};
 
-export function VoteButtons({ proposalId, myVote }: { proposalId: number; myVote: 'yes' | 'no' | null }) {
-  const [state, formAction, pending] = useActionState(voteAction, initialState);
+type VoteAction = (previousState: ActionResult, formData: FormData) => Promise<ActionResult>;
+
+export function VoteButtons({
+  proposalId,
+  myVote,
+  action = voteAction,
+}: {
+  proposalId: number;
+  myVote: 'yes' | 'no' | null;
+  action?: VoteAction;
+}) {
+  const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
     <form action={formAction} className="vote-form">

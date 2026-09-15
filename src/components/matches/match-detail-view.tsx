@@ -1,8 +1,10 @@
-import { ChevronRight } from 'lucide-react';
+import { Ban, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { UserAvatar } from '@/components/user-avatar';
+import type { ActiveBlacklistPlayer } from '@/features/blacklist/blacklist.queries';
+import { riotIdKey } from '@/features/blacklist/blacklist-rules';
 import type { FriendProfile } from '@/features/friends/friends.queries';
 import {
   csPerMinute,
@@ -64,6 +66,7 @@ function ParticipantRow({
   currentUserId,
   championImages,
   maxDamage,
+  blacklisted,
 }: {
   participant: MatchParticipant;
   team: Team;
@@ -72,6 +75,7 @@ function ParticipantRow({
   currentUserId: number;
   championImages: Map<number, string>;
   maxDamage: number;
+  blacklisted: ActiveBlacklistPlayer | undefined;
 }) {
   const badge = performanceBadge(participant, team.win);
   const content = (
@@ -102,7 +106,17 @@ function ParticipantRow({
           <span style={{ width: `${(participant.damageDealt / maxDamage) * 100}%` }} />
         </span>
       </div>
-      {badge ? <span className="match-performance-badge">{badge}</span> : null}
+      {badge || blacklisted ? (
+        <span className="match-player-badges">
+          {badge ? <span className="match-performance-badge">{badge}</span> : null}
+          {blacklisted ? (
+            <span className="match-blacklist-badge" title={blacklisted.reason ?? undefined}>
+              <Ban aria-hidden="true" size={12} strokeWidth={2.5} />
+              Black list
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {member ? <ChevronRight aria-hidden="true" className="match-player-chevron" size={18} /> : null}
     </>
   );
@@ -126,12 +140,14 @@ export function MatchDetailView({
   currentUserId,
   members,
   championImages,
+  activeBlacklist,
 }: {
   detail: MatchDetail;
   focusUser: FriendProfile;
   currentUserId: number;
   members: FriendProfile[];
   championImages: Map<number, string>;
+  activeBlacklist: Map<string, ActiveBlacklistPlayer>;
 }) {
   const teams = [...detail.teams].sort((a, b) => teamOrder(a) - teamOrder(b));
   const participants = teams.flatMap((team) => team.participants);
@@ -251,6 +267,7 @@ export function MatchDetailView({
                   <li key={participant.puuid}>
                     <ParticipantRow
                       championImages={championImages}
+                      blacklisted={activeBlacklist.get(riotIdKey(participant))}
                       currentUserId={currentUserId}
                       isFocus={participant === target}
                       maxDamage={maxDamage}
