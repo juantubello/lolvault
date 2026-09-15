@@ -22,7 +22,8 @@
     "lucide-react": "0.542.0",
     "next": "^16.3.2",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -30,6 +31,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.20.7",
