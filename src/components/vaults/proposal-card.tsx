@@ -1,5 +1,6 @@
 import Image from 'next/image';
 
+import { MatchSnapshot } from '@/components/matches/match-snapshot';
 import { formatDateRange, formatTimeLeft } from '@/features/vaults/vault-dates';
 import type { VotingStatus } from '@/features/vaults/vault-rules';
 import { cancelProposalAction } from '@/features/vaults/vaults.actions';
@@ -18,8 +19,17 @@ const STATUS: Record<VotingStatus, { label: string; tone: 'neutral' | 'vault' | 
   cancelled: { label: 'Cancelado', tone: 'neutral' },
 };
 
-export function ProposalCardView({ card, now }: { card: ProposalCard; now: Date }) {
+export function ProposalCardView({
+  card,
+  now,
+  championImages,
+}: {
+  card: ProposalCard;
+  now: Date;
+  championImages: Map<number, string>;
+}) {
   const isLift = card.kind === 'lift';
+  const matchTarget = card.match?.teams.flatMap((team) => team.participants).find((participant) => participant.isTarget);
   const dates = card.startsAt && card.endsAt ? formatDateRange(card.startsAt, card.endsAt) : null;
   const status =
     isLift && card.status === 'approved' ? { label: 'Levantado', tone: 'vault' as const } : STATUS[card.status];
@@ -66,6 +76,21 @@ export function ProposalCardView({ card, now }: { card: ProposalCard; now: Date 
       </div>
 
       {card.reason ? <p className="proposal-reason">“{card.reason}”</p> : null}
+
+      {card.match ? (
+        <details className="match-attachment">
+          <summary>
+            <span className="match-attachment-label">Partida adjunta</span>
+            {matchTarget ? (
+              <span className="match-attachment-summary">
+                {matchTarget.championName} · {matchTarget.kills}/{matchTarget.deaths}/{matchTarget.assists} ·{' '}
+                {matchTarget.result === 'WIN' ? 'Victoria' : 'Derrota'}
+              </span>
+            ) : null}
+          </summary>
+          <MatchSnapshot championImages={championImages} detail={card.match} />
+        </details>
+      ) : null}
 
       {card.status === 'open' ? (
         <>

@@ -12,6 +12,7 @@ import type { Db } from '@/db/client';
 import * as schema from '@/db/schema';
 import { champions, users, vaultProposals, vaultVotes, type VaultProposal } from '@/db/schema';
 import { championImageUrl } from '@/features/champions/ddragon-sync';
+import type { MatchDetail } from '@/features/matches/types';
 import { avatarUrl } from '@/features/profile/avatar-url';
 
 import type { ProposalInput } from './proposal-form';
@@ -83,11 +84,15 @@ function insertProposerVote(tx: Queryable, proposalId: number, proposerUserId: n
     .run();
 }
 
+/** Partida decisiva adjunta a una propuesta, con su foto (se guarda aunque la fuente caiga después). */
+export type MatchAttachment = { provider: string; matchId: string; snapshot: MatchDetail };
+
 export function createVaultProposal(
   db: Db,
   proposerUserId: number,
   input: ProposalInput,
   now: Date,
+  attachment: MatchAttachment | null = null,
 ): number {
   return db.transaction((tx) => {
     const sameVaults = tx
@@ -124,6 +129,9 @@ export function createVaultProposal(
         reason: input.reason,
         createdAt: now,
         closesAt: closesAtFor(now, input.endsAt),
+        matchProvider: attachment?.provider ?? null,
+        matchId: attachment?.matchId ?? null,
+        matchSnapshot: attachment?.snapshot ?? null,
       })
       .returning({ id: vaultProposals.id })
       .get();
@@ -282,6 +290,8 @@ export type ProposalCard = {
   startsAt: Date | null;
   endsAt: Date | null;
   reason: string | null;
+  /** Foto de la partida decisiva, si se adjuntó. */
+  match: MatchDetail | null;
   closesAt: Date;
   yes: number;
   no: number;
@@ -359,6 +369,7 @@ export function listVotingBoard(db: Db, viewerUserId: number, now: Date): Voting
       startsAt: proposal.startsAt ?? row.vaultStartsAt,
       endsAt: proposal.endsAt ?? row.vaultEndsAt,
       reason: proposal.reason,
+      match: proposal.matchSnapshot ?? null,
       closesAt: proposal.closesAt,
       yes: counted.filter((vote) => vote.value === 'yes').length,
       no: counted.filter((vote) => vote.value === 'no').length,

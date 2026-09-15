@@ -1,0 +1,9 @@
+class LolGetSummonerProfile: data
+class Data: summoner
+class Summoner: puuid,game_name,tagline,profile_image_url,level,updated_at,league_stats,most_champions
+class LeagueStat: game_type,tier_info,win,lose
+class TierInfo: tier,division,lp,tier_image_url
+class MostChampions: game_type,season_id,play,win,lose,champion_stats
+class ChampionStat: id,play,win,lose,kill,death,assist,damage_dealt_to_champions,op_score,champion_name
+
+LolGetSummonerProfile(Data(Summoner("puuid-invocador","Invocador","LAS1","https://opgg-static.akamaized.net/meta/images/profile_icons/profileIcon539.jpg",150,"2026-09-15T11:42:49+09:00",[LeagueStat("SOLORANKED",TierInfo(null,null,null,"https://opgg-static.akamaized.net/images/medals_new/default_unranked.svg"),null,null),LeagueStat("FLEXRANKED",TierInfo("PLATINUM",4,93,"https://opgg-static.akamaized.net/images/medals_new/platinum.png"),55,52),LeagueStat("ARENA",TierInfo(null,null,null,"https://opgg-static.akamaized.net/images/medals_new/default_unranked.svg"),null,null)],MostChampions("RANKED",33,106,54,52,[ChampionStat(54,24,13,11,101,98,222,512631,109,"Malphite"),ChampionStat(222,17,8,9,118,115,184,383663,85,"Jinx"),ChampionStat(420,15,10,5,69,64,94,374633,75,"Illaoi"),ChampionStat(412,13,6,7,25,78,196,114384,62,"Thresh"),ChampionStat(90,9,4,5,48,59,89,203815,40,"Malzahar"),ChampionStat(1,5,3,2,24,20,27,91502,24,"Annie"),ChampionStat(2,3,2,1,12,15,23,50419,13,"Olaf"),ChampionStat(86,3,1,2,17,16,5,50387,9,"Garen"),ChampionStat(21,3,1,2,23,17,28,80613,14,"Miss Fortune"),ChampionStat(111,3,1,2,5,20,51,28255,13,"Nautilus")]))))

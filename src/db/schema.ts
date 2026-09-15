@@ -5,9 +5,12 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
 } from 'drizzle-orm/sqlite-core';
+
+import type { MatchDetail, SummonerProfile } from '@/features/matches/types';
 
 export const champions = sqliteTable('champions', {
   id: text('id').primaryKey(),
@@ -61,6 +64,10 @@ export const vaultProposals = sqliteTable(
     cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
     /** Solo en 'vault': cuándo lo levantó una votación 'lift' aprobada. */
     liftedAt: integer('lifted_at', { mode: 'timestamp_ms' }),
+    /** Partida decisiva adjunta (opcional): fuente, id y foto guardada con la propuesta. */
+    matchProvider: text('match_provider'),
+    matchId: text('match_id'),
+    matchSnapshot: text('match_snapshot', { mode: 'json' }).$type<MatchDetail>(),
   },
   (table) => [
     check('vault_proposals_kind_check', sql`${table.kind} IN ('vault', 'lift')`),
@@ -90,6 +97,78 @@ export const vaultVotes = sqliteTable(
     check('vault_votes_value_check', sql`${table.value} IN ('yes', 'no')`),
   ],
 );
+
+/** Historial por jugador, cacheado desde la fuente (OP.GG). Una partida jugada no cambia. */
+export const playerMatches = sqliteTable(
+  'player_matches',
+  {
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    matchId: text('match_id').notNull(),
+    /** Cuenta de Riot de esa partida: si el amigo cambia de cuenta, las viejas no se mezclan. */
+    puuid: text('puuid').notNull(),
+    playedAt: integer('played_at', { mode: 'timestamp_ms' }).notNull(),
+    queue: text('queue').notNull(),
+    durationSeconds: integer('duration_seconds').notNull(),
+    championId: integer('champion_id').notNull(),
+    championName: text('champion_name').notNull(),
+    position: text('position'),
+    teamKey: text('team_key').notNull(),
+    kills: integer('kills').notNull(),
+    deaths: integer('deaths').notNull(),
+    assists: integer('assists').notNull(),
+    championLevel: integer('champion_level').notNull(),
+    cs: integer('cs').notNull(),
+    damageDealt: integer('damage_dealt').notNull(),
+    damageTaken: integer('damage_taken').notNull(),
+    teamKills: integer('team_kills').notNull(),
+    win: integer('win', { mode: 'boolean' }).notNull(),
+    result: text('result').notNull(),
+    opScore: real('op_score'),
+    opScoreRank: integer('op_score_rank'),
+    fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.provider, table.matchId] }),
+    index('player_matches_user_played_idx').on(table.userId, table.playedAt),
+  ],
+);
+
+/** Detalle completo de una partida (los 10 jugadores). Se guarda una vez y para siempre. */
+export const matchDetails = sqliteTable(
+  'match_details',
+  {
+    provider: text('provider').notNull(),
+    matchId: text('match_id').notNull(),
+    playedAt: integer('played_at', { mode: 'timestamp_ms' }).notNull(),
+    data: text('data', { mode: 'json' }).$type<MatchDetail>().notNull(),
+    fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.provider, table.matchId] })],
+);
+
+/**
+ * Estado de sincronización por jugador: cuándo se refrescó, con qué Riot ID, el perfil cacheado
+ * y el último error. Si la fuente falla o nos bloquea, la UI muestra lo que hay acá y en player_matches.
+ */
+export const playerStatsSync = sqliteTable('player_stats_sync', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  riotGameName: text('riot_game_name').notNull(),
+  riotTagLine: text('riot_tag_line').notNull(),
+  puuid: text('puuid'),
+  profile: text('profile', { mode: 'json' }).$type<SummonerProfile>(),
+  matchesSyncedAt: integer('matches_synced_at', { mode: 'timestamp_ms' }),
+  profileSyncedAt: integer('profile_synced_at', { mode: 'timestamp_ms' }),
+  /** Último intento (exitoso o no): evita reintentar en cada request cuando la fuente está caída. */
+  attemptedAt: integer('attempted_at', { mode: 'timestamp_ms' }),
+  lastError: text('last_error'),
+  lastErrorAt: integer('last_error_at', { mode: 'timestamp_ms' }),
+});
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

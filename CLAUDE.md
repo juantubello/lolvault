@@ -35,6 +35,19 @@ autorizado. **En producción no existe:** con `NODE_ENV=production` o sin
 `LOLVAULT_DEV_USER_EMAIL`, la cookie se ignora, la acción no hace nada y el selector no se
 renderiza. Si la variable llega a producción, la app no arranca.
 
+## Historial de partidas (OP.GG)
+
+- Fuente: **OP.GG MCP sin key** (`features/matches/opgg/`), siempre detrás de `MatchProvider`
+  (`features/matches/types.ts`) y creada solo en `features/matches/provider.ts`. Del lado servidor.
+- **Caché en la base** (`player_matches`, `match_details`, `player_stats_sync`) vía
+  `features/matches/player-stats.ts`: refresco cada 10 min por jugador, 5 min de espera tras un
+  error; si OP.GG falla o nos bloquea se muestra lo guardado con aviso. Nunca llamar a la fuente
+  directo desde una página.
+- La partida adjunta a una propuesta se valida contra el historial guardado **de ese jugador** y
+  su foto (`MatchDetail`) se guarda en `vault_proposals.match_snapshot`.
+- Fixtures reales en `tests/fixtures/opgg/`, **anonimizados**: no commitear nombres, tags ni
+  `puuid` reales de nadie.
+
 ## Reglas duras (resumen, detalle en el plan §8)
 
 1. La identidad solo sale del JWT de Access. Ningún `userId` viene del cliente.

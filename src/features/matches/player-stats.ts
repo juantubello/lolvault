@@ -1,0 +1,184 @@
+/**
+ * Historial y perfil de un jugador con caché en la base. La fuente (OP.GG) se consulta como mucho
+ * cada MATCHES_REFRESH_MS; si falla, se espera MATCHES_RETRY_AFTER_ERROR_MS y mientras tanto se
+ * muestra lo guardado. Nunca tira errores de la fuente hacia la UI: los devuelve como estado.
+ */
+import { and, desc, eq } from 'drizzle-orm';
+
+import { MATCHES_LIMIT, MATCHES_REFRESH_MS, MATCHES_RETRY_AFTER_ERROR_MS } from '@/config';
+import type { Db } from '@/db/client';
+import { matchDetails, playerMatches, playerStatsSync } from '@/db/schema';
+
+import {
+  MatchProviderError,
+  type MatchDetail,
+  type MatchProvider,
+  type PlayerMatchSummary,
+  type RiotId,
+  type SummonerProfile,
+} from './types';
+
+export type PlayerStats =
+  | { status: 'no-riot-id' }
+  | {
+      status: 'ok';
+      riotId: RiotId;
+      matches: PlayerMatchSummary[];
+      profile: SummonerProfile | null;
+      /** Última sincronización exitosa del historial. */
+      syncedAt: Date | null;
+      /** Mensaje para mostrar si el último intento falló (se muestran datos guardados). */
+      error: string | null;
+      notFound: boolean;
+    };
+
+type StatsUser = { id: number; riotGameName: string | null; riotTagLine: string | null };
+
+const ERROR_MESSAGES: Record<MatchProviderError['kind'], string> = {
+  'not-found': 'OP.GG no encuentra ese Riot ID. Revisá que esté bien escrito en el perfil.',
+  unavailable: 'OP.GG no respondió. Mostramos los últimos datos guardados.',
+  'invalid-response': 'OP.GG cambió su respuesta y no la pudimos leer. Mostramos los últimos datos guardados.',
+};
+
+function sameRiotId(sync: { riotGameName: string; riotTagLine: string }, riotId: RiotId): boolean {
+  return (
+    sync.riotGameName.toLocaleLowerCase('en-US') === riotId.gameName.toLocaleLowerCase('en-US') &&
+    sync.riotTagLine.toLocaleLowerCase('en-US') === riotId.tagLine.toLocaleLowerCase('en-US')
+  );
+}
+
+function errorKind(error: unknown): MatchProviderError['kind'] {
+  return error instanceof MatchProviderError ? error.kind : 'unavailable';
+}
+
+/** Decide si toca consultar la fuente o alcanza con el caché. Pura, para testearla. */
+export function shouldSync(
+  sync: typeof playerStatsSync.$inferSelect | undefined,
+  riotId: RiotId,
+  now: Date,
+): boolean {
+  if (!sync || !sameRiotId(sync, riotId)) return true;
+  if (!sync.attemptedAt) return true;
+
+  const failedLastTime = sync.lastErrorAt !== null && sync.lastErrorAt.getTime() >= sync.attemptedAt.getTime();
+  const wait = failedLastTime ? MATCHES_RETRY_AFTER_ERROR_MS : MATCHES_REFRESH_MS;
+  return now.getTime() - sync.attemptedAt.getTime() >= wait;
+}
+
+function readCachedMatches(db: Db, userId: number, puuid: string | null): PlayerMatchSummary[] {
+  if (!puuid) return [];
+  return db
+    .select()
+    .from(playerMatches)
+    .where(and(eq(playerMatches.userId, userId), eq(playerMatches.puuid, puuid)))
+    .orderBy(desc(playerMatches.playedAt))
+    .limit(MATCHES_LIMIT)
+    .all();
+}
+
+async function sync(db: Db, provider: MatchProvider, userId: number, riotId: RiotId, now: Date) {
+  // Marcar el intento antes de pedir: si llegan dos requests juntos, el segundo usa el caché.
+  db.insert(playerStatsSync)
+    .values({ userId, provider: provider.name, riotGameName: riotId.gameName, riotTagLine: riotId.tagLine, attemptedAt: now })
+    .onConflictDoUpdate({
+      target: playerStatsSync.userId,
+      set: { provider: provider.name, riotGameName: riotId.gameName, riotTagLine: riotId.tagLine, attemptedAt: now },
+    })
+    .run();
+
+  const [matchesResult, profileResult] = await Promise.allSettled([
+    provider.listMatches(riotId, MATCHES_LIMIT),
+    provider.getProfile(riotId),
+  ]);
+
+  db.transaction((tx) => {
+    if (matchesResult.status === 'fulfilled') {
+      for (const match of matchesResult.value) {
+        const row = { ...match, userId, provider: provider.name, fetchedAt: now };
+        tx.insert(playerMatches)
+          .values(row)
+          .onConflictDoUpdate({
+            target: [playerMatches.userId, playerMatches.provider, playerMatches.matchId],
+            set: row,
+          })
+          .run();
+      }
+    }
+
+    const puuid =
+      (profileResult.status === 'fulfilled' ? profileResult.value.puuid : undefined) ??
+      (matchesResult.status === 'fulfilled' ? matchesResult.value[0]?.puuid : undefined);
+    const failure = [matchesResult, profileResult].find((result) => result.status === 'rejected');
+
+    tx.update(playerStatsSync)
+      .set({
+        ...(puuid ? { puuid } : {}),
+        ...(matchesResult.status === 'fulfilled' ? { matchesSyncedAt: now } : {}),
+        ...(profileResult.status === 'fulfilled' ? { profile: profileResult.value, profileSyncedAt: now } : {}),
+        lastError: failure ? errorKind(failure.reason) : null,
+        lastErrorAt: failure ? now : null,
+      })
+      .where(eq(playerStatsSync.userId, userId))
+      .run();
+  });
+
+  for (const result of [matchesResult, profileResult]) {
+    if (result.status === 'rejected' && !(result.reason instanceof MatchProviderError)) {
+      console.error('[matches] Error inesperado de la fuente:', result.reason);
+    }
+  }
+}
+
+export async function loadPlayerStats(
+  db: Db,
+  provider: MatchProvider,
+  user: StatsUser,
+  now: Date,
+): Promise<PlayerStats> {
+  if (!user.riotGameName || !user.riotTagLine) return { status: 'no-riot-id' };
+  const riotId = { gameName: user.riotGameName, tagLine: user.riotTagLine };
+
+  const current = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
+  if (shouldSync(current, riotId, now)) await sync(db, provider, user.id, riotId, now);
+
+  const state = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
+  const kind = state?.lastError as MatchProviderError['kind'] | null | undefined;
+
+  return {
+    status: 'ok',
+    riotId,
+    matches: readCachedMatches(db, user.id, state?.puuid ?? null),
+    profile: state?.profile ?? null,
+    syncedAt: state?.matchesSyncedAt ?? null,
+    error: kind ? (ERROR_MESSAGES[kind] ?? ERROR_MESSAGES.unavailable) : null,
+    notFound: kind === 'not-found',
+  };
+}
+
+/** Detalle de una partida: una vez guardado no se vuelve a pedir. Null si la fuente no responde. */
+export async function loadMatchDetail(
+  db: Db,
+  provider: MatchProvider,
+  match: { matchId: string; playedAt: Date },
+  focus: RiotId,
+  now: Date,
+): Promise<MatchDetail | null> {
+  const cached = db
+    .select({ data: matchDetails.data })
+    .from(matchDetails)
+    .where(and(eq(matchDetails.provider, provider.name), eq(matchDetails.matchId, match.matchId)))
+    .get();
+  if (cached) return cached.data;
+
+  try {
+    const detail = await provider.getMatchDetail(match.matchId, match.playedAt, focus);
+    db.insert(matchDetails)
+      .values({ provider: provider.name, matchId: match.matchId, playedAt: match.playedAt, data: detail, fetchedAt: now })
+      .onConflictDoNothing()
+      .run();
+    return detail;
+  } catch (error) {
+    if (error instanceof MatchProviderError) return null;
+    throw error;
+  }
+}

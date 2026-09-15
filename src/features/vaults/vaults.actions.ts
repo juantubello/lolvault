@@ -1,11 +1,15 @@
 'use server';
 
+import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { getCurrentUser } from '@/auth/current-user';
 import { VAULT_REASON_MAX_LENGTH } from '@/config';
 import { getDb } from '@/db/client';
-import { champions } from '@/db/schema';
+import { champions, playerMatches } from '@/db/schema';
+import { getFriendProfile } from '@/features/friends/friends.queries';
+import { loadMatchDetail } from '@/features/matches/player-stats';
+import { getMatchProvider } from '@/features/matches/provider';
 import { SESSION_ERROR_MESSAGE } from '@/features/profile/profile-form';
 
 import { readProposalValues, validateProposal, type ProposalFormState } from './proposal-form';
@@ -15,6 +19,7 @@ import {
   createLiftProposal,
   createVaultProposal,
   listMembers,
+  type MatchAttachment,
   VaultRuleError,
 } from './vaults.queries';
 
@@ -64,9 +69,39 @@ export async function createProposalAction(
   });
   if (!result.ok) return { fieldErrors: result.fieldErrors, values };
 
+  let attachment: MatchAttachment | null = null;
+  if (values.matchId) {
+    // La partida tiene que estar en el historial guardado de ESE jugador: no se confía en el cliente.
+    const target = getFriendProfile(db, result.input.targetUserId);
+    const row = db
+      .select({ playedAt: playerMatches.playedAt })
+      .from(playerMatches)
+      .where(and(eq(playerMatches.userId, result.input.targetUserId), eq(playerMatches.matchId, values.matchId)))
+      .get();
+    if (!row || !target?.riotGameName || !target.riotTagLine) {
+      return { fieldErrors: { matchId: 'Esa partida no está en el historial de este jugador.' }, values };
+    }
+
+    const provider = getMatchProvider();
+    const snapshot = await loadMatchDetail(
+      db,
+      provider,
+      { matchId: values.matchId, playedAt: row.playedAt },
+      { gameName: target.riotGameName, tagLine: target.riotTagLine },
+      now,
+    );
+    if (!snapshot) {
+      return {
+        formError: 'OP.GG no respondió al traer la partida. Probá de nuevo o proponé sin adjuntarla.',
+        values,
+      };
+    }
+    attachment = { provider: provider.name, matchId: values.matchId, snapshot };
+  }
+
   try {
     // Regla dura: quien propone es el usuario de la sesión, nunca un campo del form.
-    const createdId = createVaultProposal(db, user.id, result.input, now);
+    const createdId = createVaultProposal(db, user.id, result.input, now, attachment);
     refreshApp();
     return { createdId };
   } catch (error) {

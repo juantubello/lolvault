@@ -8,6 +8,7 @@ import { ProposalCardView } from '@/components/vaults/proposal-card';
 import { ProposeVaultSheet } from '@/components/vaults/propose-vault-sheet';
 import { VAULT_MAX_START_AHEAD_DAYS } from '@/config';
 import { getDb } from '@/db/client';
+import { championImagesByKey } from '@/features/champions/champion-images';
 import { listChampionOptions } from '@/features/champions/champions.queries';
 import { ensureChampions } from '@/features/champions/ddragon-sync';
 import { addDays, toLocalDateString } from '@/features/vaults/vault-dates';
@@ -15,7 +16,19 @@ import { listMembers, listVotingBoard, type ProposalCard } from '@/features/vaul
 
 export const dynamic = 'force-dynamic';
 
-function Section({ id, title, cards, now }: { id: string; title: string; cards: ProposalCard[]; now: Date }) {
+function Section({
+  id,
+  title,
+  cards,
+  now,
+  championImages,
+}: {
+  id: string;
+  title: string;
+  cards: ProposalCard[];
+  now: Date;
+  championImages: Map<number, string>;
+}) {
   if (cards.length === 0) return null;
 
   return (
@@ -23,7 +36,7 @@ function Section({ id, title, cards, now }: { id: string; title: string; cards: 
       <h2 id={id}>{title}</h2>
       <div className="proposal-list">
         {cards.map((card) => (
-          <ProposalCardView card={card} key={card.id} now={now} />
+          <ProposalCardView card={card} championImages={championImages} key={card.id} now={now} />
         ))}
       </div>
     </section>
@@ -47,6 +60,7 @@ export default async function VotingPage() {
   const board = listVotingBoard(db, user.id, now);
   const isEmpty = board.pending.length + board.open.length + board.recent.length === 0;
   const today = toLocalDateString(now);
+  const championImages = championImagesByKey(db);
 
   return (
     <Screen
@@ -68,9 +82,9 @@ export default async function VotingPage() {
           title="Nadie jugó tan mal todavía. Por ahora."
         />
       ) : null}
-      <Section cards={board.pending} id="pending-heading" now={now} title="Te falta votar" />
-      <Section cards={board.open} id="open-heading" now={now} title="En votación" />
-      <Section cards={board.recent} id="recent-heading" now={now} title="Resueltas" />
+      <Section cards={board.pending} championImages={championImages} id="pending-heading" now={now} title="Te falta votar" />
+      <Section cards={board.open} championImages={championImages} id="open-heading" now={now} title="En votación" />
+      <Section cards={board.recent} championImages={championImages} id="recent-heading" now={now} title="Resueltas" />
     </Screen>
   );
 }

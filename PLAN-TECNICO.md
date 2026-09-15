@@ -49,8 +49,14 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
   Imágenes con `next/image` y `remotePatterns` limitado a `ddragon.leagueoflegends.com`.
 
 > Investigación completa de fuentes (URLs verificadas, keys, alternativas):
-> [`docs/APIS-LOL.md`](./docs/APIS-LOL.md). **OP.GG MCP** funciona sin key, pero queda solo
-> como experimento: está pensado para agentes de IA y no documenta términos ni límites.
+> [`docs/APIS-LOL.md`](./docs/APIS-LOL.md).
+>
+> **Decisión (2026-09-15): historial de partidas vía OP.GG MCP, sin key**, detrás de la interfaz
+> `MatchProvider` (`src/features/matches/types.ts`) y con **caché en la base**
+> (`player_matches`, `match_details`, `player_stats_sync`): refresco cada 10 min por jugador,
+> 5 min de espera tras un error, y si OP.GG falla o nos bloquea se muestra lo guardado. La foto
+> de una partida adjunta se guarda con la propuesta. Cuando llegue la Personal API Key de Riot
+> se cambia la implementación en `features/matches/provider.ts` sin tocar la UI.
 
 ### 2.2 Última partida de cada uno: Riot API (fase SHOULD)
 

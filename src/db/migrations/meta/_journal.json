@@ -29,6 +29,13 @@
       "when": 1789438294435,
       "tag": "0003_user_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789440338279,
+      "tag": "0004_match_history_cache",
+      "breakpoints": true
     }
   ]
 }

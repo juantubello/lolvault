@@ -1,0 +1,188 @@
+import Database from 'better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { MATCHES_REFRESH_MS, MATCHES_RETRY_AFTER_ERROR_MS } from '@/config';
+import { applyPragmas, createDb, type Db } from '@/db/client';
+import { users } from '@/db/schema';
+import { loadMatchDetail, loadPlayerStats } from '@/features/matches/player-stats';
+import {
+  MatchProviderError,
+  type MatchDetail,
+  type MatchProvider,
+  type PlayerMatchSummary,
+  type SummonerProfile,
+} from '@/features/matches/types';
+
+const NOW = new Date('2026-09-15T12:00:00Z');
+const at = (ms: number) => new Date(NOW.getTime() + ms);
+
+function summary(matchId: string, puuid = 'puuid-a'): PlayerMatchSummary {
+  return {
+    matchId,
+    playedAt: new Date('2026-09-14T21:00:00Z'),
+    queue: 'FLEXRANKED',
+    durationSeconds: 1800,
+    puuid,
+    championId: 90,
+    championName: 'Malzahar',
+    position: 'MID',
+    teamKey: 'BLUE',
+    kills: 7,
+    deaths: 6,
+    assists: 5,
+    championLevel: 17,
+    cs: 267,
+    damageDealt: 24108,
+    damageTaken: 19354,
+    teamKills: 26,
+    win: true,
+    result: 'WIN',
+    opScore: 3.81,
+    opScoreRank: 9,
+  };
+}
+
+const profile: SummonerProfile = {
+  puuid: 'puuid-a',
+  gameName: 'Invocador',
+  tagLine: 'LAS1',
+  level: 150,
+  profileImageUrl: null,
+  ranks: [{ queue: 'FLEXRANKED', tier: 'PLATINUM', division: 4, lp: 93, wins: 55, losses: 52, tierImageUrl: null }],
+  seasonChampions: [],
+};
+
+const detail: MatchDetail = {
+  matchId: 'm1',
+  playedAt: '2026-09-14T21:51:50.000Z',
+  queue: 'FLEXRANKED',
+  durationSeconds: 2220,
+  teams: [],
+};
+
+function fakeProvider(): MatchProvider & {
+  listMatches: ReturnType<typeof vi.fn>;
+  getProfile: ReturnType<typeof vi.fn>;
+  getMatchDetail: ReturnType<typeof vi.fn>;
+} {
+  return {
+    name: 'fake',
+    listMatches: vi.fn(async () => [summary('m1'), summary('m2')]),
+    getProfile: vi.fn(async () => profile),
+    getMatchDetail: vi.fn(async () => detail),
+  };
+}
+
+let db: Db;
+let user: { id: number; riotGameName: string | null; riotTagLine: string | null };
+
+beforeEach(() => {
+  const sqlite = new Database(':memory:');
+  applyPragmas(sqlite);
+  db = createDb(sqlite);
+  migrate(db, { migrationsFolder: 'src/db/migrations' });
+  const row = db
+    .insert(users)
+    .values({
+      externalIdentity: 'test:a',
+      email: 'a@example.com',
+      displayName: 'Invocador',
+      riotGameName: 'Invocador',
+      riotTagLine: 'LAS1',
+      createdAt: NOW,
+    })
+    .returning()
+    .get();
+  user = { id: row.id, riotGameName: row.riotGameName, riotTagLine: row.riotTagLine };
+});
+
+describe('loadPlayerStats', () => {
+  it('sin Riot ID no consulta la fuente', async () => {
+    const provider = fakeProvider();
+    const state = await loadPlayerStats(db, provider, { ...user, riotGameName: null }, NOW);
+    expect(state).toEqual({ status: 'no-riot-id' });
+    expect(provider.listMatches).not.toHaveBeenCalled();
+  });
+
+  it('la primera vez consulta y guarda partidas y perfil', async () => {
+    const provider = fakeProvider();
+    const state = await loadPlayerStats(db, provider, user, NOW);
+
+    expect(state.status).toBe('ok');
+    if (state.status !== 'ok') return;
+    expect(state.matches.map((m) => m.matchId).sort()).toEqual(['m1', 'm2']);
+    expect(state.profile?.ranks[0]?.tier).toBe('PLATINUM');
+    expect(state.syncedAt).toEqual(NOW);
+    expect(state.error).toBeNull();
+  });
+
+  it('dentro de la ventana de refresco usa el caché sin volver a pedir', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+    await loadPlayerStats(db, provider, user, at(MATCHES_REFRESH_MS - 1));
+    expect(provider.listMatches).toHaveBeenCalledTimes(1);
+
+    await loadPlayerStats(db, provider, user, at(MATCHES_REFRESH_MS));
+    expect(provider.listMatches).toHaveBeenCalledTimes(2);
+  });
+
+  it('si la fuente cae, muestra lo guardado con aviso y espera antes de reintentar', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+
+    provider.listMatches.mockRejectedValue(new MatchProviderError('503', 'unavailable'));
+    provider.getProfile.mockRejectedValue(new MatchProviderError('503', 'unavailable'));
+    const failedAt = at(MATCHES_REFRESH_MS);
+    const state = await loadPlayerStats(db, provider, user, failedAt);
+
+    expect(state.status === 'ok' && state.matches).toHaveLength(2);
+    expect(state.status === 'ok' && state.error).toMatch(/no respondió/);
+    expect(state.status === 'ok' && state.syncedAt).toEqual(NOW);
+
+    await loadPlayerStats(db, provider, user, new Date(failedAt.getTime() + MATCHES_RETRY_AFTER_ERROR_MS - 1));
+    expect(provider.listMatches).toHaveBeenCalledTimes(2);
+  });
+
+  it('marca Riot ID no encontrado', async () => {
+    const provider = fakeProvider();
+    provider.listMatches.mockRejectedValue(new MatchProviderError('Summoner not found', 'not-found'));
+    provider.getProfile.mockRejectedValue(new MatchProviderError('Summoner not found', 'not-found'));
+
+    const state = await loadPlayerStats(db, provider, user, NOW);
+    expect(state.status === 'ok' && state.notFound).toBe(true);
+    expect(state.status === 'ok' && state.matches).toEqual([]);
+  });
+
+  it('si cambia el Riot ID vuelve a consultar y no mezcla partidas de otra cuenta', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+
+    provider.listMatches.mockResolvedValue([summary('m9', 'puuid-b')]);
+    provider.getProfile.mockResolvedValue({ ...profile, puuid: 'puuid-b' });
+    const state = await loadPlayerStats(db, provider, { ...user, riotGameName: 'OtraCuenta' }, at(60_000));
+
+    expect(provider.listMatches).toHaveBeenCalledTimes(2);
+    expect(state.status === 'ok' && state.matches.map((m) => m.matchId)).toEqual(['m9']);
+  });
+});
+
+describe('loadMatchDetail', () => {
+  it('guarda el detalle y no lo vuelve a pedir', async () => {
+    const provider = fakeProvider();
+    const match = { matchId: 'm1', playedAt: new Date('2026-09-14T21:51:50Z') };
+    const focus = { gameName: 'Invocador', tagLine: 'LAS1' };
+
+    expect(await loadMatchDetail(db, provider, match, focus, NOW)).toEqual(detail);
+    expect(await loadMatchDetail(db, provider, match, focus, NOW)).toEqual(detail);
+    expect(provider.getMatchDetail).toHaveBeenCalledTimes(1);
+  });
+
+  it('devuelve null si la fuente no responde y no hay caché', async () => {
+    const provider = fakeProvider();
+    provider.getMatchDetail.mockRejectedValue(new MatchProviderError('timeout', 'unavailable'));
+    expect(
+      await loadMatchDetail(db, provider, { matchId: 'x', playedAt: NOW }, { gameName: 'a', tagLine: 'b' }, NOW),
+    ).toBeNull();
+  });
+});

@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: Fases 1–3 + foto de perfil implementadas y verificadas
+## Estado: votaciones, vaults, perfiles con foto e historial de partidas (OP.GG) verificados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -75,13 +75,27 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
 - 2026-09-14 — **"Por expirar" en Vaults.** Nueva opción del control segmentado: vigentes cuyo
   último día es hoy o mañana (fecha argentina, `VAULT_EXPIRING_DAYS = 2`), ordenados por el que
   termina primero. Las tarjetas dicen "termina hoy / mañana" en naranja. 86 tests.
+- 2026-09-15 — **Historial de partidas vía OP.GG (sin key) con caché.** `MatchProvider` en
+  `features/matches/types.ts`; cliente MCP, parser del formato compacto y mapeo en
+  `features/matches/opgg/` (**Codex**, 18 tests con fixtures reales anonimizados). Caché en
+  `player_matches` / `match_details` / `player_stats_sync` (migration 0004): refresco cada 10 min,
+  5 min de espera tras error, y si OP.GG falla se muestra lo guardado con aviso.
+  - **Perfil y Amigos → detalle:** % de victorias (sin remakes), KDA, participación en kills, rango
+    por cola, top campeones recientes, roles, campeones de temporada y últimas 20 partidas.
+  - **Proponer vault:** al elegir jugador se listan sus últimas 10 partidas y se puede adjuntar la
+    decisiva (validada en el servidor contra SU historial). La foto (10 jugadores con KDA y daño
+    hecho/recibido) se guarda en `vault_proposals.match_snapshot` y se ve en la tarjeta.
+  - Verificado en vivo con la cuenta de Juan (LAS): stats y 20 partidas, Riot ID inexistente con
+    aviso, propuesta con partida adjunta y foto coincidente con OP.GG. 122 tests.
+  - Nota de pruebas: en el navegador automatizado los clics dentro del sheet (scroll anidado) caían
+    desfasados; con `click()` sobre el elemento funciona. No es un bug de la app.
 
 ### Siguiente
-1. Revisión de código (`code-reviewer`), sobre todo `src/auth/`, `features/vaults/` y la ruta de avatares.
+1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 2. Push notifications de votación pendiente (requiere HTTPS → después del deploy).
 3. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-4. Riot API: última partida por amigo (cuando llegue la Personal API Key).
-5. Pestaña Amigos (hoy placeholder): lista con foto, Riot ID y vaults de cada uno.
+4. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+5. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

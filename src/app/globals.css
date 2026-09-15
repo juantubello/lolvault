@@ -1533,3 +1533,480 @@ button {
   color: var(--label-2);
   font-weight: 400;
 }
+
+/* ---- Estadísticas e historial de partidas ---- */
+.stats-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.stats-header {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stats-header h2 {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+}
+
+.stats-source {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-banner,
+.stats-empty {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.stats-banner {
+  color: var(--warning);
+}
+
+.stats-empty {
+  color: var(--label-2);
+}
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.stat-tile {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+.stat-label,
+.stat-detail {
+  margin: 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 2.125rem;
+  letter-spacing: -0.01em;
+}
+
+.stat-value-rank {
+  font-size: 1.25rem;
+  line-height: 1.625rem;
+}
+
+.meter {
+  height: 0.375rem;
+  margin: 0.25rem 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tint) 18%, transparent);
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tint);
+}
+
+.stats-subtitle {
+  margin: 0.75rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+
+.stats-list {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  list-style: none;
+}
+
+.stats-list > li + li {
+  border-top: 0.5px solid var(--separator);
+}
+
+.champion-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: var(--bg-cell-2);
+  color: var(--label-2);
+  font-weight: 600;
+  object-fit: cover;
+}
+
+.champion-icon[data-size="md"] {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.champion-icon[data-size="sm"] {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.champion-stat,
+.match-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+}
+
+.champion-stat > div,
+.match-main {
+  min-width: 0;
+}
+
+.stat-row-title,
+.match-title {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat-row-meta,
+.match-meta {
+  display: block;
+  margin: 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.stat-row-numbers,
+.match-numbers {
+  text-align: right;
+}
+
+.stat-row-value,
+.match-kda {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.role-bars > li {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+}
+
+.role-bar {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+}
+
+.role-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: var(--tint);
+}
+
+.role-count {
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.match-row {
+  padding-left: 0.8125rem;
+  border-left: 3px solid var(--separator);
+}
+
+.match-row[data-result="win"] {
+  border-left-color: var(--tint);
+}
+
+.match-row[data-result="loss"] {
+  border-left-color: var(--danger);
+}
+
+[data-result="win"] .match-result {
+  color: var(--tint);
+}
+
+[data-result="loss"] .match-result {
+  color: var(--danger);
+}
+
+/* Foto de la partida */
+.match-snapshot {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.snapshot-team-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.snapshot-team-title[data-result="win"] {
+  color: var(--tint);
+}
+
+.snapshot-team-title[data-result="loss"] {
+  color: var(--danger);
+}
+
+.snapshot-scroll {
+  overflow-x: auto;
+}
+
+.snapshot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.snapshot-table th,
+.snapshot-table td {
+  padding: 0.375rem 0.375rem;
+  border-top: 0.5px solid var(--separator);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.snapshot-table thead th {
+  border-top: 0;
+  color: var(--label-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.snapshot-table tbody th {
+  font-weight: 400;
+}
+
+.snapshot-table tr[data-target="true"] {
+  background: color-mix(in srgb, var(--tint) 10%, transparent);
+}
+
+.snapshot-player {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.snapshot-player > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.snapshot-champion {
+  font-weight: 600;
+}
+
+.snapshot-name {
+  max-width: 7.5rem;
+  overflow: hidden;
+  color: var(--label-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snapshot-number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.damage-bar {
+  display: block;
+  width: 4.5rem;
+  height: 0.25rem;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+}
+
+.damage-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--tint);
+}
+
+/* Amigos */
+.friend-row {
+  display: grid;
+  min-height: 4rem;
+  grid-template-columns: 3rem minmax(0, 1fr) auto 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  color: var(--label);
+  text-decoration: none;
+}
+
+.friend-row:active {
+  background: var(--fill-pressed);
+}
+
+.friend-text {
+  display: grid;
+  min-width: 0;
+}
+
+.friend-chevron {
+  color: var(--label-3);
+}
+
+@media (min-width: 48rem) {
+  .stat-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Selector de partida decisiva (sheet) y partida adjunta (tarjeta) */
+.legend-optional {
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.match-options {
+  display: grid;
+  max-height: 20rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 0.75rem;
+  background: var(--bg-cell-2);
+}
+
+.match-option {
+  position: relative;
+  display: grid;
+  min-height: 3.5rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.625rem;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.match-option + .match-option {
+  margin-top: 1px;
+}
+
+.match-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.match-option:has(input:checked) {
+  border-color: var(--tint);
+  background: var(--bg-cell);
+}
+
+.match-option:has(input:focus-visible) {
+  outline: 3px solid var(--tint);
+  outline-offset: -3px;
+}
+
+.match-option-none {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 2.75rem;
+  color: var(--label-2);
+}
+
+.match-option-text,
+.match-option .match-numbers {
+  display: grid;
+  min-width: 0;
+}
+
+.match-attachment {
+  border-radius: 0.625rem;
+  background: var(--bg-cell-2);
+}
+
+.match-attachment summary {
+  display: flex;
+  min-height: 2.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.match-attachment-label {
+  font-weight: 600;
+}
+
+.match-attachment-summary {
+  color: var(--label-2);
+  font-size: 0.875rem;
+}
+
+.match-attachment[open] > .match-snapshot {
+  padding: 0 0.75rem 0.75rem;
+}
+
+/* Filas de partidas: una línea por dato para que no salten a 375 px. */
+.match-main .match-meta,
+.match-option-text .match-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-numbers .match-meta,
+.match-numbers .match-kda {
+  white-space: nowrap;
+}

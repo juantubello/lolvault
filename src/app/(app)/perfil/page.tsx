@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
+import { Suspense } from 'react';
+
+import { PlayerStatsLoading, PlayerStatsSection } from '@/components/matches/player-stats-section';
 import { Screen } from '@/components/screen';
 import { UserAvatar } from '@/components/user-avatar';
 import { avatarUrl } from '@/features/profile/avatar-url';
@@ -57,6 +60,10 @@ export default async function ProfilePage() {
           </Link>
         </div>
       </section>
+
+      <Suspense fallback={<PlayerStatsLoading />}>
+        <PlayerStatsSection isSelf user={user} />
+      </Suspense>
     </Screen>
   );
 }

@@ -14,6 +14,7 @@ function values(overrides: Partial<ProposalValues> = {}): ProposalValues {
     startDate: '2026-09-14',
     endDate: '2026-09-20',
     reason: '0/11/2 y culpó al jungla',
+    matchId: '',
     ...overrides,
   };
 }

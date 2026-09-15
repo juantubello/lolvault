@@ -10,8 +10,8 @@ Las URLs de este documento están **verificadas con requests reales** ese día.
 | Lista de campeones, nombres, títulos | **Data Dragon** (oficial Riot) | No | ✅ Decidido |
 | Fotos (cuadrada, splash, loading) | **Data Dragon** | No | ✅ Decidido |
 | Assets extra (íconos por id numérico, ficha completa) | CommunityDragon (comunitario) | No | Complemento opcional |
-| Historial de partidas | **Riot API** (account-v1 + match-v5) | Sí, gratis | ✅ Decidido: key de dev ya, Personal Key a registrar |
-| Historial sin key | OP.GG MCP (oficial de OP.GG, para agentes de IA) | No | ⚠️ Solo experimento, no como base |
+| Historial de partidas | **OP.GG MCP** con caché en la base | No | ✅ **En uso** (2026-09-15) |
+| Historial con key oficial | **Riot API** (account-v1 + match-v5) | Sí, gratis | Futuro: cuando aprueben la Personal API Key |
 | OP.GG / U.GG como API REST | No existe API pública oficial; los "OP.GG API" de terceros son scrapers | — | ❌ Descartado (viola términos) |
 
 ## 1. Campeones e imágenes: Data Dragon
@@ -75,7 +75,27 @@ Flujo para cada amigo:
 - (Un blog de terceros dice que las Personal Keys vencen cada 24 h. La doc oficial de Riot dice
   que **no**. Gana la doc oficial.)
 
-## 4. OP.GG MCP (probado, no recomendado como base)
+## 4. OP.GG MCP — **adoptado (2026-09-15)** con caché propio
+
+**Decisión de Juan:** usar OP.GG para historial y estadísticas mientras no haya Personal API Key,
+con caché en la base para no depender de que OP.GG siga respondiendo. Verificado en vivo:
+
+- **LAS funciona** (`region: "LAS"`; `LA2` devuelve lo mismo). Respuesta en ~3–4 s.
+- **El texto no es JSON**: líneas `class Nombre: campo1,campo2,…` (orden de los valores, que no es
+  el orden en que se piden) y después `Nombre(v1, …)` con strings, números, `true/false`, `null`
+  y listas. Parser propio en `src/features/matches/opgg/compact-format.ts`.
+- **IDs de partida propios de OP.GG** (`P9o6vts4…=`), no `LA2_…`. Para el detalle hay que mandar
+  también `created_at`.
+- **Fechas en hora de Corea** (`+09:00`); se normalizan a UTC.
+- **Riot ID inexistente** → error JSON-RPC `{"code":-32600,"message":"Summoner not found"}`.
+- Trae `puuid`, daño hecho/recibido, CS, OP Score, kills del equipo, rango por cola y campeones de
+  temporada. Muestras reales anonimizadas en `tests/fixtures/opgg/`.
+- Python de python.org falló con `CERTIFICATE_VERIFY_FAILED`; Node `fetch` (lo que usa la app)
+  conecta bien. No desactivar la verificación TLS.
+
+Los riesgos de abajo siguen vigentes: por eso el caché y la interfaz para cambiar de fuente.
+
+### Riesgos (análisis original)
 
 Servidor MCP **oficial de OP.GG** (repo `opgginc/opgg-mcp`, licencia MIT).
 
@@ -83,15 +103,15 @@ Servidor MCP **oficial de OP.GG** (repo `opgginc/opgg-mcp`, licencia MIT).
 - **Verificado:** `initialize` responde 200 **sin auth**, 29 herramientas. La relevante es
   `lol_list_summoner_matches(game_name, tag_line, region, lang, limit, desired_output_fields)`.
   También están `lol_get_summoner_game_detail` y `lol_get_summoner_profile`.
-- `region` se describe como "Server region code" (ejemplos `KR`, `BR`, `EUNE`). **No probé** `LAS`.
+- `region` se describe como "Server region code" (ejemplos `KR`, `BR`, `EUNE`). `LAS` se probó después y funciona (ver arriba).
 
 Por qué no como base:
 - Está pensado para **agentes de IA**, no para apps. El README no documenta términos, rate
   limits ni garantías, y puede cambiar o cortarse sin aviso.
 - No reemplaza el registro en Riot, y los datos de fondo igual salen de la API de Riot.
 
-Uso razonable: **experimento mientras se aprueba la Personal Key**, detrás de la misma interfaz
-(`riot-client.ts`), para poder cambiar la fuente sin tocar la UI.
+Mitigación aplicada: la app usa la interfaz `MatchProvider` (`src/features/matches/`) y cachea todo
+en la base, así se puede cambiar a la API de Riot sin tocar la UI y un bloqueo no borra lo ya visto.
 
 ## Fuentes
 

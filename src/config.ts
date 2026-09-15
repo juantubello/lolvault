@@ -15,5 +15,14 @@ export const AVATAR_SIZE_PX = 256;
 /** Tope del archivo ya achicado (un JPEG de 256 px pesa ~30 KB). */
 export const AVATAR_MAX_BYTES = 512 * 1024;
 
+/** Historial de partidas vía OP.GG (sin key). Ver docs/APIS-LOL.md. */
+export const OPGG_REGION = 'LAS';
+/** Cada cuánto se puede volver a pedir el historial de un jugador. Mientras tanto, caché. */
+export const MATCHES_REFRESH_MS = 10 * 60 * 1000;
+/** Si la fuente falló, esperar esto antes de reintentar (no martillar a OP.GG si nos bloquea). */
+export const MATCHES_RETRY_AFTER_ERROR_MS = 5 * 60 * 1000;
+/** Partidas que se piden por jugador (OP.GG acepta 5–20). */
+export const MATCHES_LIMIT = 20;
+
 export const RIOT_PLATFORM = 'la2';
 export const RIOT_REGION = 'americas';

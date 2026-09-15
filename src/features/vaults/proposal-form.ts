@@ -9,6 +9,8 @@ export type ProposalValues = {
   startDate: string;
   endDate: string;
   reason: string;
+  /** Partida decisiva adjunta (opcional). Se valida en la acción contra el historial del jugador. */
+  matchId: string;
 };
 
 export type ProposalFieldErrors = Partial<Record<keyof ProposalValues, string>>;
@@ -49,6 +51,7 @@ export function readProposalValues(formData: FormData): ProposalValues {
     startDate: formString(formData, 'startDate'),
     endDate: formString(formData, 'endDate'),
     reason: formString(formData, 'reason'),
+    matchId: formString(formData, 'matchId'),
   };
 }
 
