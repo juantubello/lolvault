@@ -387,7 +387,7 @@ export function countPendingVotes(db: Db, viewerUserId: number, now: Date): numb
 export type VaultCard = {
   id: number;
   status: VaultStatus;
-  target: { id: number; name: string };
+  target: { id: number; name: string; avatarUrl: string | null };
   champion: { id: string; name: string; imageUrl: string };
   startsAt: Date;
   endsAt: Date;
@@ -404,6 +404,7 @@ export function listVaults(db: Db, now: Date): { inForce: VaultCard[]; past: Vau
     .select({
       vault: vaultProposals,
       targetName: target.displayName,
+      targetAvatarUpdatedAt: target.avatarUpdatedAt,
       championName: champions.name,
       championImage: champions.imageFile,
       championVersion: champions.version,
@@ -428,7 +429,11 @@ export function listVaults(db: Db, now: Date): { inForce: VaultCard[]; past: Vau
     return {
       id: vault.id,
       status: vaultStatus(vault, now),
-      target: { id: vault.targetUserId, name: row.targetName ?? 'Sin nombre' },
+      target: {
+        id: vault.targetUserId,
+        name: row.targetName ?? 'Sin nombre',
+        avatarUrl: avatarUrl({ id: vault.targetUserId, avatarUpdatedAt: row.targetAvatarUpdatedAt }),
+      },
       champion: {
         id: vault.championId,
         name: row.championName,
@@ -444,15 +449,13 @@ export function listVaults(db: Db, now: Date): { inForce: VaultCard[]; past: Vau
     };
   });
 
-  const recentSince = addDays(now, -RECENT_DAYS);
-
+  // Historial completo: con ~6 amigos son pocas filas y los filtros de la pestaña lo acotan.
   return {
     inForce: cards
       .filter((card) => isVaultInForce(card.status))
       .sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime()),
     past: cards
-      .filter((card) => !isVaultInForce(card.status) && (card.liftedAt ?? card.endsAt) >= recentSince)
-      .sort((a, b) => (b.liftedAt ?? b.endsAt).getTime() - (a.liftedAt ?? a.endsAt).getTime())
-      .slice(0, 10),
+      .filter((card) => !isVaultInForce(card.status))
+      .sort((a, b) => (b.liftedAt ?? b.endsAt).getTime() - (a.liftedAt ?? a.endsAt).getTime()),
   };
 }

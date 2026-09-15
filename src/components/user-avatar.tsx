@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-const SIZES = { sm: 28, md: 60, lg: 96 } as const;
+const SIZES = { sm: 28, nav: 48, md: 60, lg: 96 } as const;
 
 /** Foto de perfil o, si no hay, la inicial. Decorativa: el nombre siempre está al lado. */
 export function UserAvatar({

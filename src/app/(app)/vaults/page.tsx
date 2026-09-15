@@ -1,114 +1,185 @@
-import { LockKeyhole } from 'lucide-react';
-import Image from 'next/image';
+import { LockKeyhole, Search, SearchX, Users } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
-import { ConfirmActionButton } from '@/components/vaults/confirm-action-button';
+import { UserAvatar } from '@/components/user-avatar';
+import { VaultCardView } from '@/components/vaults/vault-card';
 import { getDb } from '@/db/client';
-import { addDays, formatShortDate } from '@/features/vaults/vault-dates';
-import type { VaultStatus } from '@/features/vaults/vault-rules';
-import { requestLiftAction } from '@/features/vaults/vaults.actions';
-import { listVaults, type VaultCard } from '@/features/vaults/vaults.queries';
+import {
+  countByPlayer,
+  filterVaults,
+  groupByPlayer,
+  hasActiveFilters,
+  parseVaultFilters,
+  STATUS_FILTERS,
+  vaultsHref,
+} from '@/features/vaults/vault-filters';
+import { listMembers, listVaults, type VaultCard } from '@/features/vaults/vaults.queries';
 
 export const dynamic = 'force-dynamic';
 
-function statusLabel(card: VaultCard): string {
-  const lastDay = formatShortDate(addDays(card.endsAt, -1));
-  const labels: Partial<Record<VaultStatus, string>> = {
-    scheduled: `Empieza ${formatShortDate(card.startsAt)} · hasta ${lastDay}`,
-    active: `Vaulteado · hasta ${lastDay}`,
-    served: `Cumplido · terminó ${lastDay}`,
-    lifted: `Levantado${card.liftedAt ? ` · ${formatShortDate(card.liftedAt)}` : ''}`,
-  };
-  return labels[card.status] ?? '';
-}
-
-function VaultCardView({ card }: { card: VaultCard }) {
-  const inForce = card.status === 'scheduled' || card.status === 'active';
-
+function CardList({ cards }: { cards: VaultCard[] }) {
   return (
-    <article aria-labelledby={`vault-${card.id}`} className="proposal-card">
-      <div className="proposal-head proposal-head-compact">
-        <Image
-          alt=""
-          className="champion-avatar"
-          height={44}
-          src={card.champion.imageUrl}
-          unoptimized
-          width={44}
-        />
-        <div className="proposal-text">
-          <h3 className="proposal-title" id={`vault-${card.id}`}>
-            {card.target.name} — {card.champion.name}
-          </h3>
-          <p className="status-badge" data-tone={inForce ? 'vault' : 'neutral'}>
-            {inForce ? <LockKeyhole aria-hidden="true" size={12} strokeWidth={2.5} /> : null}
-            {statusLabel(card)}
-          </p>
-        </div>
-      </div>
-
-      {card.reason ? <p className="proposal-reason">“{card.reason}”</p> : null}
-
-      {inForce ? (
-        card.liftVoteOpen ? (
-          <p className="vote-note">
-            Hay una votación abierta para levantarlo. <Link href="/">Ir a votar</Link>
-          </p>
-        ) : (
-          <ConfirmActionButton
-            action={requestLiftAction}
-            confirmMessage="¿Pedir una votación para levantar este vault? Necesita 3 votos a favor."
-            fields={{ vaultId: card.id }}
-            label="Pedir que se levante"
-            pendingLabel="Pidiendo…"
-          />
-        )
-      ) : null}
-    </article>
+    <div className="proposal-list">
+      {cards.map((card) => (
+        <VaultCardView card={card} key={card.id} />
+      ))}
+    </div>
   );
 }
 
-export default async function VaultsPage() {
+export default async function VaultsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user?.displayName) redirect('/onboarding');
 
-  const { inForce, past } = listVaults(getDb(), new Date());
+  const db = getDb();
+  const members = listMembers(db);
+  const vaults = listVaults(db, new Date());
+  const filters = parseVaultFilters(await searchParams, new Set(members.map((member) => member.id)));
 
-  return (
-    <Screen title="Vaults">
-      {inForce.length + past.length === 0 ? (
+  const cards = filterVaults(vaults, filters);
+  const inForceByPlayer = countByPlayer(vaults.inForce);
+  const selectedPlayer = members.find((member) => member.id === filters.playerId) ?? null;
+  const statusLabel = STATUS_FILTERS.find((option) => option.value === filters.status)?.label ?? '';
+
+  if (vaults.inForce.length + vaults.past.length === 0) {
+    return (
+      <Screen title="Vaults">
         <EmptyState
           description="Cuando una votación llegue a 3 votos a favor, el vault aparece acá."
           icon={LockKeyhole}
           title="Todos pueden jugar lo que quieran. Por ahora."
         />
-      ) : null}
+      </Screen>
+    );
+  }
 
-      {inForce.length > 0 ? (
-        <section aria-labelledby="in-force-heading" className="grouped-section">
-          <h2 id="in-force-heading">Vigentes</h2>
-          <div className="proposal-list">
-            {inForce.map((card) => (
-              <VaultCardView card={card} key={card.id} />
-            ))}
-          </div>
-        </section>
-      ) : null}
+  return (
+    <Screen title="Vaults">
+      <div className="vault-filters">
+        <nav aria-label="Filtrar por jugador" className="player-filter">
+          <Link
+            aria-current={filters.playerId === null ? 'true' : undefined}
+            className="player-filter-item"
+            href={vaultsHref({ ...filters, playerId: null })}
+          >
+            <span className="player-filter-avatar player-filter-all">
+              <Users aria-hidden="true" size={22} strokeWidth={2} />
+            </span>
+            <span className="player-filter-name">Todos</span>
+          </Link>
 
-      {past.length > 0 ? (
-        <section aria-labelledby="past-heading" className="grouped-section">
-          <h2 id="past-heading">Terminados</h2>
-          <div className="proposal-list">
-            {past.map((card) => (
-              <VaultCardView card={card} key={card.id} />
-            ))}
-          </div>
+          {members.map((member) => {
+            const count = inForceByPlayer.get(member.id) ?? 0;
+            return (
+              <Link
+                aria-current={filters.playerId === member.id ? 'true' : undefined}
+                className="player-filter-item"
+                href={vaultsHref({ ...filters, playerId: member.id })}
+                key={member.id}
+              >
+                <span className="player-filter-avatar">
+                  <UserAvatar name={member.displayName} size="nav" src={member.avatarUrl} />
+                  {count ? (
+                    <span aria-hidden="true" className="player-filter-count">
+                      {count}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="player-filter-name">
+                  {member.id === user.id ? 'Vos' : member.displayName}
+                </span>
+                <span className="sr-only">
+                  , {count} {count === 1 ? 'vault vigente' : 'vaults vigentes'}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <nav aria-label="Estado del vault" className="segmented">
+          {STATUS_FILTERS.map((option) => (
+            <Link
+              aria-current={filters.status === option.value ? 'true' : undefined}
+              className="segmented-item"
+              href={vaultsHref({ ...filters, status: option.value })}
+              key={option.value}
+            >
+              {option.label}
+              <span className="segmented-count">
+                {filterVaults(vaults, { ...filters, status: option.value }).length}
+              </span>
+            </Link>
+          ))}
+        </nav>
+
+        <form action="/vaults" className="vault-search" key={vaultsHref(filters)} role="search">
+          {filters.playerId !== null ? <input name="jugador" type="hidden" value={filters.playerId} /> : null}
+          {filters.status !== 'vigentes' ? <input name="estado" type="hidden" value={filters.status} /> : null}
+          <Search aria-hidden="true" size={18} strokeWidth={2} />
+          <input
+            aria-label="Buscar campeón"
+            autoComplete="off"
+            defaultValue={filters.query}
+            enterKeyHint="search"
+            name="q"
+            placeholder="Buscar campeón"
+            type="search"
+          />
+          <button className="sr-only" type="submit">
+            Buscar
+          </button>
+        </form>
+
+        {hasActiveFilters(filters) ? (
+          <Link className="clear-filters" href="/vaults">
+            Limpiar filtros
+          </Link>
+        ) : null}
+      </div>
+
+      {cards.length === 0 ? (
+        <EmptyState
+          description={
+            selectedPlayer
+              ? `${selectedPlayer.id === user.id ? 'No tenés' : `${selectedPlayer.displayName} no tiene`} vaults en “${statusLabel}”${filters.query ? ` con “${filters.query}”` : ''}.`
+              : 'Probá con otro estado, jugador o campeón.'
+          }
+          icon={SearchX}
+          title="No hay vaults con estos filtros"
+        />
+      ) : selectedPlayer ? (
+        <section aria-labelledby="player-vaults-heading" className="grouped-section">
+          <h2 className="player-group-title" id="player-vaults-heading">
+            <UserAvatar name={selectedPlayer.displayName} size="sm" src={selectedPlayer.avatarUrl} />
+            {selectedPlayer.displayName}
+            <span className="player-group-count">
+              {cards.length} {cards.length === 1 ? 'vault' : 'vaults'}
+            </span>
+          </h2>
+          <CardList cards={cards} />
         </section>
-      ) : null}
+      ) : (
+        groupByPlayer(cards, members).map(({ member, cards: playerCards }) => (
+          <section aria-labelledby={`player-${member.id}-heading`} className="grouped-section" key={member.id}>
+            <h2 className="player-group-title" id={`player-${member.id}-heading`}>
+              <UserAvatar name={member.displayName} size="sm" src={member.avatarUrl} />
+              <Link href={vaultsHref({ ...filters, playerId: member.id })}>{member.displayName}</Link>
+              <span className="player-group-count">
+                {playerCards.length} {playerCards.length === 1 ? 'vault' : 'vaults'}
+              </span>
+            </h2>
+            <CardList cards={playerCards} />
+          </section>
+        ))
+      )}
     </Screen>
   );
 }

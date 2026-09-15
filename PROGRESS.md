@@ -67,6 +67,11 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   storage y acciones (73 en total). Verificado en navegador: subir, ver, quitar y 404 posteriores.
   Nota: al quitar, el navegador que ya la vio puede seguir teniendo la URL vieja en caché, pero la
   app deja de referenciarla y el servidor responde 404.
+- 2026-09-14 — **Filtros en Vaults.** Fila de jugadores con foto y conteo de vigentes, control
+  segmentado Vigentes / Terminados / Todos, búsqueda por campeón sin tildes, "Limpiar filtros".
+  Filtros en la URL (`/vaults?jugador=2&estado=todos&q=yas`). Con "Todos" se agrupa por jugador;
+  las tarjetas muestran la foto del jugador sobre la del campeón. Terminados ahora es historial
+  completo. Lógica pura en `features/vaults/vault-filters.ts` (82 tests).
 
 ### Siguiente
 1. Revisión de código (`code-reviewer`), sobre todo `src/auth/`, `features/vaults/` y la ruta de avatares.

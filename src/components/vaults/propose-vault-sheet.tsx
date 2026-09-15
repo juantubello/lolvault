@@ -6,20 +6,12 @@ import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 
 import { VAULT_REASON_MAX_LENGTH } from '@/config';
 import type { ChampionOption } from '@/features/champions/champions.queries';
+import { searchKey } from '@/features/champions/search-key';
 import type { ProposalFormState } from '@/features/vaults/proposal-form';
 import { createProposalAction } from '@/features/vaults/vaults.actions';
 import type { Member } from '@/features/vaults/vaults.queries';
 
 import { UserAvatar } from '../user-avatar';
-
-/** "Kai'Sa" → "kaisa", "Nunu y Willump" → "nunuywillump": buscar sin tildes ni símbolos. */
-function searchKey(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]/gi, '')
-    .toLowerCase();
-}
 
 const initialState: ProposalFormState = {};
 
