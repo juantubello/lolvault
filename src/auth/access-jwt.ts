@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
+import { createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from 'jose';
 
 import type { Identity } from './identity';
 
@@ -45,9 +45,11 @@ function emailFrom(payload: JWTPayload): string | null {
 export async function verifyAccessJwt(
   token: string,
   config: AccessJwtConfig,
+  // Inyectable para tests con un JWKS local; en producción, el JWKS remoto del team.
+  keys: JWTVerifyGetKey = getJwks(config.teamDomain),
 ): Promise<Identity | null> {
   try {
-    const { payload } = await jwtVerify(token, getJwks(config.teamDomain), {
+    const { payload } = await jwtVerify(token, keys, {
       issuer: issuerFor(config.teamDomain),
       audience: config.audience,
     });
