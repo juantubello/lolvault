@@ -49,6 +49,9 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   renderiza (tests). Fixes encontrados al probarlo: el panel se salía de la pantalla en 375px, y
   el layout quedaba con el nombre viejo tras guardar el perfil (ahora `revalidatePath('/', 'layout')`).
   22 tests. Uso en `CLAUDE.md` → Modo dev.
+- 2026-09-14 — Investigación de APIs en `docs/APIS-LOL.md`: Data Dragon para campeones e imágenes
+  (sin key, URLs verificadas), Riot API para historial (key de dev ya, Personal Key a registrar),
+  OP.GG MCP probado sin auth pero solo como experimento.
 
 ### Siguiente
 1. Juan responde las preguntas abiertas restantes (§11 del plan).
@@ -58,4 +61,5 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).
-- Registrar la Personal API Key en developer.riotgames.com (solo para la fase SHOULD).
+- **Registrar ya** la Personal API Key en developer.riotgames.com: la aprobación puede tardar
+  semanas. Mientras tanto se prototipa con la key de desarrollo, que vence cada 24 h.

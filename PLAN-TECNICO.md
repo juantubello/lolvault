@@ -48,6 +48,10 @@ cachea solo el shell y los assets estáticos, y **nunca** la respuesta de login 
   vez por día (si cambió la versión). La app nunca depende de Data Dragon en cada request.
   Imágenes con `next/image` y `remotePatterns` limitado a `ddragon.leagueoflegends.com`.
 
+> Investigación completa de fuentes (URLs verificadas, keys, alternativas):
+> [`docs/APIS-LOL.md`](./docs/APIS-LOL.md). **OP.GG MCP** funciona sin key, pero queda solo
+> como experimento: está pensado para agentes de IA y no documenta términos ni límites.
+
 ### 2.2 Última partida de cada uno: Riot API (fase SHOULD)
 
 - Flujo: Riot ID (`gameName#tagLine`) → **account-v1** → `puuid` → **match-v5**
