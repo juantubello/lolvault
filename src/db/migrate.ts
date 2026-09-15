@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 
+import { backfillMatchParticipants } from '../features/matches/match-participants';
 import { createDb, databasePath, openDatabase } from './client';
 
 const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), 'migrations');
@@ -10,7 +11,9 @@ const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), 'migratio
 export function runMigrations(path = databasePath()): void {
   const sqlite = openDatabase(path);
   try {
-    migrate(createDb(sqlite), { migrationsFolder });
+    const db = createDb(sqlite);
+    migrate(db, { migrationsFolder });
+    backfillMatchParticipants(db);
   } finally {
     sqlite.close();
   }

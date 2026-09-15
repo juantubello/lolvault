@@ -4,8 +4,14 @@
  * muestra lo guardado. Nunca tira errores de la fuente hacia la UI: los devuelve como estado.
  */
 import { and, desc, eq } from 'drizzle-orm';
+import { after } from 'next/server';
 
-import { MATCHES_LIMIT, MATCHES_REFRESH_MS, MATCHES_RETRY_AFTER_ERROR_MS } from '@/config';
+import {
+  MATCH_DETAILS_PER_SYNC,
+  MATCHES_LIMIT,
+  MATCHES_REFRESH_MS,
+  MATCHES_RETRY_AFTER_ERROR_MS,
+} from '@/config';
 import type { Db } from '@/db/client';
 import { matchDetails, playerMatches, playerStatsSync } from '@/db/schema';
 
@@ -17,6 +23,7 @@ import {
   type RiotId,
   type SummonerProfile,
 } from './types';
+import { indexMatchParticipants } from './match-participants';
 
 export type PlayerStats =
   | { status: 'no-riot-id' }
@@ -32,7 +39,8 @@ export type PlayerStats =
       notFound: boolean;
     };
 
-type StatsUser = { id: number; riotGameName: string | null; riotTagLine: string | null };
+export type StatsUser = { id: number; riotGameName: string | null; riotTagLine: string | null };
+export type AfterScheduler = (task: () => void | Promise<void>) => void;
 
 const ERROR_MESSAGES: Record<MatchProviderError['kind'], string> = {
   'not-found': 'OP.GG no encuentra ese Riot ID. Revisá que esté bien escrito en el perfil.',
@@ -127,6 +135,48 @@ async function sync(db: Db, provider: MatchProvider, userId: number, riotId: Rio
       console.error('[matches] Error inesperado de la fuente:', result.reason);
     }
   }
+
+  return matchesResult.status === 'fulfilled';
+}
+
+/**
+ * Completa snapshots faltantes en orden reciente, de a uno. Es independiente de Next para que
+ * tests y scripts puedan invocarla directamente.
+ */
+export async function hydrateMissingMatchDetails(
+  db: Db,
+  provider: MatchProvider,
+  user: StatsUser,
+  now: Date,
+): Promise<number> {
+  if (!user.riotGameName || !user.riotTagLine) return 0;
+
+  const cachedIds = new Set(
+    db
+      .select({ matchId: matchDetails.matchId })
+      .from(matchDetails)
+      .where(eq(matchDetails.provider, provider.name))
+      .all()
+      .map((row) => row.matchId),
+  );
+  const missing = db
+    .select({ matchId: playerMatches.matchId, playedAt: playerMatches.playedAt })
+    .from(playerMatches)
+    .where(and(eq(playerMatches.userId, user.id), eq(playerMatches.provider, provider.name)))
+    .orderBy(desc(playerMatches.playedAt))
+    .all()
+    .filter((match) => !cachedIds.has(match.matchId))
+    .slice(0, MATCH_DETAILS_PER_SYNC);
+
+  let hydrated = 0;
+  const focus = { gameName: user.riotGameName, tagLine: user.riotTagLine };
+  for (const match of missing) {
+    const detail = await loadMatchDetail(db, provider, match, focus, now);
+    // Si la fuente cayó, no insistir con cuatro pedidos más en el mismo background task.
+    if (!detail) break;
+    hydrated += 1;
+  }
+  return hydrated;
 }
 
 export async function loadPlayerStats(
@@ -134,12 +184,33 @@ export async function loadPlayerStats(
   provider: MatchProvider,
   user: StatsUser,
   now: Date,
+  scheduleAfter: AfterScheduler = after,
 ): Promise<PlayerStats> {
   if (!user.riotGameName || !user.riotTagLine) return { status: 'no-riot-id' };
   const riotId = { gameName: user.riotGameName, tagLine: user.riotTagLine };
 
   const current = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
-  if (shouldSync(current, riotId, now)) await sync(db, provider, user.id, riotId, now);
+  let historySynced = false;
+  if (shouldSync(current, riotId, now)) {
+    historySynced = await sync(db, provider, user.id, riotId, now);
+  }
+
+  if (historySynced) {
+    try {
+      scheduleAfter(async () => {
+        try {
+          await hydrateMissingMatchDetails(db, provider, user, now);
+        } catch (error) {
+          // La hidratación es best-effort y nunca rompe la pantalla ni el sync ya persistido.
+          if (!(error instanceof MatchProviderError)) {
+            console.error('[matches] Error inesperado hidratando detalles:', error);
+          }
+        }
+      });
+    } catch {
+      // `after()` exige un request de Next; tests/scripts pueden inyectar su propio scheduler.
+    }
+  }
 
   const state = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
   const kind = state?.lastError as MatchProviderError['kind'] | null | undefined;
@@ -176,6 +247,7 @@ export async function loadMatchDetail(
       .values({ provider: provider.name, matchId: match.matchId, playedAt: match.playedAt, data: detail, fetchedAt: now })
       .onConflictDoNothing()
       .run();
+    indexMatchParticipants(db, provider.name, detail);
     return detail;
   } catch (error) {
     if (error instanceof MatchProviderError) return null;

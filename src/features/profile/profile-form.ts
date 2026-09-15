@@ -26,6 +26,18 @@ export const DISPLAY_NAME_MAX_LENGTH = 40;
 export const SESSION_ERROR_MESSAGE = 'No pudimos verificar tu sesión. Recargá e intentá de nuevo.';
 
 const RIOT_ID_PATTERN = /^([^#]{3,16})#([A-Za-z0-9]{3,5})$/;
+export const RIOT_ID_ERROR =
+  'Usá el formato gameName#tagLine (3–16 caracteres y tag de 3–5 letras o números).';
+
+export type ParsedRiotId = { gameName: string; tagLine: string };
+
+/** Parser único del Riot ID para perfil, black list y futuras entradas del servidor. */
+export function parseRiotId(value: string): ParsedRiotId | null {
+  const match = RIOT_ID_PATTERN.exec(value.trim());
+  const gameName = match?.[1]?.trim();
+  const tagLine = match?.[2];
+  return gameName && gameName.length >= 3 && tagLine ? { gameName, tagLine } : null;
+}
 
 function formString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -61,16 +73,12 @@ export function validateProfile(
   let riotTagLine: string | null = null;
 
   if (riotId) {
-    const match = RIOT_ID_PATTERN.exec(riotId);
-    const gameName = match?.[1]?.trim();
-    const tagLine = match?.[2];
-
-    if (!gameName || gameName.length < 3 || !tagLine) {
-      fieldErrors.riotId =
-        'Usá el formato gameName#tagLine (3–16 caracteres y tag de 3–5 letras o números).';
+    const parsed = parseRiotId(riotId);
+    if (!parsed) {
+      fieldErrors.riotId = RIOT_ID_ERROR;
     } else {
-      riotGameName = gameName;
-      riotTagLine = tagLine;
+      riotGameName = parsed.gameName;
+      riotTagLine = parsed.tagLine;
     }
   }
 

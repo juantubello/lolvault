@@ -5,6 +5,9 @@ export const VAULT_MAX_DAYS = 30;
 /** Hasta cuántos días en el futuro puede arrancar un vault propuesto. */
 export const VAULT_MAX_START_AHEAD_DAYS = 30;
 export const VAULT_REASON_MAX_LENGTH = 280;
+export const BLACKLIST_APPROVALS_REQUIRED = 2;
+export const BLACKLIST_NAME_MAX_LENGTH = 40;
+export const BLACKLIST_REASON_MAX_LENGTH = VAULT_REASON_MAX_LENGTH;
 /** "Por expirar": vigentes a los que les quedan como mucho estos días contando hoy (2 = hoy o mañana). */
 export const VAULT_EXPIRING_DAYS = 2;
 
@@ -23,6 +26,10 @@ export const MATCHES_REFRESH_MS = 10 * 60 * 1000;
 export const MATCHES_RETRY_AFTER_ERROR_MS = 5 * 60 * 1000;
 /** Partidas que se piden por jugador (OP.GG acepta 5–20). */
 export const MATCHES_LIMIT = 20;
+/** Detalles faltantes que se hidratan, de a uno, después de cada sync exitoso. */
+export const MATCH_DETAILS_PER_SYNC = 5;
+/** Máximo de jugadores conocidos que devuelve el autocompletado de black list. */
+export const BLACKLIST_SUGGESTIONS_LIMIT = 8;
 
 export const RIOT_PLATFORM = 'la2';
 export const RIOT_REGION = 'americas';

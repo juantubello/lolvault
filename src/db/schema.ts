@@ -98,6 +98,61 @@ export const vaultVotes = sqliteTable(
   ],
 );
 
+export const blacklistProposals = sqliteTable(
+  'blacklist_proposals',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    kind: text('kind', { enum: ['add', 'remove'] }).notNull(),
+    /** Solo en 'remove': la entrada aprobada que se quiere sacar. */
+    entryId: integer('entry_id').references((): AnySQLiteColumn => blacklistProposals.id),
+    playerName: text('player_name').notNull(),
+    riotGameName: text('riot_game_name'),
+    riotTagLine: text('riot_tag_line'),
+    dedupeKey: text('dedupe_key').notNull(),
+    proposerUserId: integer('proposer_user_id')
+      .notNull()
+      .references(() => users.id),
+    reason: text('reason'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    closesAt: integer('closes_at', { mode: 'timestamp_ms' }).notNull(),
+    approvedAt: integer('approved_at', { mode: 'timestamp_ms' }),
+    rejectedAt: integer('rejected_at', { mode: 'timestamp_ms' }),
+    cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
+    /** Solo en 'add': cuándo una propuesta 'remove' aprobada sacó la entrada. */
+    removedAt: integer('removed_at', { mode: 'timestamp_ms' }),
+    matchProvider: text('match_provider'),
+    matchId: text('match_id'),
+    matchSnapshot: text('match_snapshot', { mode: 'json' }).$type<MatchDetail>(),
+  },
+  (table) => [
+    check('blacklist_proposals_kind_check', sql`${table.kind} IN ('add', 'remove')`),
+    check(
+      'blacklist_proposals_shape_check',
+      sql`(${table.kind} = 'add' AND ${table.entryId} IS NULL) OR (${table.kind} = 'remove' AND ${table.entryId} IS NOT NULL AND ${table.removedAt} IS NULL)`,
+    ),
+    index('blacklist_proposals_dedupe_idx').on(table.dedupeKey),
+    index('blacklist_proposals_entry_idx').on(table.entryId),
+  ],
+);
+
+export const blacklistVotes = sqliteTable(
+  'blacklist_votes',
+  {
+    proposalId: integer('proposal_id')
+      .notNull()
+      .references(() => blacklistProposals.id, { onDelete: 'cascade' }),
+    voterUserId: integer('voter_user_id')
+      .notNull()
+      .references(() => users.id),
+    value: text('value', { enum: ['yes', 'no'] }).notNull(),
+    votedAt: integer('voted_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.proposalId, table.voterUserId] }),
+    check('blacklist_votes_value_check', sql`${table.value} IN ('yes', 'no')`),
+  ],
+);
+
 /** Historial por jugador, cacheado desde la fuente (OP.GG). Una partida jugada no cambia. */
 export const playerMatches = sqliteTable(
   'player_matches',
@@ -149,6 +204,28 @@ export const matchDetails = sqliteTable(
   (table) => [primaryKey({ columns: [table.provider, table.matchId] })],
 );
 
+/** Índice consultable de los jugadores que aparecieron en detalles ya cacheados. */
+export const matchParticipants = sqliteTable(
+  'match_participants',
+  {
+    provider: text('provider').notNull(),
+    matchId: text('match_id').notNull(),
+    puuid: text('puuid').notNull(),
+    gameName: text('game_name').notNull(),
+    tagLine: text('tag_line').notNull(),
+    searchName: text('search_name').notNull(),
+    championId: integer('champion_id'),
+    championName: text('champion_name'),
+    teamKey: text('team_key'),
+    playedAt: integer('played_at', { mode: 'timestamp_ms' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.provider, table.matchId, table.puuid] }),
+    index('match_participants_search_name_idx').on(table.searchName),
+    index('match_participants_riot_id_idx').on(table.gameName, table.tagLine),
+  ],
+);
+
 /**
  * Estado de sincronización por jugador: cuándo se refrescó, con qué Riot ID, el perfil cacheado
  * y el último error. Si la fuente falla o nos bloquea, la UI muestra lo que hay acá y en player_matches.
@@ -175,3 +252,5 @@ export type NewUser = typeof users.$inferInsert;
 export type Champion = typeof champions.$inferSelect;
 export type VaultProposal = typeof vaultProposals.$inferSelect;
 export type VaultVote = typeof vaultVotes.$inferSelect;
+export type BlacklistProposal = typeof blacklistProposals.$inferSelect;
+export type BlacklistVote = typeof blacklistVotes.$inferSelect;
