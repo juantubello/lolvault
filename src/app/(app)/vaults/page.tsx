@@ -21,11 +21,11 @@ import { listMembers, listVaults, type VaultCard } from '@/features/vaults/vault
 
 export const dynamic = 'force-dynamic';
 
-function CardList({ cards, now }: { cards: VaultCard[]; now: Date }) {
+function CardList({ cards, grouped = false, now }: { cards: VaultCard[]; grouped?: boolean; now: Date }) {
   return (
     <div className="proposal-list">
       {cards.map((card) => (
-        <VaultCardView card={card} key={card.id} now={now} />
+        <VaultCardView card={card} grouped={grouped} key={card.id} now={now} />
       ))}
     </div>
   );
@@ -87,7 +87,7 @@ export default async function VaultsPage({
                 key={member.id}
               >
                 <span className="player-filter-avatar">
-                  <UserAvatar name={member.displayName} size="nav" src={member.avatarUrl} />
+                  <UserAvatar id={member.id} name={member.displayName} size="nav" src={member.avatarUrl} />
                   {count ? (
                     <span aria-hidden="true" className="player-filter-count">
                       {count}
@@ -159,25 +159,25 @@ export default async function VaultsPage({
       ) : selectedPlayer ? (
         <section aria-labelledby="player-vaults-heading" className="grouped-section">
           <h2 className="player-group-title" id="player-vaults-heading">
-            <UserAvatar name={selectedPlayer.displayName} size="sm" src={selectedPlayer.avatarUrl} />
+            <UserAvatar id={selectedPlayer.id} name={selectedPlayer.displayName} size="sm" src={selectedPlayer.avatarUrl} />
             {selectedPlayer.displayName}
             <span className="player-group-count">
               {cards.length} {cards.length === 1 ? 'vault' : 'vaults'}
             </span>
           </h2>
-          <CardList cards={cards} now={now} />
+          <CardList cards={cards} grouped now={now} />
         </section>
       ) : (
         groupByPlayer(cards, members).map(({ member, cards: playerCards }) => (
           <section aria-labelledby={`player-${member.id}-heading`} className="grouped-section" key={member.id}>
             <h2 className="player-group-title" id={`player-${member.id}-heading`}>
-              <UserAvatar name={member.displayName} size="sm" src={member.avatarUrl} />
+              <UserAvatar id={member.id} name={member.displayName} size="sm" src={member.avatarUrl} />
               <Link href={vaultsHref({ ...filters, playerId: member.id })}>{member.displayName}</Link>
               <span className="player-group-count">
                 {playerCards.length} {playerCards.length === 1 ? 'vault' : 'vaults'}
               </span>
             </h2>
-            <CardList cards={playerCards} now={now} />
+            <CardList cards={playerCards} grouped now={now} />
           </section>
         ))
       )}

@@ -10,7 +10,7 @@ import type { VaultCard } from '@/features/vaults/vaults.queries';
 
 import { ConfirmActionButton } from './confirm-action-button';
 
-export function VaultCardView({ card, now }: { card: VaultCard; now: Date }) {
+export function VaultCardView({ card, grouped = false, now }: { card: VaultCard; grouped?: boolean; now: Date }) {
   const inForce = isVaultInForce(card.status);
   const tone = vaultTone(card, now);
   const titleId = `vault-${card.id}`;
@@ -18,8 +18,7 @@ export function VaultCardView({ card, now }: { card: VaultCard; now: Date }) {
   return (
     <article aria-labelledby={titleId} className="proposal-card">
       <div className="proposal-head proposal-head-compact">
-        {/* Foto del campeón con la del jugador que lo tiene vaulteado encima. */}
-        <span className="champion-with-player">
+        {grouped ? (
           <Image
             alt=""
             className="champion-avatar"
@@ -28,14 +27,25 @@ export function VaultCardView({ card, now }: { card: VaultCard; now: Date }) {
             unoptimized
             width={44}
           />
-          <span className="player-badge">
-            <UserAvatar name={card.target.name} size="sm" src={card.target.avatarUrl} />
+        ) : (
+          <span className="champion-with-player">
+            <Image
+              alt=""
+              className="champion-avatar"
+              height={44}
+              src={card.champion.imageUrl}
+              unoptimized
+              width={44}
+            />
+            <span className="player-badge">
+              <UserAvatar id={card.target.id} name={card.target.name} size="sm" src={card.target.avatarUrl} />
+            </span>
           </span>
-        </span>
+        )}
         <div className="proposal-text">
           <h3 className="proposal-title" id={titleId}>
             {card.champion.name}
-            <span className="proposal-title-player"> · {card.target.name}</span>
+            {grouped ? null : <span className="proposal-title-player"> · {card.target.name}</span>}
           </h3>
           <p className="status-badge" data-tone={tone}>
             {inForce ? <LockKeyhole aria-hidden="true" size={12} strokeWidth={2.5} /> : null}
@@ -48,8 +58,11 @@ export function VaultCardView({ card, now }: { card: VaultCard; now: Date }) {
 
       {inForce ? (
         card.liftVoteOpen ? (
-          <p className="vote-note">
-            Hay una votación abierta para levantarlo. <Link href="/">Ir a votar</Link>
+          <p className="vote-note vote-note-with-action">
+            <span>Hay una votación abierta para levantarlo.</span>
+            <Link className="inline-action-link" href="/">
+              Ir a votar
+            </Link>
           </p>
         ) : (
           <ConfirmActionButton

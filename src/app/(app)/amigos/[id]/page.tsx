@@ -25,7 +25,7 @@ export default async function FriendPage({ params }: { params: Promise<{ id: str
   return (
     <Screen back={{ href: '/amigos', label: 'Amigos' }} title={friend.displayName}>
       <section aria-label="Perfil" className="profile-hero">
-        <UserAvatar name={friend.displayName} size="md" src={friend.avatarUrl} />
+        <UserAvatar id={friend.id} name={friend.displayName} size="md" src={friend.avatarUrl} />
         <div>
           <h2>{friend.displayName}</h2>
           <p>

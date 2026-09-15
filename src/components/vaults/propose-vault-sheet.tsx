@@ -86,7 +86,9 @@ export function ProposeVaultSheet({
 
   const filtered = useMemo(() => {
     const key = searchKey(query);
-    return key ? champions.filter((champion) => searchKey(champion.name).includes(key)) : champions;
+    return key
+      ? champions.filter((champion) => searchKey(champion.name).includes(key))
+      : champions.slice(0, 24);
   }, [champions, query]);
 
   const selectedChampion = champions.find((champion) => champion.id === championId);
@@ -108,6 +110,7 @@ export function ProposeVaultSheet({
 
       <dialog aria-labelledby="propose-title" className="sheet" ref={dialogRef}>
         <form action={formAction} className="sheet-form" key={formKey} noValidate>
+          <span aria-hidden="true" className="sheet-grabber" />
           <header className="sheet-header">
             <button className="text-button" onClick={() => dialogRef.current?.close()} type="button">
               Cancelar
@@ -136,7 +139,7 @@ export function ProposeVaultSheet({
                       value={member.id}
                     />
                     <span>
-                      <UserAvatar name={member.displayName} size="sm" src={member.avatarUrl} />
+                      <UserAvatar id={member.id} name={member.displayName} size="sm" src={member.avatarUrl} />
                       {member.displayName}
                       {member.id === viewerId ? ' (vos)' : ''}
                     </span>
@@ -167,6 +170,26 @@ export function ProposeVaultSheet({
                     type="search"
                     value={query}
                   />
+                  {selectedChampion ? (
+                    <div className="selected-champion">
+                      <Image
+                        alt=""
+                        height={44}
+                        src={selectedChampion.imageUrl}
+                        unoptimized
+                        width={44}
+                      />
+                      <span>
+                        <small>Campeón elegido</small>
+                        <strong>{selectedChampion.name}</strong>
+                      </span>
+                    </div>
+                  ) : null}
+                  {!searchKey(query) ? (
+                    <p className="field-help champion-grid-help">
+                      Mostramos los primeros 24. Escribí para buscar entre todos.
+                    </p>
+                  ) : null}
                   <div aria-label="Campeones" className="champion-grid" role="group">
                     {filtered.map((champion) => (
                       <button

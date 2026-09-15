@@ -86,7 +86,7 @@ function ParticipantRow({
           <span> · nivel {participant.championLevel}</span>
         </p>
         <p className="match-player-riot-id">
-          {member ? <UserAvatar name={member.displayName} size="sm" src={member.avatarUrl} /> : null}
+          {member ? <UserAvatar id={member.id} name={member.displayName} size="sm" src={member.avatarUrl} /> : null}
           <span>{participant.gameName}#{participant.tagLine}</span>
         </p>
       </div>

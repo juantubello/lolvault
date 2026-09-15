@@ -37,7 +37,7 @@ export default async function FriendsPage() {
           return (
             <li key={friend.id}>
               <Link className="friend-row" href={friend.id === user.id ? '/perfil' : `/amigos/${friend.id}`}>
-                <UserAvatar name={friend.displayName} size="nav" src={friend.avatarUrl} />
+                <UserAvatar id={friend.id} name={friend.displayName} size="nav" src={friend.avatarUrl} />
                 <span className="friend-text">
                   <span className="stat-row-title">
                     {friend.displayName}

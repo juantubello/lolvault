@@ -57,10 +57,7 @@ export function ProposalCardView({
             {isLift ? 'Levantar vault · ' : ''}
             {card.target.name} — {card.champion.name}
           </h3>
-          <p className="proposal-meta">
-            {dates ? `${dates} · ` : ''}
-            {isLift ? 'pidió' : 'propuso'} {card.proposer.name}
-          </p>
+          {dates ? <p className="proposal-meta">{dates}</p> : null}
         </div>
         {card.status === 'open' ? (
           <p className="vote-progress">
@@ -103,25 +100,27 @@ export function ProposalCardView({
 
       {card.status === 'open' ? (
         <>
-          <p className="time-left" data-urgent={card.closesAt.getTime() - now.getTime() < URGENT_MS}>
-            Cierra en {formatTimeLeft(card.closesAt, now)}
-            {card.no ? ` · ${card.no} en contra` : ''}
-          </p>
           {card.canVote ? (
             <VoteButtons myVote={card.myVote} proposalId={card.id} />
           ) : (
-            <p className="vote-note">Es para vos: no podés votarlo.</p>
+            <p className="vote-note vote-note-target">Es para vos: no podés votarlo.</p>
           )}
-          {card.canCancel ? (
-            <ConfirmActionButton
-              action={cancelProposalAction}
-              confirmMessage="¿Cancelar esta votación? No se puede deshacer."
-              fields={{ proposalId: card.id }}
-              label="Cancelar votación"
-              pendingLabel="Cancelando…"
-              tone="danger"
-            />
-          ) : null}
+          <footer className="proposal-card-footer">
+            <p className="time-left" data-urgent={card.closesAt.getTime() - now.getTime() < URGENT_MS}>
+              Cierra en {formatTimeLeft(card.closesAt, now)} · {isLift ? 'pidió' : 'propuso'}{' '}
+              {card.proposer.name}
+            </p>
+            {card.canCancel ? (
+              <ConfirmActionButton
+                action={cancelProposalAction}
+                confirmMessage="¿Cancelar esta votación? No se puede deshacer."
+                fields={{ proposalId: card.id }}
+                label="Cancelar votación"
+                pendingLabel="Cancelando…"
+                tone="danger"
+              />
+            ) : null}
+          </footer>
         </>
       ) : null}
     </article>
