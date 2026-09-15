@@ -209,6 +209,15 @@ blacklist_proposals                           -- votaciones: agregar ('add') o s
 
 blacklist_votes                               -- misma forma que vault_votes
 
+notification_preferences                      -- qué avisos push recibe cada usuario (sin fila = todo on)
+  user_id PK REFERENCES users(id) ON DELETE CASCADE
+  vaults / blacklist / custom  INTEGER bool NOT NULL DEFAULT 1 · updated_at
+
+custom_notifications                          -- "Aviso al grupo", uno por día calendario AR por usuario
+  id PK · sender_user_id REFERENCES users(id) ON DELETE CASCADE · message TEXT (≤140)
+  local_day TEXT 'YYYY-MM-DD' (hora AR) · sent_at · recipients INTEGER
+  UNIQUE (sender_user_id, local_day)          -- el límite lo hace cumplir la base
+
 match_participants                            -- índice de jugadores vistos en partidas cacheadas
   provider TEXT · match_id TEXT · puuid TEXT   -- PK (provider, match_id, puuid)
   game_name TEXT NOT NULL · tag_line TEXT NOT NULL · search_name TEXT NOT NULL (minúsculas sin tildes)
@@ -258,6 +267,11 @@ desde / hasta → motivo (obligatorio, 280) → confirmar. En desktop, modal cen
 con VAPID**, ya implementado. Cada suscripción pertenece al usuario autenticado; sin las tres
 variables VAPID la función queda deshabilitada sin afectar el resto de la app. En iOS requiere
 16.4+ y abrir la PWA instalada desde la pantalla de inicio.
+
+**Preferencias y aviso al grupo (Perfil → Notificaciones):** switches por usuario para Vaults, Black
+list y Avisos de amigos (todo encendido por defecto; cada evento push tiene categoría). Cada miembro
+puede mandar **un aviso por día calendario argentino** (140 caracteres) a los demás que tengan "Avisos
+de amigos" encendido; se habilita de nuevo a las 00:00 AR (`CUSTOM_NOTIFICATIONS_PER_DAY`).
 
 Design system: [`design-system/lolvault/MASTER.md`](./design-system/lolvault/MASTER.md).
 

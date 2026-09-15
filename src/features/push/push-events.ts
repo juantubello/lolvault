@@ -1,6 +1,10 @@
+import type { NotificationCategory } from './notification-preferences';
 import type { PushPayload } from './push-sender';
 
-export type PushDelivery = { userIds: number[]; payload: PushPayload };
+/** 'system' (p. ej. la prueba) no se filtra por preferencias. */
+export type PushDeliveryCategory = NotificationCategory | 'system';
+
+export type PushDelivery = { category: PushDeliveryCategory; userIds: number[]; payload: PushPayload };
 
 function recipients(memberIds: readonly number[], excluded: readonly number[]): number[] {
   const excludedSet = new Set(excluded);
@@ -21,6 +25,7 @@ export function vaultProposalCreatedEvent(input: {
   if (userIds.length === 0) return [];
   return [
     {
+      category: 'vaults',
       userIds,
       payload: {
         title: input.kind === 'vault' ? 'Nueva votación de vault' : 'Piden levantar un vault',
@@ -48,6 +53,7 @@ export function vaultApprovedEvent(input: {
   if (input.kind === 'lift') {
     return [
       {
+        category: 'vaults',
         userIds: [input.targetUserId],
         payload: {
           title: `Se levantó tu vault de ${input.championName}`,
@@ -61,6 +67,7 @@ export function vaultApprovedEvent(input: {
 
   const deliveries: PushDelivery[] = [
     {
+      category: 'vaults',
       userIds: [input.targetUserId],
       payload: {
         title: `Te vaultearon ${input.championName}`,
@@ -72,6 +79,7 @@ export function vaultApprovedEvent(input: {
   ];
   if (input.proposerUserId !== input.targetUserId) {
     deliveries.push({
+      category: 'vaults',
       userIds: [input.proposerUserId],
       payload: {
         title: 'Vault aprobado',
@@ -96,6 +104,7 @@ export function blacklistProposalCreatedEvent(input: {
   if (userIds.length === 0) return [];
   return [
     {
+      category: 'blacklist',
       userIds,
       payload: {
         title: 'Black list',
@@ -118,6 +127,7 @@ export function blacklistApprovedEvent(input: {
 }): PushDelivery[] {
   return [
     {
+      category: 'blacklist',
       userIds: [input.proposerUserId],
       payload: {
         title: input.kind === 'add' ? 'Black list aprobada' : 'Black list actualizada',
@@ -127,6 +137,29 @@ export function blacklistApprovedEvent(input: {
             : `${input.playerName} salió de la black list.`,
         url: '/black-list',
         tag: `blacklist-vote-${input.proposalId}`,
+      },
+    },
+  ];
+}
+
+export function customNotificationEvent(input: {
+  notificationId: number;
+  memberIds: readonly number[];
+  senderUserId: number;
+  senderName: string;
+  message: string;
+}): PushDelivery[] {
+  const userIds = recipients(input.memberIds, [input.senderUserId]);
+  if (userIds.length === 0) return [];
+  return [
+    {
+      category: 'custom',
+      userIds,
+      payload: {
+        title: `${input.senderName} avisa`,
+        body: input.message,
+        url: '/',
+        tag: `custom-${input.notificationId}`,
       },
     },
   ];

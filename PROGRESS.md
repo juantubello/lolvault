@@ -113,6 +113,14 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   con `after()`; endpoints 404/410 se limpian y otros fallos se contabilizan. Migration 0006,
   script de claves y runbook de deploy incluidos. Typecheck, 182 tests y build verificados.
 
+- 2026-09-15 — **Preferencias de notificaciones y aviso diario al grupo.** En Perfil → "Qué recibís"
+  hay tres switches por usuario (valen para todos sus dispositivos): Vaults, Black list y Avisos de
+  amigos; cada evento push declara su categoría y el envío filtra a quienes la apagaron (la prueba no
+  se filtra). "Aviso al grupo": hasta 140 caracteres, **uno por día calendario argentino** por usuario,
+  con UNIQUE (emisor, día) en `custom_notifications` para que el límite lo haga cumplir la base.
+  Migration 0007. Notificaciones movidas arriba de Estadísticas en Perfil. Hecho por Claude (Codex sin
+  cuota). Verificado en el navegador: switch persiste, aviso enviado y bloqueado hasta las 00:00. 190 tests.
+
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 2. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.

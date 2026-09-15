@@ -8,6 +8,7 @@ import {
   real,
   sqliteTable,
   text,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 import type { MatchDetail, SummonerProfile } from '@/features/matches/types';
@@ -52,6 +53,39 @@ export const pushSubscriptions = sqliteTable(
     failureCount: integer('failure_count').notNull().default(0),
   },
   (table) => [index('push_subscriptions_user_idx').on(table.userId)],
+);
+
+/** Qué avisos push quiere recibir cada usuario (en todos sus dispositivos). Sin fila = todo encendido. */
+export const notificationPreferences = sqliteTable('notification_preferences', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  vaults: integer('vaults', { mode: 'boolean' }).notNull().default(true),
+  blacklist: integer('blacklist', { mode: 'boolean' }).notNull().default(true),
+  custom: integer('custom', { mode: 'boolean' }).notNull().default(true),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+/**
+ * Avisos custom al grupo. Con CUSTOM_NOTIFICATIONS_PER_DAY = 1 el UNIQUE (emisor, día AR) hace
+ * cumplir el límite en la base, también ante dos envíos simultáneos. Si el límite sube, reemplazar
+ * el UNIQUE por un conteo dentro de una transacción.
+ */
+export const customNotifications = sqliteTable(
+  'custom_notifications',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    senderUserId: integer('sender_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    message: text('message').notNull(),
+    /** Día calendario en hora argentina, "YYYY-MM-DD". */
+    localDay: text('local_day').notNull(),
+    sentAt: integer('sent_at', { mode: 'timestamp_ms' }).notNull(),
+    /** Miembros que podían recibirlo (con dispositivo y la preferencia encendida). */
+    recipients: integer('recipients').notNull().default(0),
+  },
+  (table) => [uniqueIndex('custom_notifications_sender_day_unique').on(table.senderUserId, table.localDay)],
 );
 
 export const vaultProposals = sqliteTable(

@@ -6,7 +6,22 @@ import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/auth/current-user';
 import { getDb } from '@/db/client';
 
+import { listMembers } from '@/features/vaults/vaults.queries';
+
+import {
+  createCustomNotification,
+  setCustomNotificationRecipients,
+  validateCustomMessage,
+} from './custom-notifications';
+import {
+  countUsersWithDevices,
+  filterUsersByCategory,
+  isNotificationCategory,
+  setNotificationPreference,
+  type NotificationPreferences,
+} from './notification-preferences';
 import { readPushConfig } from './push-config';
+import { customNotificationEvent } from './push-events';
 import { dispatchPushAfter } from './push-dispatch';
 import {
   deviceLabelFromUserAgent,
@@ -85,6 +100,7 @@ export async function sendTestPushAction(): Promise<PushActionResult> {
     getDb(),
     [
       {
+        category: 'system',
         userIds: [user.id],
         payload: {
           title: 'Prueba de LolVault',
@@ -96,4 +112,105 @@ export async function sendTestPushAction(): Promise<PushActionResult> {
     ],
   );
   return { success: true };
+}
+
+export type PreferenceActionResult = {
+  success: boolean;
+  error?: string;
+  preferences?: NotificationPreferences;
+};
+
+export async function updateNotificationPreferenceAction(
+  category: unknown,
+  enabled: unknown,
+): Promise<PreferenceActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: 'Tu sesión venció. Recargá y volvé a entrar.' };
+  if (!isNotificationCategory(category) || typeof enabled !== 'boolean') {
+    return { success: false, error: 'Esa preferencia no existe.' };
+  }
+
+  try {
+    const preferences = setNotificationPreference(getDb(), user.id, category, enabled, new Date());
+    return { success: true, preferences };
+  } catch (error) {
+    console.error('[push] No se pudo guardar la preferencia:', error);
+    return { success: false, error: 'No pudimos guardar el cambio. Probá de nuevo.' };
+  }
+}
+
+export type SentNoticeView = { message: string; sentAt: string; recipients: number };
+
+export type CustomNotificationFormState = {
+  status: 'idle' | 'sent' | 'error';
+  error?: string;
+  value?: string;
+  notice?: string;
+  sent: SentNoticeView | null;
+};
+
+function sentView(notification: { message: string; sentAt: Date; recipients: number }): SentNoticeView {
+  return {
+    message: notification.message,
+    sentAt: notification.sentAt.toISOString(),
+    recipients: notification.recipients,
+  };
+}
+
+export async function sendCustomNotificationAction(
+  previous: CustomNotificationFormState,
+  formData: FormData,
+): Promise<CustomNotificationFormState> {
+  const raw = formData.get('message');
+  const value = typeof raw === 'string' ? raw : '';
+  const user = await getCurrentUser();
+  if (!user?.displayName) {
+    return { status: 'error', error: 'Tu sesión venció. Recargá y volvé a entrar.', value, sent: previous.sent };
+  }
+
+  const config = readPushConfig();
+  if (!config.enabled) return { status: 'error', error: config.reason, value, sent: previous.sent };
+
+  const validation = validateCustomMessage(value);
+  if (!validation.ok) return { status: 'error', error: validation.error, value, sent: previous.sent };
+
+  const db = getDb();
+  const now = new Date();
+  try {
+    const created = createCustomNotification(db, user.id, validation.message, now);
+    if (!created.ok) {
+      return {
+        status: 'error',
+        error: 'Ya mandaste tu aviso de hoy. Podés mandar otro a partir de las 00:00.',
+        sent: created.notification ? sentView(created.notification) : previous.sent,
+      };
+    }
+
+    const deliveries = customNotificationEvent({
+      notificationId: created.notification.id,
+      memberIds: listMembers(db).map((member) => member.id),
+      senderUserId: user.id,
+      senderName: user.displayName,
+      message: validation.message,
+    });
+    const reachable = countUsersWithDevices(
+      db,
+      filterUsersByCategory(db, deliveries[0]?.userIds ?? [], 'custom'),
+    );
+    setCustomNotificationRecipients(db, created.notification.id, reachable);
+    dispatchPushAfter(db, deliveries);
+    revalidatePath('/perfil');
+
+    return {
+      status: 'sent',
+      notice:
+        reachable === 0
+          ? 'Aviso enviado, pero nadie tiene los avisos de amigos activados todavía.'
+          : `Aviso enviado a ${reachable} ${reachable === 1 ? 'amigo' : 'amigos'}.`,
+      sent: sentView({ ...created.notification, recipients: reachable }),
+    };
+  } catch (error) {
+    console.error('[push] No se pudo enviar el aviso custom:', error);
+    return { status: 'error', error: 'No pudimos enviar el aviso. Probá de nuevo.', value, sent: previous.sent };
+  }
 }

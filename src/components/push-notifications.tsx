@@ -205,7 +205,7 @@ export function PushNotifications({
                 la configuración del sitio del navegador).
               </p>
             )}
-            {state === 'inactive' && <p>Recibí avisos cuando haya una votación para vos.</p>}
+            {state === 'inactive' && <p>Activalas para recibir lo que elijas abajo: vaults, black list y avisos de amigos.</p>}
             {state === 'active' && <p>Este dispositivo recibirá avisos de LolVault.</p>}
           </div>
         </div>

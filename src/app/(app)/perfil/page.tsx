@@ -7,11 +7,15 @@ import { getDb } from '@/db/client';
 import { Suspense } from 'react';
 
 import { AppLogo } from '@/components/app-logo';
+import { CustomNotificationForm } from '@/components/custom-notification-form';
 import { PlayerStatsLoading, PlayerStatsSection } from '@/components/matches/player-stats-section';
+import { NotificationPreferencesPanel } from '@/components/notification-preferences-panel';
 import { PushNotifications } from '@/components/push-notifications';
 import { Screen } from '@/components/screen';
 import { UserAvatar } from '@/components/user-avatar';
 import { avatarUrl } from '@/features/profile/avatar-url';
+import { getTodayCustomNotification } from '@/features/push/custom-notifications';
+import { getNotificationPreferences } from '@/features/push/notification-preferences';
 import { readPushConfig } from '@/features/push/push-config';
 import { listPushDeviceViews } from '@/features/push/push-subscriptions';
 
@@ -24,7 +28,11 @@ export default async function ProfilePage() {
       ? `${user.riotGameName}#${user.riotTagLine}`
       : null;
   const pushConfig = readPushConfig();
-  const pushDevices = listPushDeviceViews(getDb(), user.id);
+  const db = getDb();
+  const now = new Date();
+  const pushDevices = listPushDeviceViews(db, user.id);
+  const preferences = getNotificationPreferences(db, user.id);
+  const todayNotice = getTodayCustomNotification(db, user.id, now);
 
   return (
     <Screen
@@ -56,15 +64,27 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <Suspense fallback={<PlayerStatsLoading />}>
-        <PlayerStatsSection isSelf user={user} />
-      </Suspense>
-
       <PushNotifications
         enabled={pushConfig.enabled}
         initialDevices={pushDevices}
         publicKey={pushConfig.publicKey}
       />
+
+      <NotificationPreferencesPanel hasDevices={pushDevices.length > 0} initialPreferences={preferences} />
+
+      <CustomNotificationForm
+        disabledReason={pushConfig.enabled ? null : pushConfig.reason}
+        enabled={pushConfig.enabled}
+        initialSent={
+          todayNotice
+            ? { message: todayNotice.message, sentAt: todayNotice.sentAt.toISOString(), recipients: todayNotice.recipients }
+            : null
+        }
+      />
+
+      <Suspense fallback={<PlayerStatsLoading />}>
+        <PlayerStatsSection isSelf user={user} />
+      </Suspense>
 
       <footer className="about-footer" aria-labelledby="about-heading">
         <AppLogo size={72} />

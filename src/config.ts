@@ -13,6 +13,10 @@ export const VAULT_EXPIRING_DAYS = 2;
 
 export const APP_TIME_ZONE = 'America/Argentina/Buenos_Aires';
 
+/** Avisos custom al grupo por usuario, por día calendario argentino (el límite vive en un UNIQUE). */
+export const CUSTOM_NOTIFICATIONS_PER_DAY = 1;
+export const CUSTOM_NOTIFICATION_MAX_LENGTH = 140;
+
 /** Foto de perfil: se achica en el teléfono a un cuadrado de este lado antes de subir. */
 export const AVATAR_SIZE_PX = 256;
 /** Tope del archivo ya achicado (un JPEG de 256 px pesa ~30 KB). */
