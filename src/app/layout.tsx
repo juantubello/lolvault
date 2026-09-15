@@ -17,9 +17,6 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'LolVault',
   },
-  icons: {
-    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
-  },
 };
 
 export const viewport: Viewport = {

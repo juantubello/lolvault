@@ -7,14 +7,13 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Vaults de campeones para partidas entre amigos.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#F2F2F7',
-    theme_color: '#F2F2F7',
+    // Mismo azul noche del logo: la splash de Android no hace un flash claro antes de la app.
+    background_color: '#05060f',
+    theme_color: '#05060f',
     icons: [
-      {
-        src: '/apple-icon',
-        sizes: '180x180',
-        type: 'image/png',
-      },
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

@@ -110,6 +110,37 @@ queda nada colgado si el contenedor se reinicia (misma idea que la regla 5 de Pi
 **Votar es transaccional:** insertar/actualizar el voto y recalcular el estado en la misma
 transacción, para que dos votos simultáneos no aprueben dos veces ni pisen `approved_at`.
 
+### 3.1 Black list (pedido 2026-09-15)
+
+Jugadores **de afuera del grupo** con los que no queremos volver a jugar. Es indefinida: sin
+fechas ni campeón.
+
+| Regla | Decisión |
+|---|---|
+| Qué se agrega | Un **nombre** libre (obligatorio, lo que recordamos) y un **Riot ID** opcional (`gameName#tagLine`). Motivo obligatorio (280). Partida adjunta opcional. |
+| Aprobación | `yes >= BLACKLIST_APPROVALS_REQUIRED` (**2**) en `config.ts`. **Quien propone suma su voto** (igual que en vaults), así que alcanza con un amigo más. |
+| Quién vota | Cualquier miembro (no hay acusado dentro del grupo). Cambiar voto mientras está abierta. |
+| Rechazo / vencimiento | Rechazada cuando ya no se puede llegar a 2; vencida a las **48 h** (`VOTING_WINDOW_MS`). Cancelar: solo quien propone, abierta. |
+| Sacar de la lista | Votación `kind = 'remove'` con las mismas reglas (2 a favor). Al aprobarse se setea `removed_at` en la entrada. Una sola abierta por entrada. |
+| Duplicados | Una sola entrada vigente y una sola propuesta abierta por Riot ID (sin distinguir mayúsculas) o, si no tiene Riot ID, por nombre normalizado. |
+| Estado | Derivado de timestamps, igual que vaults: vigente = `add` aprobada y sin `removed_at`. |
+
+**Autocompletar el Riot ID:** mientras se tipea el nombre se buscan coincidencias entre los
+**participantes de las partidas cacheadas de todos los miembros** (`match_participants`, sin
+distinguir mayúsculas ni tildes, mínimo 2 letras, se excluyen los Riot ID de los miembros). Cada
+sugerencia muestra `gameName#tag`, cuántas partidas compartidas y con quién ("con vos y Amigo 2 ·
+hace 3 d"). Elegirla completa el Riot ID; si no hay coincidencia, se sigue con nombre libre.
+- El historial de OP.GG trae **solo al jugador**, no a los 10: para conocer a los demás hace falta el
+  detalle de cada partida. Después de cada sync exitoso del historial se piden, en segundo plano
+  (`after()` de Next) y de a uno, hasta `MATCH_DETAILS_PER_SYNC` (5) detalles que falten. El caché
+  de detalles es permanente, así que se completa solo en pocas visitas y no castiga a OP.GG.
+- Guardar un `MatchDetail` (por cualquier camino) indexa sus participantes en `match_participants`.
+
+**Adjuntar partida:** si se eligió un jugador conocido, se listan las partidas cacheadas donde
+aparece (con qué amigo jugó y con qué campeón); si no, las últimas partidas de quien propone. El
+servidor valida que la partida esté cacheada y que sea de un miembro, y guarda la foto igual que
+en vaults.
+
 ## 4. Schema (MVP)
 
 ```
@@ -159,6 +190,30 @@ vault_votes
   value         TEXT NOT NULL CHECK (value IN ('yes','no'))
   voted_at      INTEGER NOT NULL
   PRIMARY KEY (proposal_id, voter_user_id)
+
+blacklist_proposals                           -- votaciones: agregar ('add') o sacar ('remove')
+  id               INTEGER PK
+  kind             TEXT NOT NULL CHECK (kind IN ('add','remove'))
+  entry_id         INTEGER REFERENCES blacklist_proposals(id)  -- solo 'remove'
+  player_name      TEXT NOT NULL
+  riot_game_name   TEXT
+  riot_tag_line    TEXT
+  dedupe_key       TEXT NOT NULL    -- 'riot:<name#tag en minúsculas>' o 'name:<nombre normalizado>'
+  proposer_user_id INTEGER NOT NULL REFERENCES users(id)
+  reason           TEXT
+  created_at / closes_at / approved_at / rejected_at / cancelled_at
+  removed_at       INTEGER          -- solo 'add': lo sacó un 'remove' aprobado
+  match_provider / match_id / match_snapshot   -- igual que vault_proposals
+  CHECK de forma: 'add' ⇒ entry_id NULL · 'remove' ⇒ entry_id NOT NULL y removed_at NULL
+  INDEX (dedupe_key) · INDEX (entry_id)
+
+blacklist_votes                               -- misma forma que vault_votes
+
+match_participants                            -- índice de jugadores vistos en partidas cacheadas
+  provider TEXT · match_id TEXT · puuid TEXT   -- PK (provider, match_id, puuid)
+  game_name TEXT NOT NULL · tag_line TEXT NOT NULL · search_name TEXT NOT NULL (minúsculas sin tildes)
+  champion_id INTEGER · champion_name TEXT · team_key TEXT · played_at INTEGER
+  INDEX (search_name) · INDEX (game_name, tag_line)
 ```
 
 Timestamps en unix-ms UTC. Se muestran en `America/Argentina/Buenos_Aires`.
@@ -182,12 +237,13 @@ Pragmas: `journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=5000`.
 ## 6. Pantallas y navegación (iOS clásico)
 
 Navegación adaptativa: **tab bar abajo en teléfono** y **sidebar estilo iPadOS en ≥1024px**.
-Son 4 destinos de primer nivel (la regla pide ≤5):
+Son 5 destinos de primer nivel (el máximo de la regla):
 
 | Tab | Contenido |
 |---|---|
 | **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. Botón **+ Proponer** junto al título. |
 | **Vaults** | Filtros en la URL: fila de jugadores con foto, **Vigentes · Por expirar · Terminados · Todos** y búsqueda por campeón. "Por expirar" = vigentes que terminan hoy o mañana (`VAULT_EXPIRING_DAYS`). Con "Todos" agrupa por jugador. Vigentes con **"Pedir que se levante"**. |
+| **Black list** | Entradas vigentes (nombre, Riot ID, motivo, quién y cuándo, partida adjunta) con búsqueda y **"Pedir que se saque"**. **+ Agregar** abre un sheet: nombre con autocompletado de Riot ID → motivo → partida (opcional). Las votaciones de black list aparecen en **Votaciones** junto a las de vaults. En el detalle de partida, los jugadores de la lista llevan un badge. |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
 | **Perfil** | Mi perfil con **foto**, **editar foto, nombre y Riot ID** (`/perfil/editar`), aviso legal de Riot. |
 
