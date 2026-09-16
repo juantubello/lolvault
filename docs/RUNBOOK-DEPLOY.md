@@ -488,3 +488,46 @@ El paso 0 queda como checklist operativo del primer deploy:
 - [ ] **Docker** sano y sin builds pesados concurrentes.
 - [ ] **Sin `sqlite3` en el host:** el backup usa el SQLite del contenedor (tiene que estar corriendo).
 - [ ] **Salida HTTPS desde Docker** hacia Data Dragon; OP.GG usa la misma salida.
+
+## 6. Sync de datos de Draft (Lolalytics)
+
+- **Script:** `~/lolvault/docs/draft-sync.sh`; corre en el host como `jpft` y hace el trabajo
+  con `docker exec` adentro del contenedor, igual que el backup.
+- **Por qué adentro del contenedor:** la base vive ahí, y el runner **no incluye `tsx` ni
+  `src/`**. Por eso la imagen trae `draft-sync/draft-sync.mjs`, empaquetado con esbuild en el
+  stage `builder` igual que el migrador (ver `Dockerfile`).
+- **Qué baja:** matchups y sinergias de los 173 campeones para la ventana móvil de 30 días.
+  Son **5.190 requests y ~71 minutos medidos**, con 500 ms de espera entre uno y otro.
+- **Frescura:** por defecto no sale a la fuente si la última pasada completa terminó hace menos
+  de 24 h. Para forzarla: `docs/draft-sync.sh --force`.
+- **Reanudable:** guarda el cursor en `draft_sync_runs`. Si se corta (deadline de 2 h, caída de
+  red, reinicio del contenedor), la corrida siguiente retoma donde quedó y **nunca borra** lo ya
+  bajado.
+- **Si Lolalytics nos bloquea:** el draft sigue andando con lo último cacheado y la app muestra
+  de cuándo son los datos. No hay que hacer nada urgente.
+
+Instalación del cron, una sola vez:
+
+```bash
+chmod +x ~/lolvault/docs/draft-sync.sh
+crontab -e                           # como jpft, NO como root
+```
+
+```cron
+40 5 * * * /home/jpft/lolvault/docs/draft-sync.sh >> /home/jpft/lolvault/data/draft-sync.log 2>&1
+```
+
+A las 5:40 para no cruzarse con el backup de las 4:27: el server tiene 2 núcleos y conviene no
+superponer tareas largas.
+
+Verificarlo sin esperar al cron (ojo: son ~71 minutos):
+
+```bash
+~/lolvault/docs/draft-sync.sh --force
+```
+
+Ver cómo viene sin entrar al contenedor:
+
+```bash
+tail -f ~/lolvault/data/draft-sync.log
+```

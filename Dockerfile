@@ -33,6 +33,16 @@ RUN node_modules/.bin/esbuild src/db/migrate.ts \
       --outfile=/app/migrate/migrate.mjs \
  && cp -r src/db/migrations /app/migrate/migrations
 
+# El sync de Draft se corre con `docker exec` desde el cron del host, asi que tiene que existir
+# adentro de la imagen: el runner no lleva tsx ni src/. Mismo empaquetado que el migrador, con las
+# migrations al lado porque el CLI llama a runMigrations() y esa carpeta se resuelve relativa a
+# import.meta.url.
+RUN node_modules/.bin/esbuild src/features/draft/sync-cli.ts \
+      --bundle --platform=node --format=esm --target=node22 \
+      --external:better-sqlite3 \
+      --outfile=/app/draft-sync/draft-sync.mjs \
+ && cp -r src/db/migrations /app/draft-sync/migrations
+
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 
@@ -53,6 +63,7 @@ COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=builder /app/node_modules/jose ./node_modules/jose
 
 COPY --from=builder /app/migrate ./migrate
+COPY --from=builder /app/draft-sync ./draft-sync
 COPY docker/entrypoint.sh docker/pre-migrate-backup.mjs ./docker/
 
 RUN chmod +x docker/entrypoint.sh \
