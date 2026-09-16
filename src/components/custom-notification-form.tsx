@@ -37,8 +37,8 @@ export function CustomNotificationForm({
   const sent = state.sent;
 
   return (
-    <section className="grouped-section" aria-labelledby="custom-notice-heading">
-      <h2 id="custom-notice-heading">Aviso al grupo</h2>
+    // Vive en su propia pantalla (/perfil/aviso): el título ya lo pone el encabezado.
+    <section className="grouped-section" aria-label="Aviso al grupo">
       <div className="grouped-list">
         {sent ? (
           <div className="custom-notice-sent" role="status">

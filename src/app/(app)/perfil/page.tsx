@@ -1,4 +1,4 @@
-import { ChevronRight, Settings } from 'lucide-react';
+import { ChevronRight, Megaphone, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -21,39 +21,43 @@ export default async function ProfilePage() {
       : null;
 
   return (
-    <Screen
-      action={
-        <Link className="screen-text-action" href="/perfil/editar">
-          Editar
-        </Link>
-      }
-      title="Perfil"
-    >
-      <section className="profile-hero" aria-label="Tu identidad">
+    <Screen title="Perfil">
+      {/* La tarjeta de identidad ES el acceso a editar: sin botón "Editar" repetido en la nav. */}
+      <Link aria-label="Editar tu perfil" className="profile-hero profile-hero-link" href="/perfil/editar">
         <UserAvatar id={user.id} name={user.displayName} size="md" src={avatarUrl(user)} />
         <div>
           <h2>{user.displayName}</h2>
           <p>{riotId ?? 'Sin Riot ID'}</p>
         </div>
-      </section>
+        <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
+      </Link>
 
-      {/* Entrar al perfil es para ver las partidas: los ajustes viven en su propia pantalla. */}
-      <Suspense fallback={<PlayerStatsLoading />}>
-        <PlayerStatsSection isSelf user={user} />
-      </Suspense>
-
-      <section className="grouped-section" aria-label="Ajustes">
+      <section className="grouped-section" aria-label="Accesos">
         <div className="grouped-list">
+          <Link className="profile-row profile-row-link" href="/perfil/aviso">
+            <Megaphone aria-hidden="true" size={20} strokeWidth={2} />
+            <div>
+              <span>Mandar aviso al grupo</span>
+              <p>Un mensaje por día a todos tus amigos</p>
+            </div>
+            <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
+          </Link>
+
           <Link className="profile-row profile-row-link" href="/perfil/ajustes">
             <Settings aria-hidden="true" size={20} strokeWidth={2} />
             <div>
               <span>Ajustes y notificaciones</span>
-              <p>Email, avisos que recibís y aviso al grupo</p>
+              <p>Email y avisos que recibís</p>
             </div>
             <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
           </Link>
         </div>
       </section>
+
+      {/* El grueso del perfil son las partidas. */}
+      <Suspense fallback={<PlayerStatsLoading />}>
+        <PlayerStatsSection isSelf user={user} />
+      </Suspense>
 
       <footer className="about-footer" aria-labelledby="about-heading">
         <AppLogo size={72} />

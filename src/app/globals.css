@@ -411,12 +411,29 @@ button {
 }
 
 .profile-hero {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
   padding: 1rem;
   border-radius: 0.625rem;
   background: var(--bg-cell);
+}
+
+/* Toda la tarjeta lleva a editar el perfil: chevron a la derecha y feedback al tocar. */
+.profile-hero-link {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+.profile-hero-link:active {
+  background: var(--fill-pressed);
+}
+
+.profile-hero-link > svg:last-child {
+  color: var(--label-3);
 }
 
 .profile-avatar {
