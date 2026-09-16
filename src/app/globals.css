@@ -537,13 +537,25 @@ button {
   }
 }
 
+/* Queda fijo arriba al scrollear (el título grande sí se va, como en iOS). El fondo translúcido
+   cubre de borde a borde para que el contenido no se lea por detrás del botón. */
 .screen-back {
-  display: inline-flex;
+  position: sticky;
+  z-index: 3;
+  top: env(safe-area-inset-top);
+  /* Ocupa todo el ancho: si no, el título grande asoma al costado al scrollear por debajo. */
+  display: flex;
+  width: calc(100% + 2rem);
   min-height: 2.75rem;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.125rem;
-  margin-left: -0.5rem;
-  padding-right: 0.5rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 0.5rem;
+  padding-right: 1rem;
+  background: var(--bg-grouped);
+  border-radius: 0;
   color: var(--tint);
   font-size: 1.0625rem;
   line-height: 1.375rem;
@@ -555,6 +567,8 @@ button {
 .screen-back:active {
   background: var(--fill-pressed);
 }
+
+
 
 @media (min-width: 48rem) {
   .screen {

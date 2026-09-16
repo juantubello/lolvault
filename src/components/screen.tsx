@@ -17,13 +17,15 @@ export function Screen({
 }) {
   return (
     <div className="screen">
+      {/* Fuera del <header>: un elemento sticky solo se sostiene mientras su contenedor está a la
+          vista, así que colgado de .screen queda fijo durante todo el scroll. */}
+      {back ? (
+        <Link className="screen-back" href={back.href}>
+          <ChevronLeft aria-hidden="true" size={24} strokeWidth={2} />
+          <span>{back.label}</span>
+        </Link>
+      ) : null}
       <header className="screen-header">
-        {back ? (
-          <Link className="screen-back" href={back.href}>
-            <ChevronLeft aria-hidden="true" size={24} strokeWidth={2} />
-            <span>{back.label}</span>
-          </Link>
-        ) : null}
         <div className="screen-title-row">
           <h1>{title}</h1>
           {action}
