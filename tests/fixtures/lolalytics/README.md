@@ -21,6 +21,7 @@ Host `https://a1.lolalytics.com/mega/`, params comunes:
 | `build-team-leona-middle.json` | `ep=build-team&lane=middle` (Leona) | Sinergias de muestra chica |
 | `counter-leona-middle-vacio.json` | `ep=counter` de una lane que no se juega | **Borde:** `counters: []` |
 | `counter-campeon-inexistente.json` | `ep=counter&c=noexiste` | **Borde:** 200 con `{"status":404}` |
+| `invalid-end-point.txt` | `ep=endpoint-que-no-existe` | **Borde:** 200 con texto plano, no JSON |
 
 ## Formas
 

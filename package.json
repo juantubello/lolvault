@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --import tsx src/db/migrate.ts",
+    "draft:sync": "node --import tsx src/features/draft/sync-cli.ts",
     "vapid:generate": "node scripts/generate-vapid.mjs"
   },
   "dependencies": {

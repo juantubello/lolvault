@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, ripeados, Scout de jugador, perfiles, historial y Web Push implementados
+## Estado: votaciones, ripeados, Scout de jugador, ingesta de Draft, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -156,14 +156,26 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   propagado al detalle de partida. El test cruzado falla con `instanceof` y pasa con el guard.
   Typecheck, 232 tests y build de producción verificados por Codex; sin migración ni borrado de filas.
 
+- 2026-09-16 — **Fase B de Draft: ingesta cacheada de Lolalytics.** `DraftDataSource` aísla la
+  fuente; cliente GET con User-Agent identificable y dos timeouts, parser estricto de `counter` y
+  `build-team` (incluido `team_h` dinámico) y casos borde capturados sin red. Migration 0008 agrega
+  conteos crudos de campeón, matchups y sinergias más corridas con cursor persistido. El job hace
+  upsert por claves compuestas, reemplaza sólo cada corte después de una respuesta válida, filtra
+  sinergias con menos de 10 partidas, espera 500 ms entre requests y retoma una corrida parcial.
+  Ventana móvil de 30 días por defecto, configurable con `LOLALYTICS_PATCH_WINDOW`; ejecución manual
+  con `npm run draft:sync` y disparador programático `syncDraftDataIfStale`. Tests completamente
+  offline contra fixtures reales. Typecheck, 248 tests y build de producción verificados por Codex;
+  el sync real quedó para verificar fuera del sandbox sin red.
+
 ### Siguiente
 1. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
-2. Fase B del plan Scout/Draft: ingesta diaria cacheada de Lolalytics (fuera de esta entrega).
-3. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-4. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-5. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-6. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-7. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
+2. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
+3. Fase C del plan Scout/Draft: motor puro de análisis (simetrización, prior y sugerencias).
+4. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
+5. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+6. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
+7. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+8. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

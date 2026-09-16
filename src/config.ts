@@ -49,5 +49,25 @@ export const MATCH_DETAILS_PER_SYNC = 5;
 /** Máximo de jugadores conocidos que devuelve el autocompletado de black list. */
 export const BLACKLIST_SUGGESTIONS_LIMIT = 8;
 
+/** Ingesta server-side de Lolalytics para Draft. `30` significa los últimos 30 días. */
+export const LOLALYTICS_PATCH_WINDOW = process.env.LOLALYTICS_PATCH_WINDOW?.trim() || '30';
+/**
+ * Pausa prudente entre requests. Medido contra la fuente: cada request tarda ~0,32 s de red, asi
+ * que con esta pausa cada uno sale ~0,82 s y los 5.190 (173 campeones x 30) dan unos 71 minutos.
+ */
+export const LOLALYTICS_REQUEST_DELAY_MS = 500;
+/** Cada request tiene su propio corte; además el cliente limita la operación completa. */
+export const LOLALYTICS_REQUEST_TIMEOUT_MS = 15_000;
+export const LOLALYTICS_CLIENT_TOTAL_TIMEOUT_MS = 20_000;
+/**
+ * Tope de una ejecucion. Dos horas: la pasada completa medida tarda ~71 minutos, y con una hora se
+ * cortaba siempre por la mitad. Si igual no llega, la corrida guarda su cursor y retoma sola.
+ */
+export const LOLALYTICS_SYNC_TOTAL_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+/** El disparador programático no inicia otra pasada completa antes de 24 horas. */
+export const LOLALYTICS_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
+/** Las sinergias con menos partidas son demasiado chicas para conservarlas. */
+export const LOLALYTICS_MIN_SYNERGY_GAMES = 10;
+
 export const RIOT_PLATFORM = 'la2';
 export const RIOT_REGION = 'americas';

@@ -57,6 +57,13 @@
       "when": 1789502995128,
       "tag": "0007_famous_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789586788245,
+      "tag": "0008_curved_vapor",
+      "breakpoints": true
     }
   ]
 }

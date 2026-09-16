@@ -300,6 +300,79 @@ export const playerStatsSync = sqliteTable('player_stats_sync', {
   lastErrorAt: integer('last_error_at', { mode: 'timestamp_ms' }),
 });
 
+/** Fuerza base de un campeón en un rol para la ventana actualmente cacheada. */
+export const draftChampionStats = sqliteTable(
+  'draft_champion_stats',
+  {
+    championKey: integer('champion_key').notNull(),
+    role: text('role').notNull(),
+    games: integer('games').notNull(),
+    wins: integer('wins').notNull(),
+    patchWindow: text('patch_window').notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.championKey, table.role] }),
+    check('draft_champion_stats_games_check', sql`${table.games} >= 0`),
+    check('draft_champion_stats_wins_check', sql`${table.wins} >= 0 AND ${table.wins} <= ${table.games}`),
+  ],
+);
+
+/** Matchup dirigido: campeón/rol contra enemigo/rol. */
+export const draftMatchups = sqliteTable(
+  'draft_matchups',
+  {
+    championKey: integer('champion_key').notNull(),
+    role: text('role').notNull(),
+    enemyChampionKey: integer('enemy_champion_key').notNull(),
+    enemyRole: text('enemy_role').notNull(),
+    games: integer('games').notNull(),
+    wins: integer('wins').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.championKey, table.role, table.enemyChampionKey, table.enemyRole] }),
+    check('draft_matchups_games_check', sql`${table.games} >= 0`),
+    check('draft_matchups_wins_check', sql`${table.wins} >= 0 AND ${table.wins} <= ${table.games}`),
+    index('draft_matchups_enemy_idx').on(table.enemyChampionKey, table.enemyRole),
+  ],
+);
+
+/** Sinergia dirigida: campeón/rol con aliado/rol. */
+export const draftSynergies = sqliteTable(
+  'draft_synergies',
+  {
+    championKey: integer('champion_key').notNull(),
+    role: text('role').notNull(),
+    allyChampionKey: integer('ally_champion_key').notNull(),
+    allyRole: text('ally_role').notNull(),
+    games: integer('games').notNull(),
+    wins: integer('wins').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.championKey, table.role, table.allyChampionKey, table.allyRole] }),
+    check('draft_synergies_games_check', sql`${table.games} >= 0`),
+    check('draft_synergies_wins_check', sql`${table.wins} >= 0 AND ${table.wins} <= ${table.games}`),
+    index('draft_synergies_ally_idx').on(table.allyChampionKey, table.allyRole),
+  ],
+);
+
+/** Un intento de sync. El cursor permite retomar sin descartar respuestas ya guardadas. */
+export const draftSyncRuns = sqliteTable('draft_sync_runs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),
+  finishedAt: integer('finished_at', { mode: 'timestamp_ms' }),
+  patchWindow: text('patch_window').notNull(),
+  requestsMade: integer('requests_made').notNull().default(0),
+  totalRequests: integer('total_requests').notNull(),
+  startRequestIndex: integer('start_request_index').notNull().default(0),
+  nextRequestIndex: integer('next_request_index').notNull().default(0),
+  failed: integer('failed', { mode: 'boolean' }).notNull().default(false),
+  error: text('error'),
+}, (table) => [
+  check('draft_sync_runs_requests_check', sql`${table.requestsMade} >= 0`),
+  check('draft_sync_runs_cursor_check', sql`${table.nextRequestIndex} >= 0 AND ${table.nextRequestIndex} <= ${table.totalRequests}`),
+]);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Champion = typeof champions.$inferSelect;
