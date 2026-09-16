@@ -5,12 +5,17 @@ import { getCurrentUser } from '@/auth/current-user';
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { ScoutPlayerReport } from '@/components/scout/player-report';
+import { OPGG_SCOUT_REGIONS } from '@/config';
 import { getDb } from '@/db/client';
 import { findActiveBlacklistByRiotIds } from '@/features/blacklist/blacklist.queries';
 import { riotIdKey } from '@/features/blacklist/blacklist-rules';
 import { championImagesByKey } from '@/features/champions/champion-images';
 import { getMatchProvider } from '@/features/matches/provider';
-import { loadScoutPlayerStats, parseScoutRiotId } from '@/features/scout/player';
+import {
+  loadScoutPlayerStats,
+  parseScoutRegion,
+  parseScoutRiotId,
+} from '@/features/scout/player';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,15 +33,25 @@ export default async function ScoutPage({
   const user = await getCurrentUser();
   if (!user?.displayName) redirect('/onboarding');
 
-  const query = first((await searchParams).jugador);
+  const params = await searchParams;
+  const query = first(params.jugador);
+  const region = parseScoutRegion(first(params.region));
   const parsed = query ? parseScoutRiotId(query) : null;
   const now = new Date();
   let report = null;
+  let notFoundError: string | null = null;
+  let sourceError: string | null = null;
 
   if (parsed?.ok) {
     const db = getDb();
-    const loaded = await loadScoutPlayerStats(db, getMatchProvider(), parsed.riotId, now);
-    if (loaded.stats.status === 'ok' && !loaded.stats.notFound) {
+    const loaded = await loadScoutPlayerStats(
+      db,
+      getMatchProvider(region),
+      parsed.riotId,
+      region,
+      now,
+    );
+    if (loaded.status === 'loaded' && !loaded.stats.notFound) {
       const canonicalRiotId = loaded.stats.profile
         ? { gameName: loaded.stats.profile.gameName, tagLine: loaded.stats.profile.tagLine }
         : loaded.stats.riotId;
@@ -52,13 +67,15 @@ export default async function ScoutPage({
           viewerId={user.id}
         />
       );
+    } else if (loaded.status === 'not-found' || (loaded.status === 'loaded' && loaded.stats.notFound)) {
+      notFoundError = `No encontramos a ${parsed.text} en ${region}. Revisá el nombre, el tag y la región.`;
+    } else if (loaded.status === 'error') {
+      sourceError = loaded.error;
     }
   }
 
   const invalidError = parsed && !parsed.ok ? parsed.error : null;
-  const notFoundError = parsed?.ok && !report
-    ? `No encontramos a ${parsed.text}. Revisá el nombre y el tag.`
-    : null;
+  const searchError = invalidError ?? notFoundError ?? sourceError;
 
   return (
     <Screen title="Scout">
@@ -68,8 +85,8 @@ export default async function ScoutPage({
         <div className="scout-search-control">
           <Search aria-hidden="true" size={20} strokeWidth={2} />
           <input
-            aria-describedby={`scout-riot-help${invalidError || notFoundError ? ' scout-riot-error' : ''}`}
-            aria-invalid={Boolean(invalidError || notFoundError)}
+            aria-describedby={`scout-riot-help${searchError ? ' scout-riot-error' : ''}`}
+            aria-invalid={Boolean(searchError)}
             autoCapitalize="off"
             autoComplete="off"
             defaultValue={query}
@@ -80,10 +97,15 @@ export default async function ScoutPage({
             required
             type="search"
           />
+          <select aria-label="Región" defaultValue={region} name="region">
+            {OPGG_SCOUT_REGIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
           <button type="submit">Buscar</button>
         </div>
-        {invalidError || notFoundError ? (
-          <p className="field-error" id="scout-riot-error" role="alert">{invalidError ?? notFoundError}</p>
+        {searchError ? (
+          <p className="field-error" id="scout-riot-error" role="alert">{searchError}</p>
         ) : null}
       </form>
 

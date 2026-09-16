@@ -1,7 +1,7 @@
 /** Partidas resumidas para elegir la decisiva en "Proponer vault". Serializable (va al cliente). */
 import { formatDuration, queueLabel, timeAgo } from './format';
 import { matchOutcome } from './player-summary';
-import type { PlayerMatchSummary } from './types';
+import type { PlayerMatchSummary } from '@/features/matches/types';
 
 export const PROPOSAL_MATCH_OPTIONS = 10;
 

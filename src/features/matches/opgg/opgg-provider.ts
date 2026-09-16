@@ -1,5 +1,6 @@
 import { OPGG_REGION } from '@/config';
 import {
+  isMatchProviderError,
   MatchProviderError,
   type MatchDetail,
   type MatchParticipant,
@@ -295,7 +296,7 @@ function parseProviderResponse<T>(text: string, mapper: (parsed: unknown) => T):
   try {
     return mapper(parseCompact(text));
   } catch (error) {
-    if (error instanceof MatchProviderError) throw error;
+    if (isMatchProviderError(error)) throw error;
     const detail = error instanceof Error ? `: ${error.message}` : '';
     throw new MatchProviderError(`Respuesta compacta de OP.GG inválida${detail}`, 'invalid-response');
   }

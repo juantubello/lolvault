@@ -125,6 +125,8 @@ export type MatchProviderErrorKind =
   | 'invalid-response';
 
 export class MatchProviderError extends Error {
+  readonly isMatchProviderError = true;
+
   constructor(
     message: string,
     readonly kind: MatchProviderErrorKind,
@@ -132,6 +134,25 @@ export class MatchProviderError extends Error {
     super(message);
     this.name = 'MatchProviderError';
   }
+}
+
+const MATCH_PROVIDER_ERROR_KINDS = new Set<MatchProviderErrorKind>([
+  'not-found',
+  'unavailable',
+  'invalid-response',
+]);
+
+/**
+ * Reconoce errores de la fuente aunque el bundler haya cargado más de una copia de este módulo.
+ * La marca explícita evita depender de la identidad de la clase en runtime.
+ */
+export function isMatchProviderError(error: unknown): error is MatchProviderError {
+  if (typeof error !== 'object' || error === null) return false;
+  const candidate = error as Partial<MatchProviderError>;
+  return candidate.isMatchProviderError === true
+    && candidate.name === 'MatchProviderError'
+    && typeof candidate.message === 'string'
+    && MATCH_PROVIDER_ERROR_KINDS.has(candidate.kind as MatchProviderErrorKind);
 }
 
 export type MatchProvider = {

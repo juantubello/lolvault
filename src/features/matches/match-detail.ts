@@ -1,5 +1,6 @@
-import { POSITIONS } from './format';
-import type { MatchParticipant, RiotId } from './types';
+import type { OpggScoutRegion } from '@/config';
+import { POSITIONS } from '@/features/matches/format';
+import type { MatchParticipant, RiotId } from '@/features/matches/types';
 
 export type MatchMemberIdentity = {
   id: number;
@@ -60,11 +61,13 @@ export function matchBackHref(
   focusUserId: number,
   source: string | null,
   focusRiotId?: RiotId,
+  scoutRegion?: OpggScoutRegion,
 ): string {
   if (source === 'votaciones') return '/';
   if (source === 'black-list') return '/ripeados?tipo=black-list';
   if (source === 'scout' && focusRiotId) {
-    return `/scout?jugador=${encodeURIComponent(`${focusRiotId.gameName}#${focusRiotId.tagLine}`)}`;
+    const player = encodeURIComponent(`${focusRiotId.gameName}#${focusRiotId.tagLine}`);
+    return `/scout?jugador=${player}${scoutRegion ? `&region=${scoutRegion}` : ''}`;
   }
   return currentUserId === focusUserId ? '/perfil' : `/amigos/${focusUserId}`;
 }

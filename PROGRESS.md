@@ -148,6 +148,14 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   Typecheck, 227 tests y build de producción verificados por Codex. La revisión visual automatizada
   quedó pendiente porque no hubo navegador integrado disponible en la sesión.
 
+- 2026-09-16 — **Errores de partidas y regiones de Scout.** `MatchProviderError` ahora se reconoce
+  mediante una marca estable aunque el bundler duplique el módulo; todos los imports de
+  `matches/types` y `matches/provider` usan alias. Scout confirma un Riot ID nuevo antes de crear
+  su fila de caché, conserva datos ya guardados ante una caída y separa identidades por región.
+  Selector enlazable en `?region=` con LAS por defecto y las dos regiones confirmadas (LAS/LA2),
+  propagado al detalle de partida. El test cruzado falla con `instanceof` y pasa con el guard.
+  Typecheck, 232 tests y build de producción verificados por Codex; sin migración ni borrado de filas.
+
 ### Siguiente
 1. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 2. Fase B del plan Scout/Draft: ingesta diaria cacheada de Lolalytics (fuera de esta entrega).

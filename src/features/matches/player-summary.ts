@@ -1,5 +1,5 @@
 /** Estadísticas de las últimas partidas de un jugador, como el resumen de OP.GG. Funciones puras. */
-import type { PlayerMatchSummary } from './types';
+import type { PlayerMatchSummary } from '@/features/matches/types';
 
 /** Partidas más cortas que esto son remakes: no cuentan para victorias ni promedios (como OP.GG). */
 export const REMAKE_MAX_SECONDS = 5 * 60;

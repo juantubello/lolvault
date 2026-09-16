@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/auth/current-user';
 import { EmptyState } from '@/components/empty-state';
 import { MatchDetailView } from '@/components/matches/match-detail-view';
 import { Screen } from '@/components/screen';
+import { OPGG_REGION, type OpggScoutRegion } from '@/config';
 import { getDb, type Db } from '@/db/client';
 import { blacklistProposals, matchDetails, playerMatches, vaultProposals } from '@/db/schema';
 import { findActiveBlacklistByRiotIds } from '@/features/blacklist/blacklist.queries';
@@ -37,6 +38,7 @@ async function resolveDetail(
   db: Db,
   matchId: string,
   player: { id: number; riotGameName: string | null; riotTagLine: string | null },
+  region: OpggScoutRegion = OPGG_REGION,
 ): Promise<{ detail: MatchDetail | null; historyMatchFound: boolean }> {
   const historyMatch = db
     .select({ playedAt: playerMatches.playedAt })
@@ -47,7 +49,7 @@ async function resolveDetail(
   if (historyMatch && player.riotGameName && player.riotTagLine) {
     const detail = await loadMatchDetail(
       db,
-      getMatchProvider(),
+      getMatchProvider(region),
       { matchId, playedAt: historyMatch.playedAt },
       { gameName: player.riotGameName, tagLine: player.riotTagLine },
       new Date(),
@@ -108,7 +110,13 @@ export default async function MatchDetailPage({
   const focusRiotId = player.riotGameName && player.riotTagLine
     ? { gameName: player.riotGameName, tagLine: player.riotTagLine }
     : undefined;
-  const backHref = matchBackHref(currentUser.id, player.id, source, focusRiotId);
+  const backHref = matchBackHref(
+    currentUser.id,
+    player.id,
+    source,
+    focusRiotId,
+    scoutPlayer?.region,
+  );
   const backLabel = source === 'votaciones'
     ? 'Votaciones'
     : source === 'black-list'
@@ -118,7 +126,7 @@ export default async function MatchDetailPage({
         : player.id === currentUser.id
           ? 'Perfil'
           : player.displayName;
-  const resolved = await resolveDetail(db, matchId, player);
+  const resolved = await resolveDetail(db, matchId, player, scoutPlayer?.region);
   if (!resolved.detail && !resolved.historyMatchFound) notFound();
 
   return (

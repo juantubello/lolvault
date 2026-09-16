@@ -17,14 +17,15 @@ import type { Db } from '@/db/client';
 import { matchDetails, playerMatches, playerStatsSync } from '@/db/schema';
 
 import {
-  MatchProviderError,
+  isMatchProviderError,
   type MatchDetail,
   type MatchProvider,
+  type MatchProviderError,
   type PlayerMatchSummary,
   type RiotId,
   type SummonerProfile,
-} from './types';
-import { indexMatchParticipants } from './match-participants';
+} from '@/features/matches/types';
+import { indexMatchParticipants } from '@/features/matches/match-participants';
 
 export type PlayerStats =
   | { status: 'no-riot-id' }
@@ -52,6 +53,10 @@ const ERROR_MESSAGES: Record<MatchProviderError['kind'], string> = {
   'invalid-response': 'OP.GG cambió su respuesta y no la pudimos leer. Mostramos los últimos datos guardados.',
 };
 
+export function matchProviderErrorMessage(kind: MatchProviderError['kind']): string {
+  return ERROR_MESSAGES[kind] ?? ERROR_MESSAGES.unavailable;
+}
+
 function sameRiotId(sync: { riotGameName: string; riotTagLine: string }, riotId: RiotId): boolean {
   return (
     sync.riotGameName.toLocaleLowerCase('en-US') === riotId.gameName.toLocaleLowerCase('en-US') &&
@@ -59,8 +64,8 @@ function sameRiotId(sync: { riotGameName: string; riotTagLine: string }, riotId:
   );
 }
 
-function errorKind(error: unknown): MatchProviderError['kind'] {
-  return error instanceof MatchProviderError ? error.kind : 'unavailable';
+export function errorKind(error: unknown): MatchProviderError['kind'] {
+  return isMatchProviderError(error) ? error.kind : 'unavailable';
 }
 
 /** Decide si toca consultar la fuente o alcanza con el caché. Pura, para testearla. */
@@ -135,7 +140,7 @@ async function sync(db: Db, provider: MatchProvider, userId: number, riotId: Rio
   });
 
   for (const result of [matchesResult, profileResult]) {
-    if (result.status === 'rejected' && !(result.reason instanceof MatchProviderError)) {
+    if (result.status === 'rejected' && !isMatchProviderError(result.reason)) {
       console.error('[matches] Error inesperado de la fuente:', result.reason);
     }
   }
@@ -207,7 +212,7 @@ export async function loadPlayerStats(
           await hydrateMissingMatchDetails(db, provider, user, now);
         } catch (error) {
           // La hidratación es best-effort y nunca rompe la pantalla ni el sync ya persistido.
-          if (!(error instanceof MatchProviderError)) {
+          if (!isMatchProviderError(error)) {
             console.error('[matches] Error inesperado hidratando detalles:', error);
           }
         }
@@ -226,7 +231,7 @@ export async function loadPlayerStats(
     matches: readCachedMatches(db, user.id, state?.puuid ?? null),
     profile: state?.profile ?? null,
     syncedAt: state?.matchesSyncedAt ?? null,
-    error: kind ? (ERROR_MESSAGES[kind] ?? ERROR_MESSAGES.unavailable) : null,
+    error: kind ? matchProviderErrorMessage(kind) : null,
     notFound: kind === 'not-found',
   };
 }
@@ -285,7 +290,7 @@ export async function loadMatchDetail(
     indexMatchParticipants(db, provider.name, detail);
     return detail;
   } catch (error) {
-    if (error instanceof MatchProviderError) return null;
+    if (isMatchProviderError(error)) return null;
     throw error;
   }
 }

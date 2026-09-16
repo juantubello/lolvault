@@ -9,7 +9,7 @@ import { getFriendProfile } from '@/features/friends/friends.queries';
 
 import { toMatchOptions, type MatchOption } from './match-options';
 import { loadPlayerStats, refreshPlayerStats } from './player-stats';
-import { getMatchProvider } from './provider';
+import { getMatchProvider } from '@/features/matches/provider';
 
 export type ProposalMatchesResult = {
   status: 'ok' | 'no-riot-id' | 'error';

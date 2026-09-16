@@ -24,6 +24,18 @@ export const AVATAR_MAX_BYTES = 512 * 1024;
 
 /** Historial de partidas vía OP.GG (sin key). Ver docs/APIS-LOL.md. */
 export const OPGG_REGION = 'LAS';
+/**
+ * Regiones que acepta Scout. Es la lista que devuelve el propio validador de OP.GG al mandarle
+ * una region invalida, verificada contra lol_get_summoner_profile (la herramienta que usa Scout).
+ * Los codigos de plataforma (LA2, NA1, EUW1...) son alias de estos mismos, asi que no se ofrecen:
+ * LAS y LA2 son la misma region y elegir entre las dos solo confunde.
+ * Ordenadas por cercania a LAS, que es el default (OPGG_REGION).
+ */
+export const OPGG_SCOUT_REGIONS = [
+  'LAS', 'LAN', 'BR', 'NA', 'EUW', 'EUNE', 'KR', 'OCE', 'JP',
+  'TR', 'RU', 'TW', 'VN', 'TH', 'PH', 'SG', 'SEA', 'ME',
+] as const;
+export type OpggScoutRegion = (typeof OPGG_SCOUT_REGIONS)[number];
 /** Cada cuánto se puede volver a pedir el historial de un jugador. Mientras tanto, caché. */
 export const MATCHES_REFRESH_MS = 10 * 60 * 1000;
 /** Límite entre refrescos manuales del mismo jugador, incluso si el anterior falló. */

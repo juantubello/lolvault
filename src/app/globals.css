@@ -2848,7 +2848,7 @@ button {
 .scout-search-control {
   display: grid;
   min-height: 2.75rem;
-  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.5rem;
   padding-left: 0.75rem;
@@ -2873,6 +2873,20 @@ button {
   background: transparent;
   color: var(--label);
   font-size: 1.0625rem;
+  outline: none;
+}
+
+.scout-search-control select {
+  min-width: 4.25rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-left: 0.5px solid var(--separator);
+  background: transparent;
+  color: var(--label);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
   outline: none;
 }
 

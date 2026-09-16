@@ -2,7 +2,7 @@ import type { Db } from '@/db/client';
 import { matchDetails, matchParticipants } from '@/db/schema';
 import { normalizeBlacklistName } from '@/features/blacklist/blacklist-rules';
 
-import type { MatchDetail } from './types';
+import type { MatchDetail } from '@/features/matches/types';
 
 /** Indexa los diez jugadores de un detalle. Es idempotente y actualiza nombres renombrados. */
 export function indexMatchParticipants(db: Db, provider: string, detail: MatchDetail): void {

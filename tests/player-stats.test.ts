@@ -11,6 +11,7 @@ import { applyPragmas, createDb, type Db } from '@/db/client';
 import { users } from '@/db/schema';
 import {
   FORCE_REFRESH_RATE_LIMIT_MESSAGE,
+  errorKind,
   loadMatchDetail,
   loadPlayerStats,
   refreshPlayerStats,
@@ -22,6 +23,18 @@ import {
   type PlayerMatchSummary,
   type SummonerProfile,
 } from '@/features/matches/types';
+
+class MatchProviderErrorFromAnotherModule extends Error {
+  readonly name = 'MatchProviderError';
+  readonly isMatchProviderError = true;
+
+  constructor(
+    message: string,
+    readonly kind: 'not-found' | 'unavailable' | 'invalid-response',
+  ) {
+    super(message);
+  }
+}
 
 const NOW = new Date('2026-09-15T12:00:00Z');
 const at = (ms: number) => new Date(NOW.getTime() + ms);
@@ -107,6 +120,13 @@ beforeEach(() => {
 });
 
 describe('loadPlayerStats', () => {
+  it('reconoce errores del proveedor creados por otra copia del módulo', () => {
+    const error = new MatchProviderErrorFromAnotherModule('Summoner not found', 'not-found');
+
+    expect(error).not.toBeInstanceOf(MatchProviderError);
+    expect(errorKind(error)).toBe('not-found');
+  });
+
   it('sin Riot ID no consulta la fuente', async () => {
     const provider = fakeProvider();
     const state = await loadPlayerStats(db, provider, { ...user, riotGameName: null }, NOW);

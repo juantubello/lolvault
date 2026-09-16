@@ -61,6 +61,9 @@ describe('detalle de partida', () => {
     expect(
       matchBackHref(4, 9, 'scout', { gameName: 'Rival Anónimo', tagLine: 'TAG1' }),
     ).toBe('/scout?jugador=Rival%20An%C3%B3nimo%23TAG1');
+    expect(
+      matchBackHref(4, 9, 'scout', { gameName: 'Rival Anónimo', tagLine: 'TAG1' }, 'KR'),
+    ).toBe('/scout?jugador=Rival%20An%C3%B3nimo%23TAG1&region=KR');
     expect(matchBackHref(4, 9, 'https://ejemplo.test')).toBe('/amigos/9');
   });
 

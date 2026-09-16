@@ -56,7 +56,7 @@ export function ScoutPlayerReport({
     <div className="scout-report">
       <section aria-labelledby="scout-player-heading" className="scout-player-card">
         <div className="scout-player-copy">
-          <p className="scout-eyebrow">Riot ID</p>
+          <p className="scout-eyebrow">Riot ID · {player.region}</p>
           <h2 id="scout-player-heading">{riotIdText}</h2>
           <p>{profile?.level ? `Nivel ${profile.level}` : 'Nivel no disponible'}</p>
         </div>

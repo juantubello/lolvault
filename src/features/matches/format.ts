@@ -1,7 +1,7 @@
 /** Textos en español para colas, roles, rangos y números de partidas. */
 import { APP_TIME_ZONE } from '@/config';
 
-import type { RankEntry } from './types';
+import type { RankEntry } from '@/features/matches/types';
 
 const QUEUE_LABELS: Record<string, string> = {
   SOLORANKED: 'Solo/Duo',
