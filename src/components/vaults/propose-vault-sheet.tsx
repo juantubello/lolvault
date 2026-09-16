@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import Image from 'next/image';
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
@@ -130,7 +130,14 @@ export function ProposeVaultSheet({
               Cancelar
             </button>
             <h2 id="propose-title">Proponer vault</h2>
-            <span aria-hidden="true" />
+            <button
+              aria-label="Cerrar"
+              className="sheet-close"
+              onClick={() => dialogRef.current?.close()}
+              type="button"
+            >
+              <X aria-hidden="true" size={20} strokeWidth={2.5} />
+            </button>
           </header>
 
           <div className="sheet-body">

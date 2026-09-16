@@ -2,10 +2,19 @@ import Database from 'better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MATCHES_REFRESH_MS, MATCHES_RETRY_AFTER_ERROR_MS } from '@/config';
+import {
+  MATCHES_FORCE_REFRESH_MS,
+  MATCHES_REFRESH_MS,
+  MATCHES_RETRY_AFTER_ERROR_MS,
+} from '@/config';
 import { applyPragmas, createDb, type Db } from '@/db/client';
 import { users } from '@/db/schema';
-import { loadMatchDetail, loadPlayerStats } from '@/features/matches/player-stats';
+import {
+  FORCE_REFRESH_RATE_LIMIT_MESSAGE,
+  loadMatchDetail,
+  loadPlayerStats,
+  refreshPlayerStats,
+} from '@/features/matches/player-stats';
 import {
   MatchProviderError,
   type MatchDetail,
@@ -127,6 +136,34 @@ describe('loadPlayerStats', () => {
     expect(provider.listMatches).toHaveBeenCalledTimes(2);
   });
 
+  it('el refresco forzado saltea la ventana normal de 10 minutos', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+
+    const result = await refreshPlayerStats(db, provider, user, at(MATCHES_FORCE_REFRESH_MS), () => {});
+
+    expect(result).toEqual({ ok: true });
+    expect(provider.listMatches).toHaveBeenCalledTimes(2);
+    expect(provider.getProfile).toHaveBeenCalledTimes(2);
+  });
+
+  it('el refresco forzado respeta el límite de 60 segundos sin llamar a OP.GG', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+
+    const result = await refreshPlayerStats(
+      db,
+      provider,
+      user,
+      at(MATCHES_FORCE_REFRESH_MS - 1),
+      () => {},
+    );
+
+    expect(result).toEqual({ ok: false, error: FORCE_REFRESH_RATE_LIMIT_MESSAGE });
+    expect(provider.listMatches).toHaveBeenCalledTimes(1);
+    expect(provider.getProfile).toHaveBeenCalledTimes(1);
+  });
+
   it('si la fuente cae, muestra lo guardado con aviso y espera antes de reintentar', async () => {
     const provider = fakeProvider();
     await loadPlayerStats(db, provider, user, NOW);
@@ -141,6 +178,18 @@ describe('loadPlayerStats', () => {
     expect(state.status === 'ok' && state.syncedAt).toEqual(NOW);
 
     await loadPlayerStats(db, provider, user, new Date(failedAt.getTime() + MATCHES_RETRY_AFTER_ERROR_MS - 1));
+    expect(provider.listMatches).toHaveBeenCalledTimes(2);
+  });
+
+  it('el refresco forzado saltea la espera de 5 minutos después de un error', async () => {
+    const provider = fakeProvider();
+    provider.listMatches.mockRejectedValueOnce(new MatchProviderError('503', 'unavailable'));
+    provider.getProfile.mockRejectedValueOnce(new MatchProviderError('503', 'unavailable'));
+    await loadPlayerStats(db, provider, user, NOW);
+
+    const result = await refreshPlayerStats(db, provider, user, at(MATCHES_FORCE_REFRESH_MS), () => {});
+
+    expect(result).toEqual({ ok: true });
     expect(provider.listMatches).toHaveBeenCalledTimes(2);
   });
 

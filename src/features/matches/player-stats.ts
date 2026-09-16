@@ -8,6 +8,7 @@ import { after } from 'next/server';
 
 import {
   MATCH_DETAILS_PER_SYNC,
+  MATCHES_FORCE_REFRESH_MS,
   MATCHES_LIMIT,
   MATCHES_REFRESH_MS,
   MATCHES_RETRY_AFTER_ERROR_MS,
@@ -41,6 +42,9 @@ export type PlayerStats =
 
 export type StatsUser = { id: number; riotGameName: string | null; riotTagLine: string | null };
 export type AfterScheduler = (task: () => void | Promise<void>) => void;
+export type RefreshPlayerStatsResult = { ok: true } | { ok: false; error: string };
+
+export const FORCE_REFRESH_RATE_LIMIT_MESSAGE = 'Recién actualizamos; probá de nuevo en un minuto.';
 
 const ERROR_MESSAGES: Record<MatchProviderError['kind'], string> = {
   'not-found': 'OP.GG no encuentra ese Riot ID. Revisá que esté bien escrito en el perfil.',
@@ -185,13 +189,14 @@ export async function loadPlayerStats(
   user: StatsUser,
   now: Date,
   scheduleAfter: AfterScheduler = after,
+  options: { force?: boolean } = {},
 ): Promise<PlayerStats> {
   if (!user.riotGameName || !user.riotTagLine) return { status: 'no-riot-id' };
   const riotId = { gameName: user.riotGameName, tagLine: user.riotTagLine };
 
   const current = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
   let historySynced = false;
-  if (shouldSync(current, riotId, now)) {
+  if (options.force || shouldSync(current, riotId, now)) {
     historySynced = await sync(db, provider, user.id, riotId, now);
   }
 
@@ -224,6 +229,36 @@ export async function loadPlayerStats(
     error: kind ? (ERROR_MESSAGES[kind] ?? ERROR_MESSAGES.unavailable) : null,
     notFound: kind === 'not-found',
   };
+}
+
+/**
+ * Refresco solicitado por una persona. Saltea las ventanas automáticas, pero limita los pedidos
+ * manuales por jugador para no martillar a OP.GG desde varias pantallas o dispositivos.
+ */
+export async function refreshPlayerStats(
+  db: Db,
+  provider: MatchProvider,
+  user: StatsUser,
+  now: Date,
+  scheduleAfter: AfterScheduler = after,
+): Promise<RefreshPlayerStatsResult> {
+  if (!user.riotGameName || !user.riotTagLine) {
+    return { ok: false, error: 'Ese jugador todavía no cargó su Riot ID.' };
+  }
+
+  const current = db.select().from(playerStatsSync).where(eq(playerStatsSync.userId, user.id)).get();
+  if (
+    current?.attemptedAt &&
+    now.getTime() - current.attemptedAt.getTime() < MATCHES_FORCE_REFRESH_MS
+  ) {
+    return { ok: false, error: FORCE_REFRESH_RATE_LIMIT_MESSAGE };
+  }
+
+  const stats = await loadPlayerStats(db, provider, user, now, scheduleAfter, { force: true });
+  if (stats.status === 'no-riot-id') {
+    return { ok: false, error: 'Ese jugador todavía no cargó su Riot ID.' };
+  }
+  return stats.error ? { ok: false, error: stats.error } : { ok: true };
 }
 
 /** Detalle de una partida: una vez guardado no se vuelve a pedir. Null si la fuente no responde. */

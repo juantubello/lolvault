@@ -7,7 +7,12 @@ import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { UserAvatar } from '@/components/user-avatar';
 import { VaultCardView } from '@/components/vaults/vault-card';
+import { ProposeVaultSheet } from '@/components/vaults/propose-vault-sheet';
+import { VAULT_MAX_START_AHEAD_DAYS } from '@/config';
 import { getDb } from '@/db/client';
+import { listChampionOptions } from '@/features/champions/champions.queries';
+import { ensureChampions } from '@/features/champions/ddragon-sync';
+import { addDays, toLocalDateString } from '@/features/vaults/vault-dates';
 import {
   countByPlayer,
   filterVaults,
@@ -40,10 +45,28 @@ export default async function VaultsPage({
   if (!user?.displayName) redirect('/onboarding');
 
   const db = getDb();
-  const members = listMembers(db);
   const now = new Date();
+
+  try {
+    await ensureChampions(db);
+  } catch (error) {
+    // Sin campeones el sheet muestra el aviso; el resto de la pantalla sigue andando.
+    console.error('[champions] No se pudieron cargar desde Data Dragon:', error);
+  }
+
+  const members = listMembers(db);
   const vaults = listVaults(db, now);
   const filters = parseVaultFilters(await searchParams, new Set(members.map((member) => member.id)));
+  const today = toLocalDateString(now);
+  const proposeAction = (
+    <ProposeVaultSheet
+      champions={listChampionOptions(db)}
+      maxStartDate={toLocalDateString(addDays(now, VAULT_MAX_START_AHEAD_DAYS))}
+      members={members}
+      today={today}
+      viewerId={user.id}
+    />
+  );
 
   const cards = filterVaults(vaults, filters, now);
   const inForceByPlayer = countByPlayer(vaults.inForce);
@@ -52,9 +75,9 @@ export default async function VaultsPage({
 
   if (vaults.inForce.length + vaults.past.length === 0) {
     return (
-      <Screen title="Vaults">
+      <Screen action={proposeAction} title="Vaults">
         <EmptyState
-          description="Cuando una votación llegue a 3 votos a favor, el vault aparece acá."
+          description="Proponé el primer vault desde acá. Cuando llegue a 3 votos a favor, va a aparecer en esta lista."
           icon={LockKeyhole}
           title="Todos pueden jugar lo que quieran. Por ahora."
         />
@@ -63,7 +86,7 @@ export default async function VaultsPage({
   }
 
   return (
-    <Screen title="Vaults">
+    <Screen action={proposeAction} title="Vaults">
       <div className="vault-filters">
         <nav aria-label="Filtrar por jugador" className="player-filter">
           <Link

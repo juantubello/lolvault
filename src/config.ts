@@ -26,6 +26,8 @@ export const AVATAR_MAX_BYTES = 512 * 1024;
 export const OPGG_REGION = 'LAS';
 /** Cada cuánto se puede volver a pedir el historial de un jugador. Mientras tanto, caché. */
 export const MATCHES_REFRESH_MS = 10 * 60 * 1000;
+/** Límite entre refrescos manuales del mismo jugador, incluso si el anterior falló. */
+export const MATCHES_FORCE_REFRESH_MS = 60 * 1000;
 /** Si la fuente falló, esperar esto antes de reintentar (no martillar a OP.GG si nos bloquea). */
 export const MATCHES_RETRY_AFTER_ERROR_MS = 5 * 60 * 1000;
 /** Partidas que se piden por jugador (OP.GG acepta 5–20). */

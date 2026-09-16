@@ -1,23 +1,15 @@
-import { AtSign } from 'lucide-react';
+import { ChevronRight, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/auth/current-user';
-import { getDb } from '@/db/client';
 import { Suspense } from 'react';
 
 import { AppLogo } from '@/components/app-logo';
-import { CustomNotificationForm } from '@/components/custom-notification-form';
 import { PlayerStatsLoading, PlayerStatsSection } from '@/components/matches/player-stats-section';
-import { NotificationPreferencesPanel } from '@/components/notification-preferences-panel';
-import { PushNotifications } from '@/components/push-notifications';
 import { Screen } from '@/components/screen';
 import { UserAvatar } from '@/components/user-avatar';
 import { avatarUrl } from '@/features/profile/avatar-url';
-import { getTodayCustomNotification } from '@/features/push/custom-notifications';
-import { getNotificationPreferences } from '@/features/push/notification-preferences';
-import { readPushConfig } from '@/features/push/push-config';
-import { listPushDeviceViews } from '@/features/push/push-subscriptions';
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -27,12 +19,6 @@ export default async function ProfilePage() {
     user.riotGameName && user.riotTagLine
       ? `${user.riotGameName}#${user.riotTagLine}`
       : null;
-  const pushConfig = readPushConfig();
-  const db = getDb();
-  const now = new Date();
-  const pushDevices = listPushDeviceViews(db, user.id);
-  const preferences = getNotificationPreferences(db, user.id);
-  const todayNotice = getTodayCustomNotification(db, user.id, now);
 
   return (
     <Screen
@@ -51,40 +37,23 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <section className="grouped-section" aria-labelledby="account-heading">
-        <h2 id="account-heading">Cuenta</h2>
-        <div className="grouped-list">
-          <div className="profile-row">
-            <AtSign aria-hidden="true" size={20} strokeWidth={2} />
-            <div>
-              <span>Email</span>
-              <p>{user.email}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <PushNotifications
-        enabled={pushConfig.enabled}
-        initialDevices={pushDevices}
-        publicKey={pushConfig.publicKey}
-      />
-
-      <NotificationPreferencesPanel hasDevices={pushDevices.length > 0} initialPreferences={preferences} />
-
-      <CustomNotificationForm
-        disabledReason={pushConfig.enabled ? null : pushConfig.reason}
-        enabled={pushConfig.enabled}
-        initialSent={
-          todayNotice
-            ? { message: todayNotice.message, sentAt: todayNotice.sentAt.toISOString(), recipients: todayNotice.recipients }
-            : null
-        }
-      />
-
+      {/* Entrar al perfil es para ver las partidas: los ajustes viven en su propia pantalla. */}
       <Suspense fallback={<PlayerStatsLoading />}>
         <PlayerStatsSection isSelf user={user} />
       </Suspense>
+
+      <section className="grouped-section" aria-label="Ajustes">
+        <div className="grouped-list">
+          <Link className="profile-row profile-row-link" href="/perfil/ajustes">
+            <Settings aria-hidden="true" size={20} strokeWidth={2} />
+            <div>
+              <span>Ajustes y notificaciones</span>
+              <p>Email, avisos que recibís y aviso al grupo</p>
+            </div>
+            <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
+          </Link>
+        </div>
+      </section>
 
       <footer className="about-footer" aria-labelledby="about-heading">
         <AppLogo size={72} />

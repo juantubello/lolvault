@@ -5,13 +5,13 @@ import { EmptyState } from '@/components/empty-state';
 import { ChampionVaultBadge } from '@/components/vaults/champion-vault-badge';
 import {
   formatAverage,
-  formatDateTime,
   formatKda,
   formatPercent,
   POSITIONS,
   positionLabel,
   queueLabel,
   rankLabel,
+  timeAgo,
 } from '@/features/matches/format';
 import type { PlayerStats } from '@/features/matches/player-stats';
 import { kdaRatio, summarizeMatches } from '@/features/matches/player-summary';
@@ -19,6 +19,7 @@ import type { ChampionVault } from '@/features/vaults/vaults.queries';
 
 import { ChampionIcon } from './champion-icon';
 import { MatchRow } from './match-row';
+import { RefreshStatsButton } from './refresh-stats-button';
 
 export function PlayerStatsPanel({
   stats,
@@ -66,16 +67,19 @@ export function PlayerStatsPanel({
   return (
     <section aria-labelledby="stats-heading" className="stats-panel">
       <div className="stats-header">
-        <h2 id="stats-heading">Estadísticas</h2>
-        <span className="stats-source">
-          OP.GG · {stats.riotId.gameName}#{stats.riotId.tagLine}
-        </span>
+        <div className="stats-header-copy">
+          <h2 id="stats-heading">Estadísticas</h2>
+          <span className="stats-source">
+            OP.GG · {stats.riotId.gameName}#{stats.riotId.tagLine}
+            {stats.syncedAt ? ` · Actualizado ${timeAgo(stats.syncedAt, now)}` : ''}
+          </span>
+        </div>
+        <RefreshStatsButton userId={userId} />
       </div>
 
       {stats.error ? (
         <p className="stats-banner" role="status">
           {stats.error}
-          {stats.syncedAt && !stats.notFound ? ` Datos del ${formatDateTime(stats.syncedAt)}.` : ''}
         </p>
       ) : null}
 

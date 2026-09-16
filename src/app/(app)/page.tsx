@@ -6,18 +6,13 @@ import { BlacklistProposalCardView } from '@/components/blacklist/blacklist-prop
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { ProposalCardView } from '@/components/vaults/proposal-card';
-import { ProposeVaultSheet } from '@/components/vaults/propose-vault-sheet';
-import { VAULT_MAX_START_AHEAD_DAYS } from '@/config';
 import { getDb } from '@/db/client';
 import { mergeVotingCards, type MergedVotingCard } from '@/features/blacklist/blacklist-ui';
 import {
   listBlacklistVotingBoard,
   type BlacklistProposalCard,
 } from '@/features/blacklist/blacklist.queries';
-import { listChampionOptions } from '@/features/champions/champions.queries';
-import { ensureChampions } from '@/features/champions/ddragon-sync';
-import { addDays, toLocalDateString } from '@/features/vaults/vault-dates';
-import { listMembers, listVotingBoard, type ProposalCard } from '@/features/vaults/vaults.queries';
+import { listVotingBoard, type ProposalCard } from '@/features/vaults/vaults.queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,34 +48,15 @@ export default async function VotingPage() {
   const db = getDb();
   const now = new Date();
 
-  try {
-    await ensureChampions(db);
-  } catch (error) {
-    // Sin campeones el sheet muestra el aviso; el resto de la pantalla sigue andando.
-    console.error('[champions] No se pudieron cargar desde Data Dragon:', error);
-  }
-
   const board = listVotingBoard(db, user.id, now);
   const blacklistBoard = listBlacklistVotingBoard(db, user.id, now);
   const pending = mergeVotingCards(board.pending, blacklistBoard.pending, 'oldest');
   const open = mergeVotingCards(board.open, blacklistBoard.open, 'newest');
   const recent = mergeVotingCards(board.recent, blacklistBoard.recent, 'newest');
   const isEmpty = pending.length + open.length + recent.length === 0;
-  const today = toLocalDateString(now);
 
   return (
-    <Screen
-      action={
-        <ProposeVaultSheet
-          champions={listChampionOptions(db)}
-          maxStartDate={toLocalDateString(addDays(now, VAULT_MAX_START_AHEAD_DAYS))}
-          members={listMembers(db)}
-          today={today}
-          viewerId={user.id}
-        />
-      }
-      title="Votaciones"
-    >
+    <Screen title="Votaciones">
       {isEmpty ? (
         <EmptyState
           description="Cuando alguien proponga un vault o un cambio en la black list, vas a poder votarlo desde acá."

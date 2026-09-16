@@ -133,6 +133,12 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   - Pendiente menor: los fixtures de OP.GG conservan ids de partida y datos de perfil que permiten
     reconocer la cuenta real (ya están en el historial público).
 
+- 2026-09-16 — **Propuestas en Vaults + refresco manual de OP.GG.** El sheet para proponer se movió
+  de Votaciones a Vaults y sigue disponible en el estado vacío. Perfil y Amigos ahora muestran la
+  última sincronización y un botón Actualizar con estado pendiente/error. El refresco manual reutiliza
+  el sync existente, saltea los TTL automáticos y tiene un límite por jugador de 60 s; la Server Action
+  valida sesión y membresía. Typecheck, 217 tests y build de producción verificados.
+
 ### Siguiente
 1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 2. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.

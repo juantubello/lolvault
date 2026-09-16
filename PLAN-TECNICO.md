@@ -250,8 +250,8 @@ Son 5 destinos de primer nivel (el máximo de la regla):
 
 | Tab | Contenido |
 |---|---|
-| **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. Botón **+ Proponer** junto al título. |
-| **Vaults** | Filtros en la URL: fila de jugadores con foto, **Vigentes · Por expirar · Terminados · Todos** y búsqueda por campeón. "Por expirar" = vigentes que terminan hoy o mañana (`VAULT_EXPIRING_DAYS`). Con "Todos" agrupa por jugador. Vigentes con **"Pedir que se levante"**. |
+| **Votaciones** | **"Te falta votar" primero** (con badge en la tab), después "En votación" y "Resueltas". Contador `2/3`, tiempo restante, A favor / En contra, cancelar. |
+| **Vaults** | Botón **+ Proponer** junto al título (también visible sin vaults). Filtros en la URL: fila de jugadores con foto, **Vigentes · Por expirar · Terminados · Todos** y búsqueda por campeón. "Por expirar" = vigentes que terminan hoy o mañana (`VAULT_EXPIRING_DAYS`). Con "Todos" agrupa por jugador. Vigentes con **"Pedir que se levante"**. |
 | **Black list** | Entradas vigentes (nombre, Riot ID, motivo, quién y cuándo, partida adjunta) con búsqueda y **"Pedir que se saque"**. **+ Agregar** abre un sheet: nombre con autocompletado de Riot ID → motivo → partida (opcional). Las votaciones de black list aparecen en **Votaciones** junto a las de vaults. En el detalle de partida, los jugadores de la lista llevan un badge. |
 | **Amigos** | Lista de perfiles. En el detalle: vaults activos, historial y (SHOULD) última partida. |
 | **Perfil** | Mi perfil con **foto**, **editar foto, nombre y Riot ID** (`/perfil/editar`), aviso legal de Riot. |

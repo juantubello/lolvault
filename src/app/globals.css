@@ -1179,6 +1179,26 @@ button {
   border-bottom: 0.5px solid var(--separator);
 }
 
+/* Cerrar: además de "Cancelar", un target de 44 px arriba a la derecha (iOS lo espera ahí). */
+.sheet-close {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--label-2);
+  cursor: pointer;
+  transition: background-color var(--motion-press);
+}
+
+.sheet-close:active {
+  background: var(--fill-pressed);
+}
+
 .sheet-header .text-button {
   justify-self: start;
   font-weight: 400;
@@ -1781,11 +1801,15 @@ button {
 }
 
 .stats-header {
-  display: flex;
+  display: grid;
   min-width: 0;
-  align-items: baseline;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 0.75rem;
+}
+
+.stats-header-copy {
+  min-width: 0;
 }
 
 .stats-header h2 {
@@ -1796,12 +1820,58 @@ button {
 }
 
 .stats-source {
+  display: block;
   min-width: 0;
-  overflow: hidden;
+  margin-top: 0.125rem;
   color: var(--label-2);
   font-size: 0.8125rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.stats-refresh-button {
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  color: var(--tint);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color var(--motion-press), opacity var(--motion-press);
+}
+
+.stats-refresh-button:active:not(:disabled) {
+  background: var(--fill-pressed);
+}
+
+.stats-refresh-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.stats-refresh-button .is-spinning {
+  animation: stats-refresh-spin 0.8s linear infinite;
+}
+
+.stats-refresh-error {
+  grid-column: 1 / -1;
+  margin: -0.25rem 0 0;
+  color: var(--danger);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+@keyframes stats-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .stats-banner,

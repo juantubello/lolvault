@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 
 import { ChampionIcon } from '@/components/matches/champion-icon';
@@ -200,7 +200,9 @@ export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
           <header className="sheet-header">
             <button className="text-button" onClick={closeDialog} type="button">Cancelar</button>
             <h2 id="add-blacklist-title">Agregar a la black list</h2>
-            <span aria-hidden="true" />
+            <button aria-label="Cerrar" className="sheet-close" onClick={closeDialog} type="button">
+              <X aria-hidden="true" size={20} strokeWidth={2.5} />
+            </button>
           </header>
 
           <div className="sheet-body">
