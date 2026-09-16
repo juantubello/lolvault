@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, vaults, black list, perfiles, historial y Web Push implementados
+## Estado: votaciones, castigos, Scout de jugador, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -139,12 +139,23 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   el sync existente, saltea los TTL automáticos y tiene un límite por jugador de 60 s; la Server Action
   valida sesión y membresía. Typecheck, 217 tests y build de producción verificados.
 
+- 2026-09-16 — **Navegación Castigos + Fase A de Scout.** Vaults y Black list comparten la tab
+  `/castigos` con segmento en `?tipo=`; `/vaults` y `/black-list` redirigen preservando filtros y
+  los push nuevos usan la URL canónica. La quinta tab es Scout: búsqueda manual por `nombre#tag`,
+  rango/nivel, rendimiento por posición y campeón, partidas con detalle, badge de black list y
+  propuesta precargada. Reusa `MatchProvider` y las tablas de caché existentes con los mismos TTL
+  y backoff; `LiveGameProvider` devuelve `null` hasta contar con la Personal API Key. Sin migración.
+  Typecheck, 227 tests y build de producción verificados por Codex. La revisión visual automatizada
+  quedó pendiente porque no hubo navegador integrado disponible en la sesión.
+
 ### Siguiente
-1. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-2. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-3. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-4. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-5. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
+1. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
+2. Fase B del plan Scout/Draft: ingesta diaria cacheada de Lolalytics (fuera de esta entrega).
+3. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
+4. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+5. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
+6. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+7. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

@@ -15,6 +15,16 @@ export type ChampionSummary = {
   kda: number | null;
 };
 
+export type PositionSummary = {
+  position: string;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  /** null = sin muertes (KDA perfecto). */
+  kda: number | null;
+};
+
 export type RecentSummary = {
   games: number;
   wins: number;
@@ -47,6 +57,52 @@ export function kdaRatio(kills: number, deaths: number, assists: number): number
   return deaths === 0 ? null : (kills + assists) / deaths;
 }
 
+function aggregateMatches<T extends { games: number; wins: number; losses: number; winRate: number; kda: number | null }>(
+  groups: Iterable<PlayerMatchSummary[]>,
+  build: (matches: PlayerMatchSummary[]) => Omit<T, 'games' | 'wins' | 'losses' | 'winRate' | 'kda'>,
+): T[] {
+  return [...groups].map((matches) => {
+    const wins = matches.filter((match) => match.win).length;
+    const sum = (key: 'kills' | 'deaths' | 'assists') =>
+      matches.reduce((total, match) => total + match[key], 0);
+    return {
+      ...build(matches),
+      games: matches.length,
+      wins,
+      losses: matches.length - wins,
+      winRate: ratio(wins, matches.length),
+      kda: kdaRatio(sum('kills'), sum('deaths'), sum('assists')),
+    } as T;
+  });
+}
+
+/** Rendimiento por lane en partidas completas; los remakes no cuentan. */
+export function summarizeMatchesByPosition(matches: PlayerMatchSummary[]): PositionSummary[] {
+  const groups = new Map<string, PlayerMatchSummary[]>();
+  for (const match of matches) {
+    if (isRemake(match) || !match.position) continue;
+    groups.set(match.position, [...(groups.get(match.position) ?? []), match]);
+  }
+  return aggregateMatches<PositionSummary>(groups.values(), (positionMatches) => ({
+    position: positionMatches[0]!.position!,
+  })).sort((a, b) => b.games - a.games || a.position.localeCompare(b.position));
+}
+
+/** Rendimiento por campeón en partidas completas; devuelve todos, no solo el top. */
+export function summarizeMatchesByChampion(matches: PlayerMatchSummary[]): ChampionSummary[] {
+  const groups = new Map<number, PlayerMatchSummary[]>();
+  for (const match of matches) {
+    if (isRemake(match)) continue;
+    groups.set(match.championId, [...(groups.get(match.championId) ?? []), match]);
+  }
+  return aggregateMatches<ChampionSummary>(groups.values(), (championMatches) => ({
+    championId: championMatches[0]!.championId,
+    championName: championMatches[0]!.championName,
+  })).sort(
+    (a, b) => b.games - a.games || b.winRate - a.winRate || a.championName.localeCompare(b.championName),
+  );
+}
+
 function ratio(part: number, total: number): number {
   return total === 0 ? 0 : part / total;
 }
@@ -61,28 +117,7 @@ export function summarizeMatches(matches: PlayerMatchSummary[], topCount = 3): R
   const assists = counted.reduce((sum, match) => sum + match.assists, 0);
   const teamKills = counted.reduce((sum, match) => sum + match.teamKills, 0);
 
-  const byChampion = new Map<number, PlayerMatchSummary[]>();
-  for (const match of counted) {
-    byChampion.set(match.championId, [...(byChampion.get(match.championId) ?? []), match]);
-  }
-
-  const topChampions = [...byChampion.values()]
-    .map((championMatches): ChampionSummary => {
-      const championWins = championMatches.filter((match) => match.win).length;
-      const sum = (key: 'kills' | 'deaths' | 'assists') =>
-        championMatches.reduce((total, match) => total + match[key], 0);
-      return {
-        championId: championMatches[0]!.championId,
-        championName: championMatches[0]!.championName,
-        games: championMatches.length,
-        wins: championWins,
-        losses: championMatches.length - championWins,
-        winRate: ratio(championWins, championMatches.length),
-        kda: kdaRatio(sum('kills'), sum('deaths'), sum('assists')),
-      };
-    })
-    .sort((a, b) => b.games - a.games || b.winRate - a.winRate || a.championName.localeCompare(b.championName))
-    .slice(0, topCount);
+  const topChampions = summarizeMatchesByChampion(counted).slice(0, topCount);
 
   const roleCounts = new Map<string, number>();
   for (const match of counted) {

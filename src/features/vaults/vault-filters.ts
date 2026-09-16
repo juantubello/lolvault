@@ -1,5 +1,6 @@
 /**
- * Filtros de la pestaña Vaults. Viven en la URL (`/vaults?jugador=2&estado=todos&q=yas`): así
+ * Filtros del segmento Vaults. Viven en la URL
+ * (`/castigos?tipo=vaults&jugador=2&estado=todos&q=yas`): así
  * funcionan "atrás", compartir el link y el render en el servidor, sin estado en el cliente.
  */
 import { VAULT_EXPIRING_DAYS } from '@/config';
@@ -47,17 +48,16 @@ export function parseVaultFilters(params: SearchParams, memberIds: ReadonlySet<n
 
 /** Link con los filtros dados; omite los defaults para que las URLs queden cortas. */
 export function vaultsHref(filters: VaultFilters): string {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ tipo: 'vaults' });
   if (filters.playerId !== null) params.set('jugador', String(filters.playerId));
   if (filters.status !== 'vigentes') params.set('estado', filters.status);
   if (filters.query) params.set('q', filters.query);
 
-  const query = params.toString();
-  return query ? `/vaults?${query}` : '/vaults';
+  return `/castigos?${params.toString()}`;
 }
 
 export function hasActiveFilters(filters: VaultFilters): boolean {
-  return vaultsHref(filters) !== '/vaults';
+  return vaultsHref(filters) !== '/castigos?tipo=vaults';
 }
 
 /** Días que le quedan contando hoy (hora argentina): 1 = termina hoy, 2 = termina mañana. */

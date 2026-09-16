@@ -25,15 +25,25 @@ function manualRiotId(value: string): { name: string; riotId: string } | null {
   return hash > 0 && name && tag ? { name, riotId: `${name}#${tag}` } : null;
 }
 
-export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
+export function AddBlacklistSheet({
+  viewerId,
+  initialPlayerName = '',
+  initialRiotId = '',
+  triggerLabel = 'Agregar',
+}: {
+  viewerId: number;
+  initialPlayerName?: string;
+  initialRiotId?: string;
+  triggerLabel?: string;
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const searchSequence = useRef(0);
   const matchSequence = useRef(0);
   const [state, formAction, pending] = useActionState(createBlacklistProposalAction, initialState);
   const [formKey, setFormKey] = useState(0);
   const [opened, setOpened] = useState(false);
-  const [playerName, setPlayerName] = useState('');
-  const [riotId, setRiotId] = useState('');
+  const [playerName, setPlayerName] = useState(initialPlayerName);
+  const [riotId, setRiotId] = useState(initialRiotId);
   const [reason, setReason] = useState('');
   const [matchId, setMatchId] = useState('');
   const [suggestions, setSuggestions] = useState<KnownPlayerSuggestion[]>([]);
@@ -71,15 +81,15 @@ export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
     dialogRef.current?.close();
     setFormKey((key) => key + 1);
     setOpened(false);
-    setPlayerName('');
-    setRiotId('');
+    setPlayerName(initialPlayerName);
+    setRiotId(initialRiotId);
     setReason('');
     setMatchId('');
     setSuggestions([]);
     setSuggestionsOpen(false);
     setMatches(emptyMatches);
     setMatchesForRiotId(null);
-  }, [state.createdId]);
+  }, [initialPlayerName, initialRiotId, state.createdId]);
 
   useEffect(() => {
     if (!opened || query.length < 2 || riotId) {
@@ -182,7 +192,7 @@ export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
     <>
       <button aria-haspopup="dialog" className="nav-action-button" onClick={openDialog} type="button">
         <Plus aria-hidden="true" size={20} strokeWidth={2} />
-        <span>Agregar</span>
+        <span>{triggerLabel}</span>
       </button>
 
       {/* Tocar el backdrop cierra: si el sheet quedara invisible, la app no queda trabada. */}

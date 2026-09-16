@@ -1,6 +1,6 @@
 'use client';
 
-import { Ban, CircleUserRound, LockKeyhole, Users, Vote, type LucideIcon } from 'lucide-react';
+import { CircleUserRound, LockKeyhole, Telescope, Users, Vote, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -14,14 +14,15 @@ type Destination = {
 
 const destinations: Destination[] = [
   { href: '/', label: 'Votaciones', icon: Vote },
-  { href: '/vaults', label: 'Vaults', icon: LockKeyhole },
-  { href: '/black-list', label: 'Black list', icon: Ban },
+  { href: '/castigos?tipo=vaults', label: 'Castigos', icon: LockKeyhole },
+  { href: '/scout', label: 'Scout', icon: Telescope },
   { href: '/amigos', label: 'Amigos', icon: Users },
   { href: '/perfil', label: 'Perfil', icon: CircleUserRound },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {
-  return href === '/' ? pathname === href : pathname.startsWith(href);
+  const hrefPath = href.split('?')[0] ?? href;
+  return hrefPath === '/' ? pathname === hrefPath : pathname.startsWith(hrefPath);
 }
 
 function NavigationItems({

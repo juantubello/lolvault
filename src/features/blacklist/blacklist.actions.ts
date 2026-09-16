@@ -1,12 +1,12 @@
 'use server';
 
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 import { getCurrentUser } from '@/auth/current-user';
 import { BLACKLIST_NAME_MAX_LENGTH, BLACKLIST_REASON_MAX_LENGTH } from '@/config';
 import { getDb, type Db } from '@/db/client';
-import { blacklistProposals, matchDetails, matchParticipants, playerMatches, users } from '@/db/schema';
+import { blacklistProposals, matchDetails, matchParticipants, playerMatches } from '@/db/schema';
 import { championImagesByKey } from '@/features/champions/champion-images';
 import { getFriendProfile } from '@/features/friends/friends.queries';
 import { queueLabel } from '@/features/matches/format';
@@ -106,7 +106,7 @@ function ruleMessage(error: unknown): string {
   throw error;
 }
 
-/** Busca solo snapshots ya cacheados que estén vinculados al historial de algún miembro. */
+/** Busca solo snapshots ya cacheados y, con Riot ID, comprueba que ese jugador aparezca. */
 function validatedAttachment(
   db: Db,
   matchId: string,
@@ -114,21 +114,19 @@ function validatedAttachment(
 ): BlacklistMatchAttachment | null {
   const details = db.select().from(matchDetails).where(eq(matchDetails.matchId, matchId)).all();
   for (const detail of details) {
-    const belongsToMember = Boolean(
+    const belongsToCachedHistory = Boolean(
       db
         .select({ userId: playerMatches.userId })
         .from(playerMatches)
-        .innerJoin(users, eq(users.id, playerMatches.userId))
         .where(
           and(
             eq(playerMatches.provider, detail.provider),
             eq(playerMatches.matchId, matchId),
-            isNotNull(users.displayName),
           ),
         )
         .get(),
     );
-    if (!belongsToMember) continue;
+    if (!belongsToCachedHistory) continue;
 
     if (riotId) {
       const participantAppears = db
@@ -192,8 +190,8 @@ export async function createBlacklistProposalAction(
       return {
         fieldErrors: {
           matchId: parsedRiotId.riotId
-            ? 'Esa partida no está cacheada para el grupo o no aparece ese Riot ID.'
-            : 'Esa partida no está cacheada en el historial de un miembro.',
+            ? 'Esa partida no está cacheada o no aparece ese Riot ID.'
+            : 'Esa partida no está cacheada en un historial.',
         },
         values,
       };

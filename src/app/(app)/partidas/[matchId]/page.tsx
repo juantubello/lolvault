@@ -15,6 +15,7 @@ import { matchBackHref } from '@/features/matches/match-detail';
 import { loadMatchDetail } from '@/features/matches/player-stats';
 import { getMatchProvider } from '@/features/matches/provider';
 import type { MatchDetail } from '@/features/matches/types';
+import { getScoutPlayer } from '@/features/scout/player';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,18 +98,26 @@ export default async function MatchDetailPage({
   if (!matchId || !Number.isInteger(playerId) || playerId <= 0) notFound();
 
   const db = getDb();
-  const player = getFriendProfile(db, playerId);
+  const source = first(query.desde) ?? null;
+  const scoutPlayer = source === 'scout' ? getScoutPlayer(db, playerId) : null;
+  const player = scoutPlayer
+    ? { ...scoutPlayer, avatarUrl: null }
+    : getFriendProfile(db, playerId);
   if (!player) notFound();
 
-  const source = first(query.desde) ?? null;
-  const backHref = matchBackHref(currentUser.id, player.id, source);
+  const focusRiotId = player.riotGameName && player.riotTagLine
+    ? { gameName: player.riotGameName, tagLine: player.riotTagLine }
+    : undefined;
+  const backHref = matchBackHref(currentUser.id, player.id, source, focusRiotId);
   const backLabel = source === 'votaciones'
     ? 'Votaciones'
     : source === 'black-list'
       ? 'Black list'
-      : player.id === currentUser.id
-        ? 'Perfil'
-        : player.displayName;
+      : source === 'scout'
+        ? 'Scout'
+        : player.id === currentUser.id
+          ? 'Perfil'
+          : player.displayName;
   const resolved = await resolveDetail(db, matchId, player);
   if (!resolved.detail && !resolved.historyMatchFound) notFound();
 

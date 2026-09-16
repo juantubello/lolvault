@@ -57,7 +57,10 @@ describe('detalle de partida', () => {
     expect(matchBackHref(4, 4, null)).toBe('/perfil');
     expect(matchBackHref(4, 9, null)).toBe('/amigos/9');
     expect(matchBackHref(4, 9, 'votaciones')).toBe('/');
-    expect(matchBackHref(4, 9, 'black-list')).toBe('/black-list');
+    expect(matchBackHref(4, 9, 'black-list')).toBe('/castigos?tipo=black-list');
+    expect(
+      matchBackHref(4, 9, 'scout', { gameName: 'Rival Anónimo', tagLine: 'TAG1' }),
+    ).toBe('/scout?jugador=Rival%20An%C3%B3nimo%23TAG1');
     expect(matchBackHref(4, 9, 'https://ejemplo.test')).toBe('/amigos/9');
   });
 

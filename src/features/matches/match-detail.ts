@@ -55,9 +55,17 @@ export function performanceBadge(
 }
 
 /** Destinos cerrados: ningún valor arbitrario del query string se convierte en URL. */
-export function matchBackHref(currentUserId: number, focusUserId: number, source: string | null): string {
+export function matchBackHref(
+  currentUserId: number,
+  focusUserId: number,
+  source: string | null,
+  focusRiotId?: RiotId,
+): string {
   if (source === 'votaciones') return '/';
-  if (source === 'black-list') return '/black-list';
+  if (source === 'black-list') return '/castigos?tipo=black-list';
+  if (source === 'scout' && focusRiotId) {
+    return `/scout?jugador=${encodeURIComponent(`${focusRiotId.gameName}#${focusRiotId.tagLine}`)}`;
+  }
   return currentUserId === focusUserId ? '/perfil' : `/amigos/${focusUserId}`;
 }
 

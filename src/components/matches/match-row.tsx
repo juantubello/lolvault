@@ -13,11 +13,13 @@ export function MatchRow({
   imageUrl,
   now,
   userId,
+  source,
 }: {
   match: PlayerMatchSummary;
   imageUrl: string | undefined;
   now: Date;
   userId: number;
+  source?: 'scout';
 }) {
   const outcome = matchOutcome(match);
 
@@ -25,7 +27,7 @@ export function MatchRow({
     <li data-result={outcome.tone}>
       <Link
         className="match-row"
-        href={`/partidas/${encodeURIComponent(match.matchId)}?jugador=${userId}`}
+        href={`/partidas/${encodeURIComponent(match.matchId)}?jugador=${userId}${source ? `&desde=${source}` : ''}`}
       >
         <ChampionIcon imageUrl={imageUrl} name={match.championName} />
         <div className="match-main">

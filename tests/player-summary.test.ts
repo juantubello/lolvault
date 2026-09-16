@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { isRemake, kdaRatio, summarizeMatches } from '@/features/matches/player-summary';
+import {
+  isRemake,
+  kdaRatio,
+  summarizeMatches,
+  summarizeMatchesByChampion,
+  summarizeMatchesByPosition,
+} from '@/features/matches/player-summary';
 import type { PlayerMatchSummary } from '@/features/matches/types';
 
 let nextId = 0;
@@ -82,5 +88,28 @@ describe('helpers', () => {
   it('una partida de menos de 5 minutos es remake', () => {
     expect(isRemake({ durationSeconds: 262 })).toBe(true);
     expect(isRemake({ durationSeconds: 1099 })).toBe(false);
+  });
+});
+
+describe('Scout por posición y campeón', () => {
+  const matches = [
+    match({ position: 'MID', championId: 90, championName: 'Malzahar', kills: 8, deaths: 2, assists: 4, win: true }),
+    match({ position: 'MID', championId: 90, championName: 'Malzahar', kills: 2, deaths: 3, assists: 5, win: false }),
+    match({ position: 'SUPPORT', championId: 25, championName: 'Morgana', kills: 1, deaths: 0, assists: 9, win: true }),
+    match({ position: 'TOP', championId: 122, championName: 'Darius', durationSeconds: 240, win: true }),
+  ];
+
+  it('calcula partidas, win rate y KDA por posición sin contar remakes', () => {
+    expect(summarizeMatchesByPosition(matches)).toEqual([
+      { position: 'MID', games: 2, wins: 1, losses: 1, winRate: 0.5, kda: 19 / 5 },
+      { position: 'SUPPORT', games: 1, wins: 1, losses: 0, winRate: 1, kda: null },
+    ]);
+  });
+
+  it('calcula y ordena las estadísticas por campeón', () => {
+    expect(summarizeMatchesByChampion(matches)).toEqual([
+      { championId: 90, championName: 'Malzahar', games: 2, wins: 1, losses: 1, winRate: 0.5, kda: 19 / 5 },
+      { championId: 25, championName: 'Morgana', games: 1, wins: 1, losses: 0, winRate: 1, kda: null },
+    ]);
   });
 });

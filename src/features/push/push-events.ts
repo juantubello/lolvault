@@ -58,7 +58,7 @@ export function vaultApprovedEvent(input: {
         payload: {
           title: `Se levantó tu vault de ${input.championName}`,
           body: 'Ya podés volver a jugarlo.',
-          url: `/vaults?jugador=${input.targetUserId}`,
+          url: `/castigos?tipo=vaults&jugador=${input.targetUserId}`,
           tag,
         },
       },
@@ -72,7 +72,7 @@ export function vaultApprovedEvent(input: {
       payload: {
         title: `Te vaultearon ${input.championName}`,
         body: input.lastDayLabel ? `Hasta ${input.lastDayLabel}` : 'El vault fue aprobado.',
-        url: `/vaults?jugador=${input.targetUserId}`,
+        url: `/castigos?tipo=vaults&jugador=${input.targetUserId}`,
         tag,
       },
     },
@@ -84,7 +84,7 @@ export function vaultApprovedEvent(input: {
       payload: {
         title: 'Vault aprobado',
         body: `Se aprobó vaultear ${input.championName} a ${input.targetName}`,
-        url: `/vaults?jugador=${input.targetUserId}`,
+        url: `/castigos?tipo=vaults&jugador=${input.targetUserId}`,
         tag,
       },
     });
@@ -135,7 +135,7 @@ export function blacklistApprovedEvent(input: {
           input.kind === 'add'
             ? `${input.playerName} entró a la black list.`
             : `${input.playerName} salió de la black list.`,
-        url: '/black-list',
+        url: '/castigos?tipo=black-list',
         tag: `blacklist-vote-${input.proposalId}`,
       },
     },

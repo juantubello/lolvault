@@ -38,7 +38,7 @@ export default async function FriendPage({ params }: { params: Promise<{ id: str
 
       <section aria-label="Vaults" className="grouped-section">
         <div className="grouped-list">
-          <Link className="profile-row profile-row-link" href={`/vaults?jugador=${friend.id}&estado=todos`}>
+          <Link className="profile-row profile-row-link" href={`/castigos?tipo=vaults&jugador=${friend.id}&estado=todos`}>
             <LockKeyhole aria-hidden="true" size={20} strokeWidth={2} />
             <div>
               <span>Ver sus vaults</span>
