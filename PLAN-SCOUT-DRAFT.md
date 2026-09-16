@@ -89,6 +89,28 @@ partidas.
 Con una espera prudente entre requests son ~30-45 minutos, una vez por día, de noche. Para un
 homelab de 2 núcleos es despreciable. **Muy por debajo** de los 530 MB del scraping de HTML.
 
+### 1.3.1 Scaling: `q-data.json` en vez del HTML
+
+El panel de DraftGap tiene una fila **Scaling** (cómo le va al equipo según cuánto dura la
+partida). Ese dato no está en `ep=counter` ni en `ep=build-team`, y probé quince nombres más de
+endpoint sin suerte.
+
+Pero Lolalytics es una app Qwik, y Qwik publica el estado de cada página como JSON:
+
+```
+https://lolalytics.com/lol/<champ>/build/q-data.json?tier=emerald_plus&region=all&patch=16.18&lane=<role>
+```
+
+Verificado en dos campeones: **200, ~183 KB, 0,35 s**, y adentro está `sidebar.time` /
+`timeWin`, que es exactamente la serie que usa DraftGap. Son 183 KB contra los 628 KB del HTML,
+y es JSON en vez de regex sobre una página.
+
+La contra: el formato usa *string interning* (`{"time":"2ax","timeWin":"2b5"}` son índices al
+array `_objs`), así que hace falta un resolver de punteros. Es la parte frágil de todo esto.
+
+**Por eso Scaling va en una fase aparte (Fase E) y opcional.** Las fases A a D no dependen de
+este parser: si Lolalytics cambia la serialización de Qwik, se cae Scaling y nada más.
+
 ### 1.4 Riesgo, y cómo lo acotamos
 
 Estos endpoints de Lolalytics **no están documentados ni tienen términos publicados**. Pueden
@@ -206,17 +228,49 @@ Pantalla `/scout`: input `nombre#tag` → perfil del rival con los datos que pid
 - Tests con números a mano: un matchup simétrico da 0, un campeón con 12 partidas no domina el
   ranking (prior), el total de una comp espejo da 50 %.
 
-### Fase D — Pantalla de draft
+### Fase D — Pantalla de draft y panel de análisis
 
 `/scout?tipo=draft`: dos columnas (tu equipo / enemigo), 5 slots cada una, grilla de campeones
 con la búsqueda sin tildes que ya existe.
 
-- Muestra **win rate estimado** de la comp y, para cada rol libre, los mejores picks ordenados,
-  con el desglose (cuánto viene del matchup, cuánto de la sinergia).
+Dos solapas, como DraftGap: **Draft** (armar y ver sugerencias) y **Draft Analysis** (el
+desglose completo). Juan pidió explícitamente el panel entero, no solo la sugerencia de pick.
+
+**Solapa Draft**
+- Win rate estimado de la comp y, para cada rol libre, los mejores picks ordenados, con el
+  desglose (cuánto viene del matchup, cuánto de la sinergia).
 - Selector de riesgo (el prior de DraftGap).
-- Dice **de cuándo son los datos** y de qué parche.
-- Mobile-first de verdad: en iPhone las dos comps no entran lado a lado, va segmentado o
-  apilado. Revisar con la skill `ui-ux-pro-max` antes de maquetar.
+- Encabezado: parche y **de cuándo son los datos** ("actualizado hace 2 horas").
+
+**Solapa Draft Analysis** — todo sale del mismo `analyzeDraft`, que ya devuelve cada pieza
+(`allyChampionRating`, `enemyChampionRating`, `allyDuoRating`, `enemyDuoRating`,
+`matchupRating`, `totalRating`, `winrate`). Es capa de presentación, no cálculo nuevo:
+
+| Bloque | Contenido |
+|---|---|
+| Resumen por lado | Champions · Matchups · Duos · **Winrate**, para aliados y para enemigos. |
+| Ally / Opponent overview | Tabla por rol: Champion, **Base**, **Matchup**, **Duo**, **Total**, con la fila de totales. |
+| Ally / Opponent champions | Rol, campeón y win rate base. |
+| Matchups | Rol, aliado, win rate, **ganador**, rol, oponente. Con selector **Head to head / All** (head to head = solo mismo rol; all = los 25 cruces). |
+| Ally / Opponent duos | Los 10 duos por lado con su win rate. |
+| Scaling | Fase E. Hasta entonces **no se muestra el bloque** (nunca un placeholder con 50,00). |
+
+- Las tablas de matchups y duos llevan el rótulo **"win rates normalizados"**: el número ya
+  tiene descontada la fuerza base de cada campeón (§1.5), que es lo que las hace comparables.
+- Con el draft vacío todo da 50,00: es correcto y es lo que hace DraftGap.
+- Mobile-first de verdad: en iPhone ni las dos comps ni una tabla de 6 columnas entran a lo
+  ancho. El panel va apilado, cada tabla en su `overflow-x` o replegada a lista. Revisar con la
+  skill `ui-ux-pro-max` antes de maquetar.
+
+### Fase E — Scaling (opcional)
+
+Ingesta de `q-data.json` (§1.3.1) para la serie por duración de partida, con su resolver de
+punteros Qwik aislado en un módulo propio y tests contra una fixture guardada.
+
+- +855 requests y ~153 MB por sync. Corre **después** del sync principal y, si falla, no
+  invalida nada de lo anterior.
+- Es la parte más frágil del proyecto: si Lolalytics cambia la serialización, se apaga este
+  bloque y las fases A-D siguen intactas.
 
 ---
 
