@@ -186,6 +186,22 @@ Dos detalles que **no** hay que perderse:
    ficticias con el win rate esperado (`very-low: 3000 … very-high: 250`). Sin eso, un matchup
    con 12 partidas jugadas domina el ranking.
 
+### 1.5.1 Las duplas NO se calculan como los matchups
+
+Es la trampa más fácil de invertir, y si se invierte el resultado sigue pareciendo razonable:
+
+| | Matchup (se enfrentan) | Dupla (mismo equipo) |
+|---|---|---|
+| Rating esperado | `rating(A) − rating(B)` (**resta**) | `rating(A) + rating(B)` (**suma**) |
+| Simetrización | promedio de A-vs-B con el **inverso** de B-vs-A (las derrotas del rival cuentan como victorias propias) | promedio simple de A-con-B y B-con-A |
+
+El resto es igual en los dos casos: se le suma el prior bayesiano con el win rate esperado, y el
+rating final es `ratingReal − ratingEsperado`, o sea cuánto se despega la pareja (o el
+enfrentamiento) de lo que se esperaría por la fuerza individual de cada campeón.
+
+Las duplas recorren **pares no ordenados** (i < j) de los roles ya elegidos: con cinco campeones
+son diez parejas por equipo.
+
 `getSuggestions` prueba cada campeón libre en cada rol libre, corre `analyzeDraft` y ordena por
 win rate.
 
