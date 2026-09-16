@@ -14,7 +14,7 @@ export function PunishmentSegments({ selected }: { selected: PunishmentType }) {
         <Link
           aria-current={selected === segment.value ? 'true' : undefined}
           className="segmented-item"
-          href={`/castigos?tipo=${segment.value}`}
+          href={`/ripeados?tipo=${segment.value}`}
           key={segment.value}
         >
           {segment.label}

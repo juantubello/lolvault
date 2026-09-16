@@ -62,7 +62,7 @@ export function matchBackHref(
   focusRiotId?: RiotId,
 ): string {
   if (source === 'votaciones') return '/';
-  if (source === 'black-list') return '/castigos?tipo=black-list';
+  if (source === 'black-list') return '/ripeados?tipo=black-list';
   if (source === 'scout' && focusRiotId) {
     return `/scout?jugador=${encodeURIComponent(`${focusRiotId.gameName}#${focusRiotId.tagLine}`)}`;
   }

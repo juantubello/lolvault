@@ -49,12 +49,12 @@ export function BlacklistSegment({
   const hasEntries = blacklist.active.length + blacklist.history.length > 0;
 
   return (
-    <Screen action={<AddBlacklistSheet viewerId={user.id} />} title="Castigos">
+    <Screen action={<AddBlacklistSheet viewerId={user.id} />} title="Ripeados">
       <PunishmentSegments selected="black-list" />
 
       {hasEntries ? (
         <div className="blacklist-filters">
-          <form action="/castigos" className="blacklist-search" role="search">
+          <form action="/ripeados" className="blacklist-search" role="search">
             <input name="tipo" type="hidden" value="black-list" />
             <Search aria-hidden="true" size={18} strokeWidth={2} />
             <input
@@ -68,7 +68,7 @@ export function BlacklistSegment({
             />
             <button className="sr-only" type="submit">Buscar</button>
           </form>
-          {query ? <Link className="clear-filters" href="/castigos?tipo=black-list">Limpiar búsqueda</Link> : null}
+          {query ? <Link className="clear-filters" href="/ripeados?tipo=black-list">Limpiar búsqueda</Link> : null}
         </div>
       ) : null}
 

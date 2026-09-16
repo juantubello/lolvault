@@ -81,9 +81,9 @@ describe('parseVaultFilters', () => {
 
 describe('vaultsHref', () => {
   it('omite los defaults y arma la query con el resto', () => {
-    expect(vaultsHref(base)).toBe('/castigos?tipo=vaults');
+    expect(vaultsHref(base)).toBe('/ripeados?tipo=vaults');
     expect(vaultsHref({ playerId: 2, status: 'terminados', query: 'yas' })).toBe(
-      '/castigos?tipo=vaults&jugador=2&estado=terminados&q=yas',
+      '/ripeados?tipo=vaults&jugador=2&estado=terminados&q=yas',
     );
     expect(hasActiveFilters(base)).toBe(false);
     expect(hasActiveFilters({ ...base, status: 'todos' })).toBe(true);

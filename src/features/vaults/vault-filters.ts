@@ -1,6 +1,6 @@
 /**
  * Filtros del segmento Vaults. Viven en la URL
- * (`/castigos?tipo=vaults&jugador=2&estado=todos&q=yas`): así
+ * (`/ripeados?tipo=vaults&jugador=2&estado=todos&q=yas`): así
  * funcionan "atrás", compartir el link y el render en el servidor, sin estado en el cliente.
  */
 import { VAULT_EXPIRING_DAYS } from '@/config';
@@ -53,11 +53,11 @@ export function vaultsHref(filters: VaultFilters): string {
   if (filters.status !== 'vigentes') params.set('estado', filters.status);
   if (filters.query) params.set('q', filters.query);
 
-  return `/castigos?${params.toString()}`;
+  return `/ripeados?${params.toString()}`;
 }
 
 export function hasActiveFilters(filters: VaultFilters): boolean {
-  return vaultsHref(filters) !== '/castigos?tipo=vaults';
+  return vaultsHref(filters) !== '/ripeados?tipo=vaults';
 }
 
 /** Días que le quedan contando hoy (hora argentina): 1 = termina hoy, 2 = termina mañana. */

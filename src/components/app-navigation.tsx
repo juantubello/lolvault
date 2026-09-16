@@ -14,7 +14,7 @@ type Destination = {
 
 const destinations: Destination[] = [
   { href: '/', label: 'Votaciones', icon: Vote },
-  { href: '/castigos?tipo=vaults', label: 'Castigos', icon: LockKeyhole },
+  { href: '/ripeados?tipo=vaults', label: 'Ripeados', icon: LockKeyhole },
   { href: '/scout', label: 'Scout', icon: Telescope },
   { href: '/amigos', label: 'Amigos', icon: Users },
   { href: '/perfil', label: 'Perfil', icon: CircleUserRound },

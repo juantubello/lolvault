@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, castigos, Scout de jugador, perfiles, historial y Web Push implementados
+## Estado: votaciones, ripeados, Scout de jugador, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -139,8 +139,8 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   el sync existente, saltea los TTL automáticos y tiene un límite por jugador de 60 s; la Server Action
   valida sesión y membresía. Typecheck, 217 tests y build de producción verificados.
 
-- 2026-09-16 — **Navegación Castigos + Fase A de Scout.** Vaults y Black list comparten la tab
-  `/castigos` con segmento en `?tipo=`; `/vaults` y `/black-list` redirigen preservando filtros y
+- 2026-09-16 — **Navegación Ripeados + Fase A de Scout.** Vaults y Black list comparten la tab
+  `/ripeados` con segmento en `?tipo=`; `/vaults` y `/black-list` redirigen preservando filtros y
   los push nuevos usan la URL canónica. La quinta tab es Scout: búsqueda manual por `nombre#tag`,
   rango/nivel, rendimiento por posición y campeón, partidas con detalle, badge de black list y
   propuesta precargada. Reusa `MatchProvider` y las tablas de caché existentes con los mismos TTL

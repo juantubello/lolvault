@@ -19,5 +19,5 @@ export function punishmentHref(
       query.append(key, value);
     }
   }
-  return `/castigos?${query.toString()}`;
+  return `/ripeados?${query.toString()}`;
 }

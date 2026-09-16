@@ -70,7 +70,7 @@ export async function VaultsSegment({
   const statusLabel = STATUS_FILTERS.find((option) => option.value === filters.status)?.label ?? '';
 
   return (
-    <Screen action={proposeAction} title="Castigos">
+    <Screen action={proposeAction} title="Ripeados">
       <PunishmentSegments selected="vaults" />
 
       {vaults.inForce.length + vaults.past.length === 0 ? (
@@ -134,7 +134,7 @@ export async function VaultsSegment({
               ))}
             </nav>
 
-            <form action="/castigos" className="vault-search" key={vaultsHref(filters)} role="search">
+            <form action="/ripeados" className="vault-search" key={vaultsHref(filters)} role="search">
               <input name="tipo" type="hidden" value="vaults" />
               {filters.playerId !== null ? <input name="jugador" type="hidden" value={filters.playerId} /> : null}
               {filters.status !== 'vigentes' ? <input name="estado" type="hidden" value={filters.status} /> : null}
@@ -152,7 +152,7 @@ export async function VaultsSegment({
             </form>
 
             {hasActiveFilters(filters) ? (
-              <Link className="clear-filters" href="/castigos?tipo=vaults">Limpiar filtros</Link>
+              <Link className="clear-filters" href="/ripeados?tipo=vaults">Limpiar filtros</Link>
             ) : null}
           </div>
 

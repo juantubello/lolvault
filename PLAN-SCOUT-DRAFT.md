@@ -111,6 +111,40 @@ array `_objs`), así que hace falta un resolver de punteros. Es la parte frágil
 **Por eso Scaling va en una fase aparte (Fase E) y opcional.** Las fases A a D no dependen de
 este parser: si Lolalytics cambia la serialización de Qwik, se cae Scaling y nada más.
 
+### 1.3.2 Casos borde verificados (el parser tiene que aguantarlos)
+
+Probados contra el endpoint real, con las respuestas guardadas para usar de fixtures:
+
+| Caso | Qué devuelve |
+|---|---|
+| Campeón que no se juega en esa lane (Leona mid) | **200** con `counters: []`. Es un caso legítimo, no un fallo: no abortar el sync. |
+| `build-team` de una lane sin datos | **200** con filas igual, pero de muestra chica. Filtrar por `n` mínimo antes de guardar. |
+| Campeón inexistente | **200** con `{"status":404}` **en el cuerpo**. |
+| Endpoint mal escrito | **200** con el texto plano `invalid end point`, que no es JSON. |
+
+**La regla que sale de esto:** el status HTTP no alcanza para decidir si la respuesta sirve.
+Hay que validar la forma del cuerpo siempre, como ya hace `opgg-provider.ts` con su
+`ResponseShapeError`, y envolver todo `JSON.parse`.
+
+### 1.3.3 Usar la ventana de 30 días, no el parche exacto
+
+El parámetro `patch` acepta una ventana móvil en días además del número de parche. Medido con
+ahri/middle:
+
+| `patch` | Partidas analizadas | Filas de matchup |
+|---|---|---|
+| 7 (última semana) | 12,2 M | 78 |
+| 16.18 (parche actual) | 12,4 M | 78 |
+| 16.17 (parche anterior) | 29,1 M | 104 |
+| **30 (últimos 30 días)** | **57,1 M** | **130** |
+
+El parche recién salido tiene un quinto de las partidas y **52 matchups menos**. Con esa muestra
+el prior bayesiano aplasta todo contra 50 % y las sugerencias quedan grises e inútiles.
+
+**Decisión:** default `patch=30`. Resuelve el problema del parche recién salido sin necesidad de
+lógica de fallback al parche anterior, y da más cobertura. En la UI se muestra "últimos 30 días",
+no un número de parche, que sería mentira. El parche exacto queda como opción configurable.
+
 ### 1.4 Riesgo, y cómo lo acotamos
 
 Estos endpoints de Lolalytics **no están documentados ni tienen términos publicados**. Pueden
@@ -176,7 +210,7 @@ Queda:
 | Tab | Contenido |
 |---|---|
 | Votaciones | igual |
-| **Castigos** | segmentado **Vaults / Black list**. El estado del segmento va en la URL (`?tipo=vaults`), nunca solo en el cliente. `/vaults` y `/black-list` siguen andando y redirigen, para no romper links ni notificaciones push ya mandadas. |
+| **Ripeados** | segmentado **Vaults / Black list**. El estado del segmento va en la URL (`?tipo=vaults`), nunca solo en el cliente. `/vaults` y `/black-list` siguen andando y redirigen, para no romper links ni notificaciones push ya mandadas. |
 | **Scout** | segmentado **Jugador / Draft**. |
 | Amigos | igual |
 | Perfil | igual |

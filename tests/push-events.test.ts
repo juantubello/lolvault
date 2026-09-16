@@ -58,7 +58,7 @@ describe('eventos push', () => {
     expect(deliveries[0]?.payload).toMatchObject({
       title: 'Te vaultearon Ahri',
       body: 'Hasta 20 sep',
-      url: '/castigos?tipo=vaults&jugador=1',
+      url: '/ripeados?tipo=vaults&jugador=1',
     });
 
     const selfVault = vaultApprovedEvent({
@@ -116,7 +116,7 @@ describe('eventos push', () => {
         playerName: 'Rival',
       });
       expect(delivery.map(({ userIds }) => userIds)).toEqual([[3]]);
-      expect(delivery[0]?.payload.url).toBe('/castigos?tipo=black-list');
+      expect(delivery[0]?.payload.url).toBe('/ripeados?tipo=black-list');
     },
   );
 });
