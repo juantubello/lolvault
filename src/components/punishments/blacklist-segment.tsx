@@ -83,11 +83,19 @@ export function BlacklistSegment({
           <h2 id="blacklist-active-heading">Vigentes</h2>
           <CardList cards={active} />
         </section>
-      ) : (
+      ) : query ? (
         <EmptyState
           description="Probá con otro nombre o limpiá la búsqueda."
           icon={SearchX}
           title={`No hay jugadores que coincidan con “${query}”`}
+        />
+      ) : (
+        /* Hay historial pero ningún vigente: sin esta rama caía en el vacío de búsqueda
+           y mostraba “No hay jugadores que coincidan con «»”, con las comillas peladas. */
+        <EmptyState
+          description="Los que salieron de la lista quedan en el historial, más abajo."
+          icon={Ban}
+          title="No hay nadie en la black list ahora mismo."
         />
       )}
 
