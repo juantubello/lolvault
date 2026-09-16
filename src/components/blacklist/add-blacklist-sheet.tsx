@@ -125,7 +125,14 @@ export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
 
   function openDialog() {
     setOpened(true);
-    dialogRef.current?.showModal();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    try {
+      dialog.showModal();
+    } catch {
+      // Navegador sin <dialog> modal: se abre igual, sin bloquear el fondo.
+      dialog.setAttribute('open', '');
+    }
   }
 
   function closeDialog() {
@@ -178,9 +185,13 @@ export function AddBlacklistSheet({ viewerId }: { viewerId: number }) {
         <span>Agregar</span>
       </button>
 
+      {/* Tocar el backdrop cierra: si el sheet quedara invisible, la app no queda trabada. */}
       <dialog
         aria-labelledby="add-blacklist-title"
         className="sheet blacklist-sheet"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeDialog();
+        }}
         onClose={() => setOpened(false)}
         ref={dialogRef}
       >

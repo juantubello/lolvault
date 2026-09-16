@@ -96,19 +96,33 @@ export function ProposeVaultSheet({
   const errors = state.createdId ? undefined : state.fieldErrors;
   const currentMatches = matches && matches.forUserId === targetUserId ? matches : null;
 
+  function openSheet(): void {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    try {
+      dialog.showModal();
+    } catch {
+      // Navegador sin <dialog> modal: se abre igual, sin bloquear el fondo.
+      dialog.setAttribute('open', '');
+    }
+  }
+
   return (
     <>
-      <button
-        aria-haspopup="dialog"
-        className="nav-action-button"
-        onClick={() => dialogRef.current?.showModal()}
-        type="button"
-      >
+      <button aria-haspopup="dialog" className="nav-action-button" onClick={openSheet} type="button">
         <Plus aria-hidden="true" size={20} strokeWidth={2} />
         <span>Proponer</span>
       </button>
 
-      <dialog aria-labelledby="propose-title" className="sheet" ref={dialogRef}>
+      {/* Tocar el backdrop cierra: si el sheet quedara invisible, la app no queda trabada. */}
+      <dialog
+        aria-labelledby="propose-title"
+        className="sheet"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) dialogRef.current?.close();
+        }}
+        ref={dialogRef}
+      >
         <form action={formAction} className="sheet-form" key={formKey} noValidate>
           <span aria-hidden="true" className="sheet-grabber" />
           <header className="sheet-header">
