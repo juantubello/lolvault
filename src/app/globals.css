@@ -2912,6 +2912,384 @@ button {
   gap: 1rem;
 }
 
+.player-performance-report {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.quick-read {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quick-read-grid,
+.comparison-grid,
+.side-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.quick-read-card,
+.comparison-grid > article,
+.side-grid > article {
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+.quick-read-card {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+.quick-read-champion {
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quick-read-champion > div {
+  min-width: 0;
+}
+
+.quick-read-value {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.625rem;
+}
+
+.comparison-grid > article,
+.side-grid > article {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+.comparison-delta {
+  justify-self: start;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--bg-cell-2);
+  color: var(--label);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+}
+
+.comparison-delta[data-tone="positive"]::before {
+  content: "Mejor · ";
+  color: var(--success);
+}
+
+.comparison-delta[data-tone="negative"]::before {
+  content: "Peor · ";
+  color: var(--danger);
+}
+
+.comparison-delta[data-tone="neutral"]::before {
+  content: "Igual · ";
+}
+
+.compact-stat-tiles .stat-value {
+  font-size: 1.5rem;
+  line-height: 1.875rem;
+}
+
+.stats-disclosure,
+.champion-deep-dive {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+.stats-disclosure > summary,
+.champion-deep-dive > summary {
+  display: grid;
+  min-height: 2.75rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  list-style: none;
+  transition: background-color var(--motion-press);
+}
+
+.stats-disclosure > summary::-webkit-details-marker,
+.champion-deep-dive > summary::-webkit-details-marker {
+  display: none;
+}
+
+.stats-disclosure > summary:active,
+.champion-deep-dive > summary:active {
+  background: var(--fill-pressed);
+}
+
+.stats-disclosure > summary:focus-visible,
+.champion-deep-dive > summary:focus-visible {
+  outline: 3px solid var(--tint);
+  outline-offset: -3px;
+}
+
+.stats-disclosure > summary small {
+  color: var(--label-2);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1rem;
+  text-align: right;
+}
+
+.stats-disclosure > summary svg,
+.champion-deep-dive > summary svg {
+  color: var(--label-2);
+  transition: transform 200ms ease-out;
+}
+
+.stats-disclosure[open] > summary svg,
+.champion-deep-dive[open] > summary svg {
+  transform: rotate(90deg);
+}
+
+.stats-disclosure-content {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.stats-disclosure-content > h3 {
+  margin: 1rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+}
+
+.stats-context {
+  margin: -0.25rem 0 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.pattern-list > li {
+  display: grid;
+  min-height: 2.75rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pattern-list > li > span:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.pattern-list small {
+  color: var(--label-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.activity-hours {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.activity-hours > li + li {
+  border-top: 0;
+}
+
+.activity-hours > li:nth-child(n + 3) {
+  border-top: 0.5px solid var(--separator);
+}
+
+.activity-hours > li:nth-child(even) {
+  border-left: 0.5px solid var(--separator);
+}
+
+.side-grid > article[data-side="blue"] {
+  border-top: 3px solid var(--tint);
+}
+
+.side-grid > article[data-side="red"] {
+  border-top: 3px solid var(--danger);
+}
+
+.season-champion-list {
+  gap: 0.75rem;
+}
+
+.season-champion-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: var(--bg-cell-2);
+}
+
+.season-champion-card > header {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.season-champion-card > header > div {
+  min-width: 0;
+}
+
+.season-champion-card h3,
+.season-champion-card header p {
+  margin: 0;
+}
+
+.season-champion-card h3 {
+  overflow: hidden;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.season-champion-card header p {
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.season-champion-card header > strong {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.champion-key-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 0.5px solid var(--separator);
+}
+
+.champion-key-metrics > span {
+  display: grid;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+}
+
+.champion-key-metrics > span:nth-child(even) {
+  border-left: 0.5px solid var(--separator);
+}
+
+.champion-key-metrics > span:nth-child(n + 3) {
+  border-top: 0.5px solid var(--separator);
+}
+
+.champion-key-metrics strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.champion-key-metrics small {
+  color: var(--label-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.champion-deep-dive {
+  border-radius: 0;
+  border-top: 0.5px solid var(--separator);
+  background: var(--bg-cell);
+}
+
+.champion-deep-dive > summary {
+  font-size: 0.9375rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.champion-deep-content {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.champion-deep-content h4 {
+  margin: 1rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.deep-metric-grid {
+  display: grid;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--bg-cell-2);
+}
+
+.deep-metric-grid > div {
+  display: grid;
+  min-height: 2.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.deep-metric-grid > div + div {
+  border-top: 0.5px solid var(--separator);
+}
+
+.deep-metric-grid dt {
+  min-width: 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.deep-metric-grid dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-disclosure-list {
+  margin: 0 1rem 1rem;
+}
+
+.season-history > li {
+  display: grid;
+  min-height: 2.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.125rem 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.season-history strong {
+  text-align: right;
+}
+
+.season-history small {
+  grid-column: 2;
+  color: var(--label-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-align: right;
+}
+
 .scout-player-card {
   display: grid;
   min-width: 0;
@@ -3076,6 +3454,30 @@ button {
   .scout-player-card {
     grid-template-columns: minmax(0, 1fr) minmax(14rem, auto);
     align-items: center;
+  }
+
+  .quick-read-grid {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .compact-stat-tiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .deep-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .deep-metric-grid > div + div {
+    border-top: 0;
+  }
+
+  .deep-metric-grid > div:nth-child(n + 3) {
+    border-top: 0.5px solid var(--separator);
+  }
+
+  .deep-metric-grid > div:nth-child(even) {
+    border-left: 0.5px solid var(--separator);
   }
 }
 

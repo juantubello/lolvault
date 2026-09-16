@@ -6,7 +6,12 @@ import {
   type MatchParticipant,
   type MatchProvider,
   type PlayerMatchSummary,
+  type PreviousSeasonRank,
   type RankEntry,
+  type RankedChampionBasic,
+  type RankedChampionExtend,
+  type RankedSeason,
+  type RankedSeasonChampion,
   type RiotId,
   type SeasonChampionStat,
   type SummonerProfile,
@@ -39,6 +44,13 @@ const PROFILE_FIELDS = [
   'data.summoner.league_stats[].tier_info.{division,lp,tier,tier_image_url}',
   'data.summoner.most_champions.{game_type,lose,play,season_id,win}',
   'data.summoner.most_champions.champion_stats[].{assist,champion_name,damage_dealt_to_champions,death,id,kill,lose,op_score,play,win}',
+  'data.summoner.previous_seasons[].{season_id}',
+  'data.summoner.previous_seasons[].tier_info.{division,lp,tier}',
+  'data.summoner.ladder_rank.{rank,total}',
+  'data.summoner.ranked_most_champions.{game_type,lose,play,season_id,win}',
+  'data.summoner.ranked_most_champions.my_champion_stats[].{champion_name,game_second,id,lose,play,win}',
+  'data.summoner.ranked_most_champions.my_champion_stats[].basic.{ace,assist,cs,damage_distribution,damage_participation,damage_to_champion,death,double_kill,double_kill_play,gold,kill,kill_participation,lane_lead,lane_score,lane_score_count,mvp,op_score,op_score_rank,penta_kill,penta_kill_play,quadra_kill,quadra_kill_play,triple_kill,triple_kill_play,vision_score,vision_ward,ward_kill,ward_placed}',
+  'data.summoner.ranked_most_champions.my_champion_stats[].extend.{buff_steal,cc,cc_make_kill,cc_score,damage_self_mitigated,damage_taken,damage_to_building,damage_to_objective,damage_to_turret,enemy_jungle_monster_kill,epic_monster_kill_near_enemy_jungler,epic_monster_steal_no_smite,evolution_first,evolution_none,evolution_second,faster_support_quest,heal,heal_to_team,initial_crab_kill,inhibitor_kill,invade_kill,invade_kill_play,invade_play,jungle_cs_10_minute,lane_advantage_7_minute,lane_cs_10_minute,magic_damage_to_champion,make_solo_kill,neutral_cs,object_steal,physical_damage_to_champion,save_ally,shield_to_team,solo_kill,true_damage_to_champion,turret_kill,turret_plate,ward_guard}',
 ];
 
 type JsonObject = Record<string, unknown>;
@@ -277,9 +289,130 @@ function mapChampion(value: unknown, index: number): SeasonChampionStat {
   };
 }
 
+function mapPreviousSeason(value: unknown, index: number): PreviousSeasonRank {
+  const path = `data.summoner.previous_seasons[${index}]`;
+  const season = objectAt(value, path);
+  const tierInfo = objectField(season, 'tier_info', path);
+  return {
+    seasonId: numberField(season, 'season_id', path),
+    tier: nullableStringField(tierInfo, 'tier', `${path}.tier_info`),
+    division: nullableNumberField(tierInfo, 'division', `${path}.tier_info`),
+    lp: nullableNumberField(tierInfo, 'lp', `${path}.tier_info`),
+  };
+}
+
+function mapChampionBasic(basic: JsonObject, path: string): RankedChampionBasic {
+  return {
+    kills: numberField(basic, 'kill', path),
+    deaths: numberField(basic, 'death', path),
+    assists: numberField(basic, 'assist', path),
+    killParticipation: numberField(basic, 'kill_participation', path),
+    damageToChampion: numberField(basic, 'damage_to_champion', path),
+    damageParticipation: numberField(basic, 'damage_participation', path),
+    damageDistribution: numberField(basic, 'damage_distribution', path),
+    cs: numberField(basic, 'cs', path),
+    gold: numberField(basic, 'gold', path),
+    visionScore: numberField(basic, 'vision_score', path),
+    controlWards: numberField(basic, 'vision_ward', path),
+    wardsPlaced: numberField(basic, 'ward_placed', path),
+    wardsKilled: numberField(basic, 'ward_kill', path),
+    opScore: numberField(basic, 'op_score', path),
+    opScoreRank: numberField(basic, 'op_score_rank', path),
+    mvp: numberField(basic, 'mvp', path),
+    ace: numberField(basic, 'ace', path),
+    laneScore: numberField(basic, 'lane_score', path),
+    laneScoreCount: numberField(basic, 'lane_score_count', path),
+    laneLead: numberField(basic, 'lane_lead', path),
+    doubleKills: numberField(basic, 'double_kill', path),
+    doubleKillGames: numberField(basic, 'double_kill_play', path),
+    tripleKills: numberField(basic, 'triple_kill', path),
+    tripleKillGames: numberField(basic, 'triple_kill_play', path),
+    quadraKills: numberField(basic, 'quadra_kill', path),
+    quadraKillGames: numberField(basic, 'quadra_kill_play', path),
+    pentaKills: numberField(basic, 'penta_kill', path),
+    pentaKillGames: numberField(basic, 'penta_kill_play', path),
+  };
+}
+
+function mapChampionExtend(extend: JsonObject, path: string): RankedChampionExtend {
+  return {
+    damageTaken: numberField(extend, 'damage_taken', path),
+    damageSelfMitigated: numberField(extend, 'damage_self_mitigated', path),
+    heal: numberField(extend, 'heal', path),
+    healToTeam: numberField(extend, 'heal_to_team', path),
+    shieldToTeam: numberField(extend, 'shield_to_team', path),
+    physicalDamageToChampion: numberField(extend, 'physical_damage_to_champion', path),
+    magicDamageToChampion: numberField(extend, 'magic_damage_to_champion', path),
+    // La fuente rotula mal este total como true_damage_to_champion; no es dano verdadero.
+    totalDamageToChampion: numberField(extend, 'true_damage_to_champion', path),
+    damageToObjective: numberField(extend, 'damage_to_objective', path),
+    damageToTurret: numberField(extend, 'damage_to_turret', path),
+    damageToBuildingDuplicate: numberField(extend, 'damage_to_building', path),
+    turretKills: numberField(extend, 'turret_kill', path),
+    inhibitorKills: numberField(extend, 'inhibitor_kill', path),
+    objectiveSteals: numberField(extend, 'object_steal', path),
+    ccScore: numberField(extend, 'cc_score', path),
+    soloKills: numberField(extend, 'solo_kill', path),
+    soloKillGames: numberField(extend, 'make_solo_kill', path),
+    invadeKills: numberField(extend, 'invade_kill', path),
+    invadeKillGames: numberField(extend, 'invade_kill_play', path),
+    invadeGames: numberField(extend, 'invade_play', path),
+    neutralCs: numberField(extend, 'neutral_cs', path),
+    buffSteals: numberField(extend, 'buff_steal', path),
+    enemyJungleMonsterKills: numberField(extend, 'enemy_jungle_monster_kill', path),
+    epicMonsterKillsNearEnemyJungler: numberField(extend, 'epic_monster_kill_near_enemy_jungler', path),
+    epicMonsterStealsWithoutSmite: numberField(extend, 'epic_monster_steal_no_smite', path),
+    initialCrabKills: numberField(extend, 'initial_crab_kill', path),
+    jungleCsAt10: numberField(extend, 'jungle_cs_10_minute', path),
+    laneAdvantagesAt7: numberField(extend, 'lane_advantage_7_minute', path),
+    laneCsAt10: numberField(extend, 'lane_cs_10_minute', path),
+    turretPlates: numberField(extend, 'turret_plate', path),
+    crowdControls: numberField(extend, 'cc', path),
+    crowdControlKills: numberField(extend, 'cc_make_kill', path),
+    alliesSaved: numberField(extend, 'save_ally', path),
+    wardsGuarded: numberField(extend, 'ward_guard', path),
+    fasterSupportQuests: numberField(extend, 'faster_support_quest', path),
+    evolutionNone: numberField(extend, 'evolution_none', path),
+    evolutionFirst: numberField(extend, 'evolution_first', path),
+    evolutionSecond: numberField(extend, 'evolution_second', path),
+  };
+}
+
+function mapRankedChampion(value: unknown, index: number): RankedSeasonChampion {
+  const path = `data.summoner.ranked_most_champions.my_champion_stats[${index}]`;
+  const champion = objectAt(value, path);
+  return {
+    championId: numberField(champion, 'id', path),
+    championName: stringField(champion, 'champion_name', path),
+    games: numberField(champion, 'play', path),
+    wins: numberField(champion, 'win', path),
+    losses: numberField(champion, 'lose', path),
+    durationSeconds: numberField(champion, 'game_second', path),
+    basic: mapChampionBasic(objectField(champion, 'basic', path), `${path}.basic`),
+    extend: mapChampionExtend(objectField(champion, 'extend', path), `${path}.extend`),
+  };
+}
+
+function mapRankedSeason(summoner: JsonObject): RankedSeason | null {
+  const path = 'data.summoner.ranked_most_champions';
+  const value = valueAt(summoner, 'ranked_most_champions', 'data.summoner');
+  if (value === null) return null;
+  const season = objectAt(value, path);
+  return {
+    queue: stringField(season, 'game_type', path),
+    seasonId: numberField(season, 'season_id', path),
+    games: numberField(season, 'play', path),
+    wins: numberField(season, 'win', path),
+    losses: numberField(season, 'lose', path),
+    champions: arrayField(season, 'my_champion_stats', path).map(mapRankedChampion),
+  };
+}
+
 function mapProfile(parsed: unknown): SummonerProfile {
   const summoner = objectField(rootData(parsed), 'summoner', 'data');
   const mostChampions = objectField(summoner, 'most_champions', 'data.summoner');
+  const ladderValue = valueAt(summoner, 'ladder_rank', 'data.summoner');
+  const ladder = ladderValue === null ? null : objectAt(ladderValue, 'data.summoner.ladder_rank');
   return {
     puuid: stringField(summoner, 'puuid', 'data.summoner'),
     gameName: stringField(summoner, 'game_name', 'data.summoner'),
@@ -289,6 +422,12 @@ function mapProfile(parsed: unknown): SummonerProfile {
     ranks: arrayField(summoner, 'league_stats', 'data.summoner').map(mapRank),
     seasonChampions: arrayField(mostChampions, 'champion_stats', 'data.summoner.most_champions')
       .map(mapChampion),
+    previousSeasons: arrayField(summoner, 'previous_seasons', 'data.summoner').map(mapPreviousSeason),
+    ladder: ladder ? {
+      rank: numberField(ladder, 'rank', 'data.summoner.ladder_rank'),
+      total: numberField(ladder, 'total', 'data.summoner.ladder_rank'),
+    } : null,
+    rankedSeason: mapRankedSeason(summoner),
   };
 }
 

@@ -73,6 +73,9 @@ const profile: SummonerProfile = {
   profileImageUrl: null,
   ranks: [{ queue: 'FLEXRANKED', tier: 'PLATINUM', division: 4, lp: 93, wins: 55, losses: 52, tierImageUrl: null }],
   seasonChampions: [],
+  previousSeasons: [{ seasonId: 31, tier: 'GOLD', division: 2, lp: 40 }],
+  ladder: { rank: 1234, total: 3_000_000 },
+  rankedSeason: { queue: 'RANKED', seasonId: 33, games: 107, wins: 55, losses: 52, champions: [] },
 };
 
 const detail: MatchDetail = {
@@ -142,6 +145,9 @@ describe('loadPlayerStats', () => {
     if (state.status !== 'ok') return;
     expect(state.matches.map((m) => m.matchId).sort()).toEqual(['m1', 'm2']);
     expect(state.profile?.ranks[0]?.tier).toBe('PLATINUM');
+    expect(state.profile?.previousSeasons?.[0]?.tier).toBe('GOLD');
+    expect(state.profile?.ladder).toEqual({ rank: 1234, total: 3_000_000 });
+    expect(state.profile?.rankedSeason).toMatchObject({ games: 107, wins: 55, losses: 52 });
     expect(state.syncedAt).toEqual(NOW);
     expect(state.error).toBeNull();
   });

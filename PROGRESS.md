@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, ripeados, Scout de jugador, ingesta de Draft, perfiles, historial y Web Push implementados
+## Estado: votaciones, ripeados, Scout profundo, ingesta de Draft, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -167,15 +167,29 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   offline contra fixtures reales. Typecheck, 248 tests y build de producción verificados por Codex;
   el sync real quedó para verificar fuera del sandbox sin red.
 
+- 2026-09-16 — **Scout profundo compartido con Perfil y Amigos.** El perfil de OP.GG ahora pide y
+  guarda en el JSON existente `previous_seasons`, `ladder_rank` y
+  `ranked_most_champions.my_champion_stats` con los bloques completos `basic` / `extend` (sin
+  migración). El parser sigue resolviendo cada valor por las declaraciones `class X: ...` de la
+  respuesta. Funciones puras calculan reparto y win rate por rol, día, hora y lado; KP, CS/min,
+  daño/min, duración media y últimas 20 vs. total ranked de temporada. Los acumulados por campeón
+  se dividen por `play`; el daño verdadero se obtiene como total − físico − mágico y el duplicado
+  `damage_to_building` no se presenta como otra métrica. UI mobile-first: lectura rápida de rol y
+  campeón siempre visible, luego comparación/rango/ritmo, y actividad, temporadas, detalle profundo
+  por campeón y partidas en disclosures accesibles. Sin mastery. Tests offline contra las dos
+  fixtures completas; typecheck, 255 tests y build de producción verificados por Codex. La revisión
+  visual local no pudo ejecutarse en este sandbox porque no permite abrir un puerto localhost.
+
 ### Siguiente
-1. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
-2. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
-3. Fase C del plan Scout/Draft: motor puro de análisis (simetrización, prior y sugerencias).
-4. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-5. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-6. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-7. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-8. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
+1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
+2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
+3. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
+4. Fase C del plan Scout/Draft: motor puro de análisis (simetrización, prior y sugerencias).
+5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
+6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
+8. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+9. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

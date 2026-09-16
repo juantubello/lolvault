@@ -105,6 +105,114 @@ export type SeasonChampionStat = {
   opScore: number | null;
 };
 
+export type PreviousSeasonRank = {
+  seasonId: number;
+  tier: string | null;
+  division: number | null;
+  lp: number | null;
+};
+
+export type LadderStanding = {
+  rank: number;
+  total: number;
+};
+
+/** Sumas que OP.GG acumula por partida para un campeon de la temporada. */
+export type RankedChampionBasic = {
+  kills: number;
+  deaths: number;
+  assists: number;
+  killParticipation: number;
+  damageToChampion: number;
+  damageParticipation: number;
+  damageDistribution: number;
+  cs: number;
+  gold: number;
+  visionScore: number;
+  controlWards: number;
+  wardsPlaced: number;
+  wardsKilled: number;
+  opScore: number;
+  opScoreRank: number;
+  mvp: number;
+  ace: number;
+  laneScore: number;
+  laneScoreCount: number;
+  laneLead: number;
+  doubleKills: number;
+  doubleKillGames: number;
+  tripleKills: number;
+  tripleKillGames: number;
+  quadraKills: number;
+  quadraKillGames: number;
+  pentaKills: number;
+  pentaKillGames: number;
+};
+
+/** Sumas extendidas. `totalDamageToChampion` viene bajo la clave engañosa true_damage_to_champion. */
+export type RankedChampionExtend = {
+  damageTaken: number;
+  damageSelfMitigated: number;
+  heal: number;
+  healToTeam: number;
+  shieldToTeam: number;
+  physicalDamageToChampion: number;
+  magicDamageToChampion: number;
+  totalDamageToChampion: number;
+  damageToObjective: number;
+  damageToTurret: number;
+  /** Duplicado crudo de damageToTurret en la fuente; no se presenta como otra metrica. */
+  damageToBuildingDuplicate: number;
+  turretKills: number;
+  inhibitorKills: number;
+  objectiveSteals: number;
+  ccScore: number;
+  soloKills: number;
+  soloKillGames: number;
+  invadeKills: number;
+  invadeKillGames: number;
+  invadeGames: number;
+  neutralCs: number;
+  buffSteals: number;
+  enemyJungleMonsterKills: number;
+  epicMonsterKillsNearEnemyJungler: number;
+  epicMonsterStealsWithoutSmite: number;
+  initialCrabKills: number;
+  jungleCsAt10: number;
+  laneAdvantagesAt7: number;
+  laneCsAt10: number;
+  turretPlates: number;
+  crowdControls: number;
+  crowdControlKills: number;
+  alliesSaved: number;
+  wardsGuarded: number;
+  fasterSupportQuests: number;
+  evolutionNone: number;
+  evolutionFirst: number;
+  evolutionSecond: number;
+};
+
+export type RankedSeasonChampion = {
+  championId: number;
+  championName: string;
+  games: number;
+  wins: number;
+  losses: number;
+  /** Suma de la duracion de todas las partidas con el campeon. */
+  durationSeconds: number;
+  basic: RankedChampionBasic;
+  extend: RankedChampionExtend;
+};
+
+export type RankedSeason = {
+  queue: string;
+  seasonId: number;
+  games: number;
+  wins: number;
+  losses: number;
+  champions: RankedSeasonChampion[];
+};
+
 /** Perfil del jugador en la fuente. Serializable a JSON. */
 export type SummonerProfile = {
   puuid: string;
@@ -114,6 +222,10 @@ export type SummonerProfile = {
   profileImageUrl: string | null;
   ranks: RankEntry[];
   seasonChampions: SeasonChampionStat[];
+  /** Opcionales para poder leer perfiles guardados antes de Scout profundo. */
+  previousSeasons?: PreviousSeasonRank[];
+  ladder?: LadderStanding | null;
+  rankedSeason?: RankedSeason | null;
 };
 
 export type MatchProviderErrorKind =
