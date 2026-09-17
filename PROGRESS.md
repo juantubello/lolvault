@@ -226,11 +226,32 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   686,63 ms y una sugerencia de 5 roles × top 10 tuvo mediana de 20,13 ms (20 corridas). Typecheck
   limpio, 284 tests verdes y build de producción exitoso.
 
+- 2026-09-17 — **Fase D1 de Draft: armado y sugerencias.** Scout ahora despacha los segmentos
+  Jugador / Draft desde `?tipo=` y conserva el reporte de jugador sin cambios funcionales. Todo el
+  draft vive en la URL con parseo tolerante que descarta picks inválidos, roles duplicados y
+  campeones repetidos antes de llamar al motor. La matriz se memoiza por la última corrida exitosa
+  `(id, finishedAt)` y se recarga sólo cuando termina otra. La vista mobile-first muestra vigencia
+  de datos, marcador, diez casilleros accesibles, cinco niveles de riesgo, buscador local y picks
+  ordenados por win rate estimado de la composición con desglose de matchup/sinergia; la solapa
+  Análisis queda como placeholder explícito para D2. Sin red ni cambios al motor/sync. Typecheck
+  limpio, 293 tests verdes y build de producción exitoso. La revisión visual automatizada quedó
+  pendiente porque el sandbox rechazó abrir el puerto local (`listen EPERM`).
+
+- 2026-09-17 — **Verificación en el navegador de la D1 y tres arreglos.** Al mirar la pantalla a
+  375 px salieron tres cosas que los tests no podían ver. (1) La lista recomendaba campeones **sin
+  datos en el rol**: como un rating faltante vale 0 y 0 es neutral, en un draft perdido le ganaba a
+  cualquier pick real — Sivir support arriba de Thresh. Ahora hay filtro de rol medido (§1.5.3 del
+  plan) y los descartados van al fondo sin número. (2) En un casillero enemigo el porcentaje era
+  **del enemigo** pero no lo decía; cada número dice ahora de quién es. (3) Los casilleros ocupaban
+  672 px, así que el selector arrancaba a 1.311 px y cada pick devolvía el scroll arriba: pasaron a
+  una fila compacta de cinco (284 px) y tocar un casillero ancla en el selector. Además se ranquea
+  la lista entera en vez de un top de 40, para no mezclar dos unidades. 294 tests verdes.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 3. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
-4. Fase D del plan Scout/Draft: pantalla de draft y panel completo de análisis.
+4. Fase D2 del plan Scout/Draft: panel completo de análisis (sin Scaling, que sigue en Fase E).
 5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
 7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.

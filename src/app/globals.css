@@ -3670,6 +3670,389 @@ button {
   }
 }
 
+/* Draft: flujo vertical mobile-first, sin columnas laterales que achiquen los casilleros. */
+.scout-segmented,
+.draft-panel-segmented {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.draft-panel-segmented {
+  margin-top: -0.25rem;
+}
+
+.draft-screen {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.draft-data-header {
+  display: flex;
+  min-height: 2.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.draft-data-header span {
+  color: var(--label-2);
+}
+
+.draft-score,
+.draft-risk,
+.draft-picker,
+.draft-slot-prompt,
+.draft-analysis-placeholder {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+.draft-score h2,
+.draft-risk h2,
+.draft-picker h2,
+.draft-team h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+
+.draft-score-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-score-labels strong:last-child {
+  text-align: right;
+}
+
+.draft-score progress {
+  display: block;
+  width: 100%;
+  height: 1rem;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  appearance: none;
+  background: color-mix(in srgb, var(--danger) 70%, var(--bg-cell));
+}
+
+.draft-score progress::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--danger) 70%, var(--bg-cell));
+}
+
+.draft-score progress::-webkit-progress-value {
+  border-radius: 999px 0 0 999px;
+  background: var(--tint-fill);
+}
+
+.draft-score progress::-moz-progress-bar {
+  border-radius: 999px 0 0 999px;
+  background: var(--tint-fill);
+}
+
+.draft-score p,
+.draft-risk p,
+.draft-picker header p {
+  margin: 0.625rem 0 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.draft-teams {
+  display: grid;
+  gap: 1rem;
+}
+
+.draft-team {
+  min-width: 0;
+}
+
+.draft-team h2 {
+  margin: 0 1rem 0.5rem;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.125rem;
+}
+
+.draft-slot-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.375rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  list-style: none;
+}
+
+.draft-slot {
+  min-width: 0;
+}
+
+.draft-slot-select {
+  display: grid;
+  min-width: 0;
+  min-height: 5.25rem;
+  grid-template-rows: auto 3rem auto;
+  justify-items: center;
+  align-content: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.125rem;
+  border-radius: 0.5rem;
+  color: var(--label);
+  text-align: center;
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+.draft-slot-select[aria-current="true"] {
+  box-shadow: inset 0 0 0 2px var(--tint);
+  background: color-mix(in srgb, var(--tint) 12%, var(--bg-cell));
+}
+
+.draft-slot-select:active,
+.draft-champion-option:active,
+.draft-slot-clear:active,
+.draft-clear:active {
+  background: var(--fill-pressed);
+}
+
+.draft-role-label {
+  color: var(--label-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 0.875rem;
+  letter-spacing: 0.02em;
+}
+
+.draft-slot-image {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.draft-slot-empty {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px dashed var(--separator);
+  border-radius: 0.5rem;
+  color: var(--tint);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.draft-slot-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--label-2);
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-slot[data-filled="true"] .draft-slot-name {
+  color: var(--label);
+  font-weight: 600;
+}
+
+.draft-slot-clear {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0 1rem 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+  color: var(--danger);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+.draft-offrole-note {
+  color: var(--label-2);
+}
+
+.draft-champion-option[data-kind="off-role"] .draft-champion-image {
+  opacity: 0.55;
+}
+
+.draft-risk-segmented {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 0.75rem;
+}
+
+.draft-risk-segmented .segmented-item {
+  min-width: 0;
+  padding: 0 0.125rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  text-align: center;
+}
+
+.draft-slot-prompt,
+.draft-analysis-placeholder,
+.draft-picker-empty {
+  color: var(--label-2);
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.draft-picker {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.draft-champion-search {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--fill-control);
+  color: var(--label-2);
+}
+
+.draft-champion-search:focus-within {
+  outline: 3px solid var(--tint);
+  outline-offset: 2px;
+}
+
+.draft-champion-search input {
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--label);
+  font-size: 1rem;
+  outline: none;
+}
+
+.draft-champion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+  gap: 0.5rem;
+}
+
+.draft-champion-option {
+  display: grid;
+  min-width: 0;
+  min-height: 5.5rem;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  border: 0.5px solid var(--separator);
+  border-radius: 0.75rem;
+  background: var(--bg-cell-2);
+  color: var(--label);
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+.draft-champion-image {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.625rem;
+  object-fit: cover;
+}
+
+.draft-champion-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.125rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.draft-champion-copy strong {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-champion-copy span,
+.draft-champion-copy small {
+  color: var(--label-2);
+}
+
+.draft-champion-copy b {
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-picker-note {
+  color: var(--label-2);
+}
+
+.draft-champion-copy small {
+  overflow-wrap: anywhere;
+  font-size: 0.6875rem;
+  line-height: 0.9375rem;
+}
+
+.draft-picker-empty {
+  margin: 0;
+  padding: 1.5rem 0.5rem;
+}
+
+.draft-clear {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  color: var(--danger);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--motion-press);
+}
+
+@media (min-width: 48rem) {
+  .draft-champion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (hover: hover) {
+  .draft-slot-select:hover,
+  .draft-slot-remove:hover,
+  .draft-champion-option:hover,
+  .draft-clear:hover {
+    background: var(--fill-pressed);
+  }
+}
+
 @media (hover: hover) {
   .blacklist-history > summary:hover,
   .blacklist-suggestion-panel li:hover {

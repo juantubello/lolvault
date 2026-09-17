@@ -236,6 +236,47 @@ de cinco contra cinco acumula eso en veinticinco cruces.
 `getSuggestions` prueba cada campeón libre en cada rol libre, corre `analyzeDraft` y ordena por
 win rate.
 
+### 1.5.3 Sin filtro de rol, el que no tiene datos gana
+
+Apareció al verificar la Fase D1, y es el defecto más grave que tuvo la pantalla.
+
+Un campeón sin partidas en un rol recibe rating **0**, que es exactamente neutral. Un campeón real
+con matchups malos recibe un rating **negativo**. Entonces, en un draft que vas perdiendo, **no
+tener datos le gana a tener datos malos**: la lista recomendaba Sivir support (0 partidas) por
+encima de Thresh (846.206). Los primeros veinte puestos eran Sivir, Draven, Aphelios, Kassadin y
+compañía, todos empatados en el mismo número — que era, literalmente, el win rate del draft *sin*
+elegir support.
+
+El sesgo es asimétrico y pega donde más duele: del lado que va ganando, neutral es un mal puesto y
+la lista sale bien; del lado que va perdiendo, neutral es el mejor puesto y la lista se vuelve
+inútil. Justo el lado que necesita la sugerencia.
+
+**Umbral, medido sobre la matriz.** Un campeón juega un rol si tiene **≥ 1.000 partidas** en él
+**y** el rol es **≥ 2 % de sus propias partidas**. La proporción es la que separa de verdad:
+
+| Campeón en support | Partidas | % de sus partidas | ¿Entra? |
+|---|---|---|---|
+| Thresh | 846.206 | 100 % | sí |
+| Ivern | 8.692 | 10,7 % | sí |
+| Sion | 10.975 | 5,1 % | sí |
+| Sett | 9.692 | 2,9 % | sí |
+| Syndra | 10.017 | 1,6 % | no |
+| Ahri | 5.466 | 1,0 % | no |
+| Akali | 100 | 0,02 % | no |
+| Sivir | 0 | 0 % | no |
+
+El corte deja entre 40 y 95 candidatos por rol (support: 71 de 173). El mínimo absoluto de 1.000
+partidas no descarta nada que la proporción ya no descarte en esta ventana de 30 días: está como
+red de seguridad para un parche recién salido, con la matriz todavía flaca.
+
+Los descartados **siguen siendo elegibles** — se buscan por nombre y se pueden poner en cualquier
+casillero — pero van al fondo y **sin número**, porque su estimación no significaría nada.
+
+**Se ranquea la lista entera, no un top.** Con el filtro puesto quedan ~70 candidatos y calcularlos
+todos cuesta 6-9 ms, así que toda la grilla habla en la misma unidad (el win rate estimado de la
+composición) en vez de mezclar un top estimado con una segunda tanda midiendo el win rate propio
+del campeón.
+
 ---
 
 ## 2. Decisiones tomadas (Juan, 2026-09-16)
