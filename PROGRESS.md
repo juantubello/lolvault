@@ -196,6 +196,25 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   ni llamadas nuevas a OP.GG desde render; tests offline incluyen la fixture real anonimizada y
   SQLite en memoria. Typecheck limpio, 263 tests verdes y build de producción exitoso.
 
+- 2026-09-16 — **Informe propio accionable por rol y lane temprana.** Perfil ahora reutiliza las
+  medianas cacheadas de su rol + cola para contrastar muertes/partida, CS/min, participación en
+  kills, daño/min, oro/min y KDA; si las muertes quedan cerca de la referencia, igual responde con
+  ambos números sin inventar una fortaleza o debilidad. La lane temprana divide por partidas los
+  acumulados de temporada `lane_cs_10_minute`, `lane_advantage_7_minute`, solo kills/partidas y
+  placas, con mínimo de 10 partidas representadas. Las señales entrenables se ordenan antes que
+  campeón/horario, el tope propio queda en 3 fortalezas + 5 debilidades y el pie aclara que OP.GG
+  no informa el minuto de cada muerte. Verificado sin red contra fixture anonimizada, SQLite en
+  memoria y la base local en modo solo lectura: typecheck limpio, 268 tests verdes y build exitoso.
+
+- 2026-09-16 — **Diagnósticos cruzados y puesto OP en el informe propio.** Los cruces CS alto +
+  daño bajo, CS alto + KP baja, KP alta + muertes altas, ventaja al 7 alta + win rate no superior
+  a 50%, y oro alto + daño bajo reemplazan las señales simples duplicadas y se ordenan primero;
+  cada pata conserva sus mínimos de jugador y referencia. El puesto promedio de OP Score usa la
+  muestra válida más grande entre partidas recientes y acumulados por campeón de temporada, con
+  5,5 como referencia matemática. Mejor/peor campeón requieren 5 partidas y el peor queda como
+  respaldo solo cuando no hay otra debilidad. Cubierto sin red con fixtures de OP.GG, tests con
+  SQLite en memoria y lectura de la base local; typecheck, 278 tests y build verificados.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
