@@ -41,6 +41,10 @@ RUN node_modules/.bin/esbuild src/features/draft/sync-cli.ts \
       --bundle --platform=node --format=esm --target=node22 \
       --external:better-sqlite3 \
       --outfile=/app/draft-sync/draft-sync.mjs \
+ && node_modules/.bin/esbuild src/features/draft/scaling-sync-cli.ts \
+      --bundle --platform=node --format=esm --target=node22 \
+      --external:better-sqlite3 \
+      --outfile=/app/draft-sync/scaling-sync.mjs \
  && cp -r src/db/migrations /app/draft-sync/migrations
 
 FROM node:22-bookworm-slim AS runner

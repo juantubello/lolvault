@@ -24,7 +24,7 @@ function invalidResponse(error: unknown): DraftDataSourceError {
 }
 
 export function createLolalyticsProvider(options: {
-  client?: ReturnType<typeof createLolalyticsClient>;
+  client?: Pick<ReturnType<typeof createLolalyticsClient>, 'getCounter' | 'getTeam'>;
 } = {}): DraftDataSource {
   const client = options.client ?? createLolalyticsClient();
 

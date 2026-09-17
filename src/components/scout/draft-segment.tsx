@@ -25,7 +25,12 @@ import {
   type DraftTeam,
   type DraftUrlState,
 } from '@/features/draft/draft-url';
-import { getDraftMatrix, getLatestCompletedDraftRun } from '@/features/draft/matrix-cache';
+import {
+  getDraftMatrix,
+  getDraftScalingMatrix,
+  getLatestCompletedDraftRun,
+} from '@/features/draft/matrix-cache';
+import { calculateDraftScalingCurves } from '@/features/draft/scaling';
 import {
   buildDraftChampionGrid,
   type DraftChampionCatalogItem,
@@ -201,6 +206,10 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
   const championsByKey = new Map(catalog.map((champion) => [champion.key, champion]));
   const state = parseDraftUrl(searchParams, new Set(catalog.map((champion) => champion.key)));
   const analysis = analyzeDraft(matrix, state, state.risk);
+  const scalingMatrix = getDraftScalingMatrix(db);
+  const scaling = scalingMatrix && scalingMatrix.size > 0
+    ? calculateDraftScalingCurves(scalingMatrix, state, state.risk)
+    : null;
   const enemyWinrate = 1 - analysis.winrate;
 
   let grid: DraftChampionGridViewItem[] = [];
@@ -246,6 +255,7 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
             championImages={new Map(catalog.map((champion) => [champion.key, champion.imageUrl]))}
             championNames={new Map(catalog.map((champion) => [champion.key, champion.name]))}
             searchParams={searchParams}
+            scaling={scaling}
             state={state}
           />
         </div>

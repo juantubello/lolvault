@@ -19,6 +19,7 @@ import {
   type DraftUrlState,
 } from '@/features/draft/draft-url';
 import type { DraftRole } from '@/features/draft/types';
+import type { DraftScalingCurves, DraftScalingPoint } from '@/features/draft/scaling';
 
 const ROLE_LABELS: Record<DraftRole, string> = {
   top: 'TOP',
@@ -35,6 +36,22 @@ const percent = new Intl.NumberFormat('es-AR', {
 });
 
 const integer = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+
+const compactPercent = new Intl.NumberFormat('es-AR', {
+  style: 'percent',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1,
+});
+
+const SCALING_BUCKETS = [
+  { short: '<15', full: 'Menos de 15 min' },
+  { short: '15–20', full: '15–20 min' },
+  { short: '20–25', full: '20–25 min' },
+  { short: '25–30', full: '25–30 min' },
+  { short: '30–35', full: '30–35 min' },
+  { short: '35–40', full: '35–40 min' },
+  { short: '40+', full: 'Más de 40 min' },
+] as const;
 
 const SUMMARY_METRICS: ReadonlyArray<{
   key: keyof DraftSideSummary;
@@ -458,16 +475,155 @@ function DuoList({ side, rows }: { side: DraftTeam; rows: readonly DraftDuoViewR
   );
 }
 
+function scalingPath(
+  points: readonly DraftScalingPoint[],
+  x: (index: number) => number,
+  y: (winrate: number) => number,
+): string {
+  return points.map((point, index) => (
+    `${index === 0 ? 'M' : 'L'} ${x(index).toFixed(2)} ${y(point.winrate).toFixed(2)}`
+  )).join(' ');
+}
+
+function ScalingChart({ curves }: { curves: DraftScalingCurves }) {
+  const values = [...curves.allies, ...curves.enemies].map(({ winrate }) => winrate);
+  const lowest = Math.min(0.5, ...values);
+  const highest = Math.max(0.5, ...values);
+  const padding = Math.max(0.015, (highest - lowest) * 0.18);
+  let minimum = Math.max(0, Math.floor((lowest - padding) * 20) / 20);
+  let maximum = Math.min(1, Math.ceil((highest + padding) * 20) / 20);
+  if (maximum - minimum < 0.1) {
+    minimum = Math.max(0, minimum - 0.05);
+    maximum = Math.min(1, maximum + 0.05);
+  }
+
+  const left = 48;
+  const right = 364;
+  const top = 14;
+  const bottom = 184;
+  const x = (index: number) => left + (right - left) * index / 6;
+  const y = (winrate: number) => top + (maximum - winrate) / (maximum - minimum) * (bottom - top);
+  const ticks = Array.from({ length: 5 }, (_, index) => maximum - (maximum - minimum) * index / 4);
+
+  return (
+    <section aria-labelledby="draft-scaling-heading" className="draft-analysis-section draft-scaling">
+      <header className="draft-analysis-section-header">
+        <h2 id="draft-scaling-heading">Scaling</h2>
+        <p>
+          Win rate normalizado de cada equipo según la duración. Cada campeón se compara contra su
+          propio promedio; las dos líneas son independientes y no tienen por qué sumar 100 %.
+        </p>
+      </header>
+
+      <div className="draft-scaling-legend" aria-hidden="true">
+        <span data-side="allies">Tu equipo</span>
+        <span data-side="enemies">Enemigo</span>
+      </div>
+      <svg
+        aria-labelledby="draft-scaling-chart-title draft-scaling-chart-description"
+        className="draft-scaling-chart"
+        role="img"
+        viewBox="0 0 375 238"
+      >
+        <title id="draft-scaling-chart-title">Curvas de Scaling de ambos equipos</title>
+        <desc id="draft-scaling-chart-description">
+          Las cifras exactas y las duraciones aproximadas están en la tabla que sigue al gráfico.
+        </desc>
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line className="draft-scaling-grid-line" x1={left} x2={right} y1={y(tick)} y2={y(tick)} />
+            <text className="draft-scaling-axis-tick" textAnchor="end" x={left - 7} y={y(tick) + 3}>
+              {compactPercent.format(tick)}
+            </text>
+          </g>
+        ))}
+        <line className="draft-scaling-axis-line" x1={left} x2={left} y1={top} y2={bottom} />
+        <line className="draft-scaling-axis-line" x1={left} x2={right} y1={bottom} y2={bottom} />
+        {SCALING_BUCKETS.map((bucket, index) => (
+          <g key={bucket.short}>
+            <line className="draft-scaling-axis-line" x1={x(index)} x2={x(index)} y1={bottom} y2={bottom + 4} />
+            <text className="draft-scaling-axis-tick" textAnchor="middle" x={x(index)} y={bottom + 17}>
+              {bucket.short}
+            </text>
+          </g>
+        ))}
+        <text className="draft-scaling-axis-title" textAnchor="middle" x={(left + right) / 2} y={229}>
+          Duración aproximada (minutos)
+        </text>
+        <text
+          className="draft-scaling-axis-title"
+          textAnchor="middle"
+          transform="rotate(-90 11 99)"
+          x={11}
+          y={99}
+        >
+          Win rate normalizado
+        </text>
+        <path className="draft-scaling-line" d={scalingPath(curves.allies, x, y)} data-side="allies" />
+        <path className="draft-scaling-line" d={scalingPath(curves.enemies, x, y)} data-side="enemies" />
+        {curves.allies.map((point, index) => (
+          <circle
+            className="draft-scaling-point"
+            cx={x(index)}
+            cy={y(point.winrate)}
+            data-side="allies"
+            key={point.bucket}
+            r={3.5}
+          />
+        ))}
+        {curves.enemies.map((point, index) => (
+          <rect
+            className="draft-scaling-point"
+            data-side="enemies"
+            height={7}
+            key={point.bucket}
+            width={7}
+            x={x(index) - 3.5}
+            y={y(point.winrate) - 3.5}
+          />
+        ))}
+      </svg>
+
+      <div className="draft-scaling-table-wrap">
+        <table className="draft-scaling-table">
+          <caption className="sr-only">Valores exactos de Scaling por duración aproximada</caption>
+          <thead>
+            <tr>
+              <th scope="col">Duración aprox.</th>
+              <th scope="col">Tu equipo</th>
+              <th scope="col">Enemigo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SCALING_BUCKETS.map((bucket, index) => (
+              <tr key={bucket.full}>
+                <th scope="row">{bucket.full}</th>
+                <td>{percent.format(curves.allies[index]!.winrate)}</td>
+                <td>{percent.format(curves.enemies[index]!.winrate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="draft-analysis-footnote">
+        Las duraciones son aproximadas: Lolalytics numera siete tramos pero no publica sus rótulos.
+      </p>
+    </section>
+  );
+}
+
 export function DraftAnalysisPanel({
   analysis,
   championImages,
   championNames,
+  scaling,
   searchParams,
   state,
 }: {
   analysis: DraftAnalysis;
   championImages: ReadonlyMap<number, string>;
   championNames: ReadonlyMap<number, string>;
+  scaling: DraftScalingCurves | null;
   searchParams: DraftSearchParams;
   state: DraftUrlState;
 }) {
@@ -564,6 +720,8 @@ export function DraftAnalysisPanel({
           <DuoList rows={view.duos.enemies} side="enemies" />
         </div>
       </section>
+
+      {scaling ? <ScalingChart curves={scaling} /> : null}
     </div>
   );
 }

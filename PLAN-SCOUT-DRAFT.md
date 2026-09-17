@@ -147,6 +147,15 @@ remakes dado que no se puede rendir antes de los 15 minutos (si el primer tramo 
 ~8-10 %); y los 7 tramos se pliegan exactamente en los 5 que muestra DraftGap (1+2 → 0-20,
 6+7 → 35+). Es una inferencia, no un dato de la fuente, y hay que tratarla como tal.
 
+**Interpretación implementada de “team winrate normalized”.** La fórmula exacta de DraftGap no
+está expuesta. En la captura de referencia, las dos líneas dan 53,18 % y 48,75 % en el mismo tramo:
+suman 101,93 %, así que no son probabilidades complementarias de una partida entre ambos drafts.
+La lectura que mejor explica que ambas ronden 50 % es tratarlas como curvas independientes. Para
+cada campeón, el win rate del tramo se encoge hacia su propio win rate general con el prior del
+riesgo elegido; su aporte es `rating(tramo ajustado) − rating(general)`, y la curva del equipo es
+`ratingToWinrate` de la suma de los cinco aportes. Así se mide cuánto mejor o peor que su propio
+promedio rinde la composición a esa duración, y un equipo vacío queda neutral en 50,00 %.
+
 **Casos borde medidos:**
 
 - Un combo raro (sivir/support) devuelve **200 con serie real pero inservible**: 157 partidas en
@@ -418,7 +427,7 @@ desglose completo). Juan pidió explícitamente el panel entero, no solo la suge
 | Ally / Opponent champions | Rol, campeón y win rate base. |
 | Matchups | Rol, aliado, win rate, **ganador**, rol, oponente. Con selector **Head to head / All** (head to head = solo mismo rol; all = los 25 cruces). |
 | Ally / Opponent duos | Los 10 duos por lado con su win rate. |
-| Scaling | Fase E. Hasta entonces **no se muestra el bloque** (nunca un placeholder con 50,00). |
+| Scaling | Fase E: dos curvas independientes en SVG y tabla accesible. Si falta una serie, **no se muestra el bloque** (nunca un placeholder). |
 
 - Las tablas de matchups y duos llevan el rótulo **"win rates normalizados"**: el número ya
   tiene descontada la fuerza base de cada campeón (§1.5), que es lo que las hace comparables.
@@ -429,11 +438,13 @@ desglose completo). Juan pidió explícitamente el panel entero, no solo la suge
 
 ### Fase E — Scaling (opcional)
 
-Ingesta de `q-data.json` (§1.3.1) para la serie por duración de partida, con su resolver de
-punteros Qwik aislado en un módulo propio y tests contra una fixture guardada.
+Implementada el 2026-09-17. Ingesta de `q-data.json` (§1.3.1) para la serie por duración de
+partida, con su resolver de punteros Qwik aislado y probado contra las cuatro fixtures guardadas.
 
-- +855 requests y ~153 MB por sync. Corre **después** del sync principal y, si falla, no
-  invalida nada de lo anterior.
+- Son 389 pares campeón/rol medidos, ~76 MB por sync. Corre **después** del sync principal con
+  cursor y estado propios; si falla, no invalida nada de lo anterior.
+- La UI calcula dos curvas independientes con la interpretación documentada en §1.3.1, las muestra
+  en SVG más una tabla accesible y no renderiza el bloque si falta cualquier serie elegida.
 - Es la parte más frágil del proyecto: si Lolalytics cambia la serialización, se apaga este
   bloque y las fases A-D siguen intactas.
 

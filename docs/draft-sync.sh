@@ -6,9 +6,8 @@
 # empaquetado con esbuild (ver Dockerfile).
 #
 # Qué hace: baja matchups y sinergias de los 173 campeones (5.190 requests, ~71 min
-# medidos) y los cachea en SQLite. Por defecto respeta la frescura: si la última pasada
-# terminó hace menos de 24 h, no sale a la fuente y corta enseguida. Con --force arranca
-# igual.
+# medidos) y, sólo si esa pasada termina bien, baja las curvas de Scaling de los pares
+# campeón/rol reales (~389 requests). Cada pasada respeta su propia frescura de 24 h.
 #
 # Es reanudable: si se corta a la mitad guarda su cursor y la corrida siguiente retoma
 # donde quedó, así que un cron que falle una noche no pierde lo ya bajado.
@@ -36,9 +35,16 @@ fi
 
 log "arrancando (contenedor $CONTAINER, raíz $ROOT)"
 if docker exec -w /app "$CONTAINER" node draft-sync/draft-sync.mjs "$@"; then
-  log "terminó bien"
+  log "sync principal terminado; arrancando Scaling"
 else
   code=$?
   log "ERROR: el sync salió con código $code. La próxima corrida retoma donde quedó."
   exit "$code"
+fi
+
+if docker exec -w /app "$CONTAINER" node draft-sync/scaling-sync.mjs "$@"; then
+  log "terminó bien"
+else
+  code=$?
+  log "AVISO: Scaling falló con código $code. Las fases A-D siguen válidas y Scaling retomará la próxima vez."
 fi

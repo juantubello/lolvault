@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createLolalyticsClient, lolalyticsSlug } from '@/features/draft/lolalytics/lolalytics-client';
 
 describe('cliente de Lolalytics', () => {
-  it('arma los dos endpoints con parámetros comunes y un User-Agent identificable', async () => {
+  it('arma los tres endpoints con parámetros comunes y un User-Agent identificable', async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('{}'));
     const client = createLolalyticsClient({ fetchFn: fetchFn as typeof fetch });
 
@@ -15,6 +15,7 @@ describe('cliente de Lolalytics', () => {
       patchWindow: '30',
     });
     await client.getTeam({ championKey: 103, championId: 'Ahri', role: 'middle', patchWindow: '16.18' });
+    await client.getQData({ championKey: 62, championId: 'MonkeyKing', role: 'top', patchWindow: '30' });
 
     const [counterUrl, counterInit] = fetchFn.mock.calls[0] ?? [];
     expect(counterUrl).toBeInstanceOf(URL);
@@ -41,6 +42,10 @@ describe('cliente de Lolalytics', () => {
       c: 'ahri',
     });
     expect((teamUrl as URL).searchParams.has('vslane')).toBe(false);
+    const [qDataUrl] = fetchFn.mock.calls[2] ?? [];
+    expect((qDataUrl as URL).toString()).toBe(
+      'https://lolalytics.com/lol/wukong/build/q-data.json?tier=emerald_plus&region=all&patch=30&lane=top',
+    );
   });
 
   it('manda el id en minúsculas y traduce MonkeyKing a wukong', () => {
@@ -59,5 +64,18 @@ describe('cliente de Lolalytics', () => {
 
     await expect(client.getTeam({ championKey: 103, championId: 'Ahri', role: 'middle', patchWindow: '30' }))
       .rejects.toMatchObject({ kind: 'unavailable' });
+  });
+
+  it('clasifica el 404 HTTP de q-data como campeón inexistente', async () => {
+    const client = createLolalyticsClient({
+      fetchFn: vi.fn(async () => new Response('{"status":404}', { status: 404 })) as typeof fetch,
+    });
+
+    await expect(client.getQData({
+      championKey: 999_999,
+      championId: 'NoExiste',
+      role: 'middle',
+      patchWindow: '30',
+    })).rejects.toMatchObject({ kind: 'not-found' });
   });
 });

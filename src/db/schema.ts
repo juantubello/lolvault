@@ -356,6 +356,24 @@ export const draftSynergies = sqliteTable(
   ],
 );
 
+/** Rendimiento de un campeón/rol en cada uno de los siete tramos de duración de Lolalytics. */
+export const draftChampionScaling = sqliteTable(
+  'draft_champion_scaling',
+  {
+    championKey: integer('champion_key').notNull(),
+    role: text('role').notNull(),
+    bucket: integer('bucket').notNull(),
+    games: integer('games').notNull(),
+    wins: integer('wins').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.championKey, table.role, table.bucket] }),
+    check('draft_champion_scaling_bucket_check', sql`${table.bucket} >= 1 AND ${table.bucket} <= 7`),
+    check('draft_champion_scaling_games_check', sql`${table.games} >= 0`),
+    check('draft_champion_scaling_wins_check', sql`${table.wins} >= 0 AND ${table.wins} <= ${table.games}`),
+  ],
+);
+
 /** Un intento de sync. El cursor permite retomar sin descartar respuestas ya guardadas. */
 export const draftSyncRuns = sqliteTable('draft_sync_runs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -371,6 +389,23 @@ export const draftSyncRuns = sqliteTable('draft_sync_runs', {
 }, (table) => [
   check('draft_sync_runs_requests_check', sql`${table.requestsMade} >= 0`),
   check('draft_sync_runs_cursor_check', sql`${table.nextRequestIndex} >= 0 AND ${table.nextRequestIndex} <= ${table.totalRequests}`),
+]);
+
+/** Cursor separado: una falla de Scaling nunca cambia el estado del sync principal. */
+export const draftScalingSyncRuns = sqliteTable('draft_scaling_sync_runs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  startedAt: integer('started_at', { mode: 'timestamp_ms' }).notNull(),
+  finishedAt: integer('finished_at', { mode: 'timestamp_ms' }),
+  patchWindow: text('patch_window').notNull(),
+  requestsMade: integer('requests_made').notNull().default(0),
+  totalRequests: integer('total_requests').notNull(),
+  startRequestIndex: integer('start_request_index').notNull().default(0),
+  nextRequestIndex: integer('next_request_index').notNull().default(0),
+  failed: integer('failed', { mode: 'boolean' }).notNull().default(false),
+  error: text('error'),
+}, (table) => [
+  check('draft_scaling_sync_runs_requests_check', sql`${table.requestsMade} >= 0`),
+  check('draft_scaling_sync_runs_cursor_check', sql`${table.nextRequestIndex} >= 0 AND ${table.nextRequestIndex} <= ${table.totalRequests}`),
 ]);
 
 export type User = typeof users.$inferSelect;

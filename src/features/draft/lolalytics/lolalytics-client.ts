@@ -5,9 +5,11 @@ import {
 import { DraftDataSourceError, type DraftRole } from '@/features/draft/types';
 
 const DEFAULT_ENDPOINT = 'https://a1.lolalytics.com/mega/';
+const DEFAULT_Q_DATA_ENDPOINT = 'https://lolalytics.com/lol/';
 
 type LolalyticsClientOptions = {
   endpoint?: string;
+  qDataEndpoint?: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
   totalTimeoutMs?: number;
@@ -39,23 +41,18 @@ function unavailable(message: string, cause?: unknown): DraftDataSourceError {
 export function createLolalyticsClient(options: LolalyticsClientOptions = {}): {
   getCounter(input: CommonInput & { enemyRole: DraftRole }): Promise<string>;
   getTeam(input: CommonInput): Promise<string>;
+  getQData(input: CommonInput): Promise<string>;
 } {
   const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
+  const qDataEndpoint = options.qDataEndpoint ?? DEFAULT_Q_DATA_ENDPOINT;
   const fetchFn = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? LOLALYTICS_REQUEST_TIMEOUT_MS;
   const totalTimeoutMs = options.totalTimeoutMs ?? LOLALYTICS_CLIENT_TOTAL_TIMEOUT_MS;
 
-  async function request(params: Record<string, string>): Promise<string> {
-    const url = new URL(endpoint);
-    const common = {
-      v: '1',
-      tier: 'emerald_plus',
-      queue: 'ranked',
-      region: 'all',
-      ...params,
-    };
-    for (const [key, value] of Object.entries(common)) url.searchParams.set(key, value);
-
+  async function request(
+    url: URL,
+    options: { httpNotFound?: boolean } = {},
+  ): Promise<string> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(unavailable(
@@ -76,6 +73,9 @@ export function createLolalyticsClient(options: LolalyticsClientOptions = {}): {
       } catch (error) {
         throw unavailable('No se pudo conectar con Lolalytics', error);
       }
+      if (options.httpNotFound && response.status === 404) {
+        throw new DraftDataSourceError('Lolalytics indicó que el campeón no existe', 'not-found');
+      }
       if (!response.ok) {
         throw unavailable(`Lolalytics respondió HTTP ${response.status}`);
       }
@@ -93,9 +93,23 @@ export function createLolalyticsClient(options: LolalyticsClientOptions = {}): {
     }
   }
 
+  async function requestMega(params: Record<string, string>): Promise<string> {
+    const url = new URL(endpoint);
+    const common = {
+      v: '1',
+      tier: 'emerald_plus',
+      queue: 'ranked',
+      region: 'all',
+      ...params,
+    };
+    for (const [key, value] of Object.entries(common)) url.searchParams.set(key, value);
+
+    return request(url);
+  }
+
   return {
     getCounter(input) {
-      return request({
+      return requestMega({
         ep: 'counter',
         lane: input.role,
         vslane: input.enemyRole,
@@ -104,12 +118,21 @@ export function createLolalyticsClient(options: LolalyticsClientOptions = {}): {
       });
     },
     getTeam(input) {
-      return request({
+      return requestMega({
         ep: 'build-team',
         lane: input.role,
         patch: input.patchWindow,
         c: lolalyticsSlug(input.championId),
       });
+    },
+    getQData(input) {
+      const base = qDataEndpoint.endsWith('/') ? qDataEndpoint : `${qDataEndpoint}/`;
+      const url = new URL(`${lolalyticsSlug(input.championId)}/build/q-data.json`, base);
+      url.searchParams.set('tier', 'emerald_plus');
+      url.searchParams.set('region', 'all');
+      url.searchParams.set('patch', input.patchWindow);
+      url.searchParams.set('lane', input.role);
+      return request(url, { httpNotFound: true });
     },
   };
 }

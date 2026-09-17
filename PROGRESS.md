@@ -268,17 +268,27 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   que Vaults. Se siguió la guía local `ui-ux-pro-max`; la verificación visual queda para fuera del
   sandbox, sin puerto local. Typecheck limpio, 304 tests verdes y build de producción exitoso.
 
+- 2026-09-17 — **Fase E de Draft: Scaling aislado.** Parser puro del formato Qwik probado contra
+  las cuatro fixtures reales (incluida la captura completa de 9.466 entradas), cliente de
+  `q-data.json` con 404 HTTP explícito y pasada reanudable sólo para los pares que cumplen
+  `playsRole`. Migration `0009_dashing_black_bird.sql`: siete conteos por campeón/rol y corridas
+  separadas, de modo que una caída de Scaling nunca altera el estado principal. El cron ejecuta
+  esta pasada después de A-D y tolera que falle sola. La curva encoge cada tramo hacia el win rate
+  general propio con el prior de riesgo y suma las diferencias en Elo; aliado y enemigo son curvas
+  independientes. UI con SVG inline, tabla accesible, ejes y rótulos de duración declarados como
+  aproximados; si falta una serie, el bloque entero desaparece. Se agregaron créditos a Lolalytics
+  y DraftGap (MIT). Verificación visual pendiente fuera del sandbox, que no permite abrir puertos.
+  Typecheck limpio, 326 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
-3. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
-4. Revisar D2 a mano en 375 px y tablet, en claro/oscuro y con texto grande.
-5. Fase E opcional: Scaling con `q-data.json`, aislado del análisis principal.
-6. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-7. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-8. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-9. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-10. Aviso legal de Riot/OP.GG/Lolalytics/DraftGap en Perfil → Acerca de.
+3. Ejecutar los syncs de Draft y Scaling con red y verificar tiempos/volumen de la primera pasada.
+4. Revisar D2 + Scaling a mano en 375 px y tablet, en claro/oscuro y con texto grande.
+5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
+6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
+8. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

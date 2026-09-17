@@ -302,6 +302,10 @@ button {
   line-height: 1.125rem;
 }
 
+.about-footer a {
+  color: var(--tint);
+}
+
 .eyebrow {
   margin: 0 0 0.25rem;
   color: var(--tint);
@@ -4095,6 +4099,139 @@ button {
   color: var(--label-2);
   font-size: 0.8125rem;
   line-height: 1.125rem;
+}
+
+.draft-scaling {
+  overflow: hidden;
+}
+
+.draft-scaling-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+}
+
+.draft-scaling-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.draft-scaling-legend span::before {
+  width: 1.5rem;
+  height: 0;
+  border-top: 0.1875rem solid var(--tint);
+  content: '';
+}
+
+.draft-scaling-legend span[data-side="enemies"]::before {
+  border-top-color: var(--danger);
+  border-top-style: dashed;
+}
+
+.draft-scaling-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 22rem;
+  color: var(--label-2);
+}
+
+.draft-scaling-grid-line {
+  stroke: var(--separator);
+  stroke-width: 0.5;
+}
+
+.draft-scaling-axis-line {
+  stroke: var(--label-2);
+  stroke-width: 0.75;
+}
+
+.draft-scaling-axis-tick,
+.draft-scaling-axis-title {
+  fill: currentColor;
+  font-family: inherit;
+}
+
+.draft-scaling-axis-tick {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-scaling-axis-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.draft-scaling-line {
+  fill: none;
+  stroke: var(--tint);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.draft-scaling-line[data-side="enemies"] {
+  stroke: var(--danger);
+  stroke-dasharray: 7 5;
+}
+
+.draft-scaling-point {
+  fill: var(--bg-cell);
+  stroke: var(--tint);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.draft-scaling-point[data-side="enemies"] {
+  stroke: var(--danger);
+}
+
+.draft-scaling-table-wrap {
+  overflow: hidden;
+  border: 0.5px solid var(--separator);
+  border-radius: 0.625rem;
+}
+
+.draft-scaling-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-cell-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-scaling-table th,
+.draft-scaling-table td {
+  padding: 0.625rem 0.5rem;
+  border-bottom: 0.5px solid var(--separator);
+  text-align: right;
+}
+
+.draft-scaling-table th:first-child {
+  text-align: left;
+}
+
+.draft-scaling-table thead th {
+  color: var(--label-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.draft-scaling-table tbody th {
+  font-weight: 500;
+}
+
+.draft-scaling-table tbody tr:last-child th,
+.draft-scaling-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .draft-analysis-side,

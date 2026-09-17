@@ -4,8 +4,14 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { applyPragmas, createDb, type Db } from '@/db/client';
-import { champions, draftChampionStats, draftSyncRuns } from '@/db/schema';
-import { getDraftMatrix } from '@/features/draft/matrix-cache';
+import {
+  champions,
+  draftChampionScaling,
+  draftChampionStats,
+  draftScalingSyncRuns,
+  draftSyncRuns,
+} from '@/db/schema';
+import { getDraftMatrix, getDraftScalingMatrix } from '@/features/draft/matrix-cache';
 
 let sqlite: Database.Database;
 let db: Db;
@@ -81,5 +87,38 @@ describe('caché de la matriz de Draft', () => {
     const reloaded = getDraftMatrix(db);
     expect(reloaded).not.toBe(first);
     expect(reloaded?.championStats.get('103:middle')?.wins).toBe(55);
+  });
+
+  it('no publica filas de Scaling hasta que su propia corrida termina bien', () => {
+    db.insert(draftChampionScaling).values({
+      championKey: 103,
+      role: 'middle',
+      bucket: 1,
+      games: 100,
+      wins: 50,
+    }).run();
+    expect(getDraftScalingMatrix(db)).toBeNull();
+
+    db.insert(draftScalingSyncRuns).values({
+      startedAt: new Date('2026-09-17T11:00:00Z'),
+      finishedAt: new Date('2026-09-17T11:01:00Z'),
+      patchWindow: '30',
+      requestsMade: 1,
+      totalRequests: 1,
+      nextRequestIndex: 0,
+      failed: true,
+    }).run();
+    expect(getDraftScalingMatrix(db)).toBeNull();
+
+    db.insert(draftScalingSyncRuns).values({
+      startedAt: new Date('2026-09-17T12:00:00Z'),
+      finishedAt: new Date('2026-09-17T12:01:00Z'),
+      patchWindow: '30',
+      requestsMade: 1,
+      totalRequests: 1,
+      nextRequestIndex: 1,
+      failed: false,
+    }).run();
+    expect(getDraftScalingMatrix(db)?.get('103:middle')).toHaveLength(1);
   });
 });
