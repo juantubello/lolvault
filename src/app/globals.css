@@ -170,6 +170,10 @@ button {
   background: var(--bar-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  /* Safari de iOS pierde de vista un elemento `fixed` con `backdrop-filter` durante el scroll por
+     inercia: lo deja pintado donde estaba y aparece en el medio de la pantalla. Forzarlo a su
+     propia capa de composición lo mantiene en su lugar. No cambia cómo se ve. */
+  transform: translateZ(0);
 }
 
 .tab-item {
