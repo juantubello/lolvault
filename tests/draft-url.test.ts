@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  clearDraftHref,
   draftMatchupScopeHref,
   draftPanelHref,
   draftPickHref,
@@ -150,5 +151,21 @@ describe('estado de Draft en la URL', () => {
       draftMatchupScopeHref({ cruces: 'todos' }, all, 'head-to-head'),
       'https://lolvault.local',
     ).searchParams.has('cruces')).toBe(false);
+  });
+
+  it('conserva la captura al corregir un pick y la descarta al vaciar todo', () => {
+    const params = {
+      tipo: 'draft',
+      aliados: '86-top,64-jungle',
+      enemigos: '222-bottom',
+      captura: 'comprobante-firmado',
+    };
+    const state = parseDraftUrl(params, VALID_KEYS);
+    const changed = draftPickHref(params, state, { team: 'allies', role: 'middle' }, 103);
+    const cleared = new URL(clearDraftHref(params, state), 'https://lolvault.local');
+
+    expect(new URL(changed, 'https://lolvault.local').searchParams.get('captura'))
+      .toBe('comprobante-firmado');
+    expect(cleared.searchParams.has('captura')).toBe(false);
   });
 });

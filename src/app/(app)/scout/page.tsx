@@ -22,6 +22,6 @@ export default async function ScoutPage({
 
   const member = { ...user, displayName: user.displayName };
   if (type === 'jugador') return <ScoutPlayerSegment searchParams={query} user={member} />;
-  if (type === 'draft') return <DraftSegment searchParams={query} />;
+  if (type === 'draft') return <DraftSegment searchParams={query} user={user} />;
   return <DraftRecordSegment searchParams={query} viewerUserId={member.id} />;
 }

@@ -12,6 +12,7 @@ Las URLs de este documento están **verificadas con requests reales** ese día.
 | Assets extra (íconos por id numérico, ficha completa) | CommunityDragon (comunitario) | No | Complemento opcional |
 | Historial de partidas | **OP.GG MCP** con caché en la base | No | ✅ **En uso** (2026-09-15) |
 | Historial con key oficial | **Riot API** (account-v1 + match-v5) | Sí, gratis | Futuro: cuando aprueben la Personal API Key |
+| Partida en curso | **Riot API** (Spectator-v5) | Sí, gratis | ✅ Cliente listo; falta verificar con una key real |
 | OP.GG / U.GG como API REST | No existe API pública oficial; los "OP.GG API" de terceros son scrapers | — | ❌ Descartado (viola términos) |
 
 ## 1. Campeones e imágenes: Data Dragon
@@ -53,6 +54,9 @@ Flujo para cada amigo:
 3. `GET https://americas.api.riotgames.com/lol/match/v5/matches/{matchId}` → detalle (campeón, KDA, win, cola)
 
 - LAS usa el routing regional **`americas`** (match-v5 y account-v1 van por región, no por `la2`).
+- La partida en curso usa routing de plataforma: Spectator-v5 va por **`la2`**, no por
+  `americas`: `GET /lol/spectator/v5/active-games/by-puuid/{puuid}`. Sólo devuelve partidas ya
+  empezadas y no informa carriles; LolVault los infiere con la matriz local de Draft.
 - Sin key responde **401** (verificado). La key va en el header `X-Riot-Token`, **solo del lado servidor**.
 - Con `by-puuid` (paso 3 del flujo del perfil) se obtiene el Riot ID actual: sirve para refrescar
   nombres cuando alguien se lo cambia.

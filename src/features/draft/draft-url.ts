@@ -248,5 +248,9 @@ export function clearDraftHref(
   searchParams: DraftSearchParams,
   state: DraftUrlState,
 ): string {
-  return stateHref(searchParams, { ...state, allies: [], enemies: [] });
+  const href = new URL(stateHref(searchParams, { ...state, allies: [], enemies: [] }), 'https://lolvault.local');
+  // Vaciar rompe deliberadamente la relación con la partida capturada. Los cambios puntuales de
+  // rol o campeón la conservan porque son correcciones permitidas por el flujo en vivo.
+  href.searchParams.delete('captura');
+  return `${href.pathname}?${href.searchParams.toString()}`;
 }

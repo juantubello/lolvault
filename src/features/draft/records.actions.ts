@@ -9,6 +9,7 @@ import { analyzeDraft } from '@/features/draft/analysis';
 import { parseDraftUrl } from '@/features/draft/draft-url';
 import { getDraftMatrix, getLatestCompletedDraftRun } from '@/features/draft/matrix-cache';
 import { SESSION_ERROR_MESSAGE } from '@/features/profile/profile-form';
+import { verifyLiveCaptureToken } from '@/features/scout/live-capture';
 
 import {
   attachDraftRecordMatch,
@@ -73,7 +74,25 @@ export async function saveDraftRecordAction(
     // La identidad, la corrida y la predicción se obtienen del servidor. Un userId o porcentaje
     // agregado al FormData queda deliberadamente sin leer.
     const analysis = analyzeDraft(matrix, state, state.risk);
-    const savedId = createDraftRecord(db, user.id, state, state.risk, run, analysis, new Date());
+    const captureToken = textValue(formData, 'captura');
+    const apiKey = process.env.RIOT_API_KEY?.trim() ?? '';
+    const capturedLive = captureToken !== ''
+      && verifyLiveCaptureToken(captureToken, user.id, apiKey);
+    if (captureToken && !capturedLive) {
+      return {
+        error: 'No pudimos validar la captura en vivo. Volvé a traer la partida o vaciá el draft para guardarlo como carga manual.',
+      };
+    }
+    const savedId = createDraftRecord(
+      db,
+      user.id,
+      state,
+      state.risk,
+      run,
+      analysis,
+      new Date(),
+      capturedLive,
+    );
     refreshRegistro();
     return { done: true, savedId };
   } catch (error) {

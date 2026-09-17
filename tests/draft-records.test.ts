@@ -142,9 +142,18 @@ beforeEach(() => {
 
 afterEach(() => sqlite.close());
 
-function save(at: Date): number {
+function save(at: Date, capturedLive = false): number {
   const matrix = buildDraftMatrix({ championKeys: [], championStats: [], matchups: [], synergies: [] });
-  return createDraftRecord(db, memberId, draft, 'medium', run, analyzeDraft(matrix, draft), at);
+  return createDraftRecord(
+    db,
+    memberId,
+    draft,
+    'medium',
+    run,
+    analyzeDraft(matrix, draft),
+    at,
+    capturedLive,
+  );
 }
 
 function cacheMatch(snapshot: MatchDetail): void {
@@ -233,6 +242,7 @@ describe('registro de drafts', () => {
     const matched = matchDraftToDetail(pickViews(), detail({ remake: true }));
     const record = {
       predictedAllyWinrate: 0.65,
+      capturedLive: false,
       match: { result: matched.result, savedAfterMatch: false },
     } as DraftRecordView;
 
@@ -254,14 +264,28 @@ describe('registro de drafts', () => {
     expect(buildDraftCalibration([record!])).toMatchObject({ eligibleN: 0, excludedN: 1 });
   });
 
+  it('incluye una captura en vivo aunque savedAt sea posterior al inicio de la partida', () => {
+    const recordId = save(SAVED_AFTER, true);
+    cacheMatch(detail());
+    db.update(draftRecords).set({ predictedAllyWinrate: 0.65 }).where(eq(draftRecords.id, recordId)).run();
+
+    attachDraftRecordMatch(db, recordId, 'cache', 'MATCH-1', new Date('2026-09-17T21:00:00Z'));
+    const [record] = listDraftRecords(db, memberId);
+
+    expect(record?.capturedLive).toBe(true);
+    expect(record?.match?.savedAfterMatch).toBe(true);
+    expect(recordWasCorrect(record!)).toBe(true);
+    expect(buildDraftCalibration([record!])).toMatchObject({ eligibleN: 1, excludedN: 0 });
+  });
+
   it('agrupa la calibración por confianza y cada porcentaje conserva su n', () => {
     const normalMatch = (result: 'win' | 'lose') => ({ result, savedAfterMatch: false });
     const records = [
-      { predictedAllyWinrate: 0.55, match: normalMatch('win') },
-      { predictedAllyWinrate: 0.58, match: normalMatch('lose') },
-      { predictedAllyWinrate: 0.68, match: normalMatch('win') },
-      { predictedAllyWinrate: 0.35, match: normalMatch('lose') },
-      { predictedAllyWinrate: 0.72, match: normalMatch('lose') },
+      { predictedAllyWinrate: 0.55, capturedLive: false, match: normalMatch('win') },
+      { predictedAllyWinrate: 0.58, capturedLive: false, match: normalMatch('lose') },
+      { predictedAllyWinrate: 0.68, capturedLive: false, match: normalMatch('win') },
+      { predictedAllyWinrate: 0.35, capturedLive: false, match: normalMatch('lose') },
+      { predictedAllyWinrate: 0.72, capturedLive: false, match: normalMatch('lose') },
     ] as DraftRecordView[];
 
     const calibration = buildDraftCalibration(records);

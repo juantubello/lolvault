@@ -94,7 +94,7 @@ function RecordOutcome({ record }: { record: DraftRecordView }) {
       </p>
     );
   }
-  if (record.match.savedAfterMatch) {
+  if (record.match.savedAfterMatch && !record.capturedLive) {
     return (
       <p className="draft-record-outcome" data-tone="warning">
         <TriangleAlert aria-hidden="true" size={18} strokeWidth={2} />
@@ -169,6 +169,9 @@ function RecordCard({
         <div>
           <strong>{record.savedBy.name}</strong>
           <span>{formatDateTime(record.savedAt)}</span>
+          <small className="draft-record-source" data-live={record.capturedLive}>
+            {record.capturedLive ? 'Capturado en vivo' : 'Carga manual'}
+          </small>
         </div>
         <div className="draft-record-prediction">
           <span>Predicción</span>
@@ -256,7 +259,7 @@ export function DraftRecordSegment({
             <h2 id="draft-calibration-heading">Calibración por banda</h2>
             <p>
               Agrupa la confianza del lado favorito y cuenta si ese lado ganó. Remakes y registros
-              guardados tarde quedan afuera.
+              manuales guardados tarde quedan afuera; las capturas en vivo sí cuentan.
             </p>
           </header>
           <p className="draft-calibration-honesty" data-enough={calibration.enoughEvidence}>
@@ -285,7 +288,7 @@ export function DraftRecordSegment({
           {calibration.excludedN ? (
             <p className="draft-record-note">
               Excluidas de la calibración: n={integer.format(calibration.excludedN)} (sin partida,
-              remake, sin favorito o guardadas después).
+              remake, sin favorito o cargas manuales guardadas después).
             </p>
           ) : null}
         </section>

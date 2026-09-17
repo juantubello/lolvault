@@ -1,0 +1,16 @@
+{
+  "gameId": 1234567890,
+  "gameStartTime": 1789675200000,
+  "participants": [
+    { "puuid": "fixture-blue-1", "championId": 1, "teamId": 100 },
+    { "puuid": "fixture-blue-2", "championId": 2, "teamId": 100 },
+    { "puuid": "fixture-blue-3", "championId": 3, "teamId": 100 },
+    { "puuid": "fixture-blue-4", "championId": 4, "teamId": 100 },
+    { "puuid": "fixture-blue-5", "championId": 5, "teamId": 100 },
+    { "puuid": "fixture-red-1", "championId": 6, "teamId": 200 },
+    { "puuid": "fixture-red-2", "championId": 7, "teamId": 200 },
+    { "puuid": "fixture-red-3", "championId": 8, "teamId": 200 },
+    { "puuid": "fixture-red-4", "championId": 9, "teamId": 200 },
+    { "puuid": "fixture-red-5", "championId": 10, "teamId": 200 }
+  ]
+}

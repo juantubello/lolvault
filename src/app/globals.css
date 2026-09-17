@@ -3705,6 +3705,60 @@ button {
   gap: 1rem;
 }
 
+.live-draft-shortcut {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+.live-draft-shortcut h2 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+
+.live-draft-shortcut p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0;
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.live-draft-shortcut p > svg {
+  flex: none;
+}
+
+.live-draft-shortcut form,
+.live-draft-shortcut .primary-button {
+  width: 100%;
+}
+
+.live-draft-shortcut .primary-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.live-draft-inferred {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--tint);
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--tint) 8%, var(--bg-cell));
+  color: var(--label);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
 .draft-data-header {
   display: flex;
   min-height: 2.75rem;
@@ -4956,6 +5010,16 @@ button {
 }
 
 @media (min-width: 48rem) {
+  .live-draft-shortcut {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .live-draft-shortcut form,
+  .live-draft-shortcut .primary-button {
+    width: auto;
+  }
+
   .draft-champion-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5525,11 +5589,29 @@ button {
 }
 
 .draft-record-card > header > div:first-child span,
+.draft-record-card > header > div:first-child small,
 .draft-record-prediction span,
 .draft-record-prediction small {
   color: var(--label-2);
   font-size: 0.75rem;
   line-height: 1rem;
+}
+
+.draft-record-source {
+  width: fit-content;
+  margin-top: 0.25rem;
+  padding: 0.1875rem 0.375rem;
+  border: 0.5px solid var(--separator);
+  border-radius: 0.375rem;
+  background: var(--bg-cell-2);
+  color: var(--label-2);
+  font-weight: 600;
+}
+
+.draft-record-source[data-live="true"] {
+  border-color: var(--tint);
+  background: color-mix(in srgb, var(--tint) 10%, var(--bg-cell));
+  color: var(--tint);
 }
 
 .draft-record-prediction {

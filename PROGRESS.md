@@ -314,6 +314,22 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   el design system y la copia local de `ui-ux-pro-max`; la verificación visual queda para Juan porque
   el sandbox no permite abrir puertos. Typecheck limpio, 355 tests verdes y build exitoso.
 
+- 2026-09-17 — **Fase I de Draft: captura desde una partida en vivo.** Cliente server-side de
+  Spectator-v5 contra `la2`, con `X-Riot-Token`, timeout, errores tipados y caché de un minuto;
+  sin `RIOT_API_KEY` se conserva el provider nulo y la carga manual. El atajo sólo consulta al
+  tocarlo, toma el PUUID cacheado, deriva aliados por el equipo del usuario e infiere los cinco
+  roles probando las 120 permutaciones por equipo contra `draft_champion_stats`; el tablero queda
+  editable y avisa que la inferencia puede fallar. Una captura lleva un comprobante server-side
+  firmado y los registros guardan `captured_live` (migration `0011_strange_mulholland_black.sql`):
+  cuentan para calibración aunque el guardado sea posterior al inicio porque Spectator garantiza
+  que el resultado todavía no existía, mientras que una carga manual conserva la exclusión por
+  reloj. Registro distingue ambos orígenes y Perfil incluye el aviso legal completo de Riot.
+  Todo se probó offline con una fixture anónima de la forma documentada. La inferencia de ambos
+  equipos (240 permutaciones) midió 0,066 ms de mediana en 25 muestras de 1.000 iteraciones
+  calientes (mín. 0,065; máx. 0,068 ms). Verificación real y visual pendientes del lado de Juan;
+  el sandbox no tiene key, red ni permite abrir el puerto local. Typecheck limpio, 372 tests
+  verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
@@ -322,7 +338,8 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
 5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
 7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-8. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+8. Verificar Spectator-v5 con una partida real cuando Juan tenga una key de Riot.
+9. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { getDb } from '@/db/client';
-import { champions, playerStatsSync, users } from '@/db/schema';
+import { champions, playerStatsSync, users, type User } from '@/db/schema';
 import {
   analyzeDraft,
   DRAFT_PRIOR_GAMES,
@@ -47,12 +47,18 @@ import { searchKey } from '@/features/champions/search-key';
 import { timeAgo } from '@/features/matches/format';
 import type { SummonerProfile } from '@/features/matches/types';
 import { scoutHref } from '@/features/scout/routes';
+import { verifyLiveCaptureToken } from '@/features/scout/live-capture';
+import { hasLiveGameProvider } from '@/features/scout/live-game';
 
 import { DraftChampionGrid, type DraftChampionGridViewItem } from './draft-champion-grid';
 import { DraftPlayerSelect } from './draft-player-select';
 import { DraftAnalysisPanel } from './draft-analysis-panel';
 import { SaveDraftRecordButton } from './draft-record-actions';
 import { ScoutSegments } from './scout-segments';
+import {
+  LiveDraftShortcut,
+  type LiveDraftAvailability,
+} from './live-draft-shortcut';
 
 const ROLE_LABELS: Record<DraftRole, { short: string; full: string }> = {
   top: { short: 'TOP', full: 'carril superior' },
@@ -214,7 +220,13 @@ function DraftPanelSegments({
   );
 }
 
-export async function DraftSegment({ searchParams }: { searchParams: DraftSearchParams }) {
+export async function DraftSegment({
+  searchParams,
+  user,
+}: {
+  searchParams: DraftSearchParams;
+  user: User;
+}) {
   const db = getDb();
 
   try {
@@ -275,6 +287,26 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
     new Set(catalog.map((champion) => champion.key)),
     new Set(members.map((member) => member.id)),
   );
+  const ownSync = db.select({ puuid: playerStatsSync.puuid })
+    .from(playerStatsSync)
+    .where(eq(playerStatsSync.userId, user.id))
+    .get();
+  const ownPuuid = ownSync?.puuid ?? user.riotPuuid;
+  const liveAvailability: LiveDraftAvailability = !hasLiveGameProvider()
+    ? 'unconfigured'
+    : !user.riotGameName || !user.riotTagLine
+      ? 'no-riot-id'
+      : !ownPuuid
+        ? 'missing-puuid'
+        : 'available';
+  const rawCapture = Array.isArray(searchParams.captura)
+    ? searchParams.captura[0] ?? ''
+    : searchParams.captura ?? '';
+  const apiKey = process.env.RIOT_API_KEY?.trim() ?? '';
+  const captureToken = rawCapture
+    && verifyLiveCaptureToken(rawCapture, user.id, apiKey)
+    ? rawCapture
+    : '';
   const analysis = analyzeDraft(matrix, state, state.risk);
   const missingPicks = 10 - state.allies.length - state.enemies.length;
   const complete = missingPicks === 0;
@@ -344,6 +376,7 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
       action={state.panel === 'draft' ? (
         <SaveDraftRecordButton
           allies={serializePicks(state.allies)}
+          captureToken={captureToken}
           clearHref={(state.allies.length || state.enemies.length)
             ? clearDraftHref(searchParams, state)
             : null}
@@ -379,6 +412,19 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
             <strong>{formatWindow(run.patchWindow)}</strong>
             <span>Actualizado {timeAgo(run.finishedAt, new Date())}</span>
           </header>
+
+          <LiveDraftShortcut
+            availability={liveAvailability}
+            players={state.players.map(({ role, userId }) => `${role}-${userId}`).join(',')}
+            risk={state.risk}
+          />
+
+          {captureToken ? (
+            <p className="live-draft-inferred" role="status">
+              Los diez campeones se capturaron en vivo. Los roles fueron inferidos y pueden
+              equivocarse: podés corregir cualquier casillero o cambiar un campeón antes de guardar.
+            </p>
+          ) : null}
 
           <section aria-labelledby="draft-score-heading" className="draft-score">
             <h2 id="draft-score-heading">Win rate estimado</h2>

@@ -1,0 +1,1 @@
+ALTER TABLE `draft_records` ADD `captured_live` integer DEFAULT false NOT NULL;

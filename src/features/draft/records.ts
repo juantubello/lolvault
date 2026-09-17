@@ -54,6 +54,7 @@ export function createDraftRecord(
   run: CompletedDraftSyncRun,
   analysis: DraftAnalysis,
   savedAt: Date,
+  capturedLive = false,
 ): number {
   if (!isCompleteDraft(draft)) {
     throw new DraftRecordError('Completá los cinco campeones de cada lado antes de guardar.');
@@ -63,6 +64,7 @@ export function createDraftRecord(
     const record = tx.insert(draftRecords).values({
       savedByUserId,
       savedAt,
+      capturedLive,
       predictedAllyWinrate: analysis.winrate,
       risk,
       patchWindow: run.patchWindow,
@@ -104,6 +106,7 @@ export type DraftRecordView = {
   id: number;
   savedBy: { id: number; name: string };
   savedAt: Date;
+  capturedLive: boolean;
   predictedAllyWinrate: number;
   risk: DraftRisk;
   patchWindow: string;
@@ -156,6 +159,7 @@ export function listDraftRecords(db: Db, viewerUserId: number): DraftRecordView[
     id: record.id,
     savedBy: { id: record.savedByUserId, name: savedByName ?? 'Sin nombre' },
     savedAt: record.savedAt,
+    capturedLive: record.capturedLive,
     predictedAllyWinrate: record.predictedAllyWinrate,
     risk: record.risk,
     patchWindow: record.patchWindow,
@@ -429,7 +433,7 @@ export type DraftCalibration = {
 
 type CalibrationRecord = Pick<
   DraftRecordView,
-  'predictedAllyWinrate' | 'match'
+  'predictedAllyWinrate' | 'capturedLive' | 'match'
 >;
 
 export function predictedSide(winrate: number): DraftRecordSide | null {
@@ -439,7 +443,11 @@ export function predictedSide(winrate: number): DraftRecordSide | null {
 
 export function recordWasCorrect(record: CalibrationRecord): boolean | null {
   const side = predictedSide(record.predictedAllyWinrate);
-  if (!record.match || record.match.result === 'other' || record.match.savedAfterMatch || !side) {
+  // Una captura de Spectator-v5 sólo puede existir mientras la partida está en curso: en ese
+  // momento el resultado todavía no existe. Esa garantía es más fuerte que comparar relojes, así
+  // que cuenta aunque savedAt sea posterior al inicio. La carga manual conserva la regla anterior.
+  const savedTooLate = record.match?.savedAfterMatch && !record.capturedLive;
+  if (!record.match || record.match.result === 'other' || savedTooLate || !side) {
     return null;
   }
   const alliesWon = record.match.result === 'win';

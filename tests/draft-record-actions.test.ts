@@ -18,6 +18,7 @@ vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }));
 import { applyPragmas, createDb, type Db } from '@/db/client';
 import { champions, draftRecords, draftSyncRuns, users } from '@/db/schema';
 import { saveDraftRecordAction } from '@/features/draft/records.actions';
+import { createLiveCaptureToken } from '@/features/scout/live-capture';
 
 const NOW = new Date('2026-09-17T12:00:00Z');
 const ALLIES = '1-top,2-jungle,3-middle,4-bottom,5-support';
@@ -59,7 +60,10 @@ beforeEach(() => {
   mocks.getCurrentUser.mockResolvedValue({ id: memberId, displayName: 'Miembro' });
 });
 
-afterEach(() => sqlite.close());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  sqlite.close();
+});
 
 function form(allies = ALLIES, enemies = ENEMIES): FormData {
   const data = new FormData();
@@ -91,6 +95,31 @@ describe('saveDraftRecordAction', () => {
     const result = await saveDraftRecordAction({}, data);
 
     expect(result.error).toContain('Completá los cinco campeones de cada lado');
+    expect(db.select().from(draftRecords).all()).toHaveLength(0);
+  });
+
+  it('marca en vivo sólo un comprobante firmado para el usuario autenticado', async () => {
+    vi.stubEnv('RIOT_API_KEY', 'key-de-fixture');
+    const data = form();
+    data.set('captura', createLiveCaptureToken({
+      userId: memberId,
+      gameId: 1234567890,
+      gameStartTime: Date.now() - 60_000,
+      capturedAt: Date.now(),
+    }, 'key-de-fixture'));
+
+    const result = await saveDraftRecordAction({}, data);
+    expect(result.savedId).toBeDefined();
+    expect(db.select().from(draftRecords).get()?.capturedLive).toBe(true);
+  });
+
+  it('rechaza una marca en vivo inventada por el cliente', async () => {
+    vi.stubEnv('RIOT_API_KEY', 'key-de-fixture');
+    const data = form();
+    data.set('captura', 'no-es-un-comprobante');
+
+    const result = await saveDraftRecordAction({}, data);
+    expect(result.error).toContain('No pudimos validar la captura en vivo');
     expect(db.select().from(draftRecords).all()).toHaveLength(0);
   });
 });

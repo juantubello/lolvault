@@ -420,6 +420,8 @@ export const draftRecords = sqliteTable(
       .notNull()
       .references(() => users.id),
     savedAt: integer('saved_at', { mode: 'timestamp_ms' }).notNull(),
+    /** Spectator-v5 confirmó que la partida seguía en curso cuando se capturó el draft. */
+    capturedLive: integer('captured_live', { mode: 'boolean' }).notNull().default(false),
     predictedAllyWinrate: real('predicted_ally_winrate').notNull(),
     risk: text('risk', { enum: ['very-low', 'low', 'medium', 'high', 'very-high'] }).notNull(),
     patchWindow: text('patch_window').notNull(),

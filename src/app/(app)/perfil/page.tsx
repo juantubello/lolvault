@@ -63,8 +63,10 @@ export default async function ProfilePage() {
         <AppLogo size={72} />
         <h2 id="about-heading">LolVault</h2>
         <p>
-          LolVault no está respaldado por Riot Games ni refleja sus opiniones. League of Legends y Riot Games
-          son marcas registradas de Riot Games, Inc. Historial de partidas vía OP.GG. Datos de Draft vía{' '}
+          LolVault no está respaldado por Riot Games ni refleja las opiniones o puntos de vista de
+          Riot Games ni de ninguna persona oficialmente involucrada en producir o administrar sus
+          propiedades. Riot Games y todas sus propiedades asociadas son marcas comerciales o marcas
+          registradas de Riot Games, Inc. Historial de partidas vía OP.GG. Datos de Draft vía{' '}
           <a href="https://lolalytics.com/">Lolalytics</a>; análisis inspirado en{' '}
           <a href="https://github.com/vigovlugt/draftgap">DraftGap (MIT)</a>.
         </p>

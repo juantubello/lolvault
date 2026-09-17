@@ -25,6 +25,7 @@ export function draftSaveLabel(missingPicks: number): string {
 export function DraftSaveActionView({
   action,
   allies,
+  captureToken = '',
   clearHref,
   enemies,
   missingPicks,
@@ -35,6 +36,7 @@ export function DraftSaveActionView({
 }: {
   action?: ComponentProps<'form'>['action'];
   allies: string;
+  captureToken?: string;
   clearHref: string | null;
   enemies: string;
   missingPicks: number;
@@ -59,6 +61,7 @@ export function DraftSaveActionView({
       {clearHref ? <Link className="draft-header-clear" href={clearHref}>Vaciar</Link> : null}
       <form action={action} className="draft-save-form">
         <input name="aliados" type="hidden" value={allies} />
+        <input name="captura" type="hidden" value={captureToken} />
         <input name="enemigos" type="hidden" value={enemies} />
         <input name="riesgo" type="hidden" value={risk} />
         <button
@@ -80,6 +83,7 @@ export function DraftSaveActionView({
 
 export function SaveDraftRecordButton({
   allies,
+  captureToken = '',
   clearHref,
   enemies,
   missingPicks,
@@ -87,6 +91,7 @@ export function SaveDraftRecordButton({
   recordHref,
 }: {
   allies: string;
+  captureToken?: string;
   enemies: string;
   clearHref: string | null;
   missingPicks: number;
@@ -98,6 +103,7 @@ export function SaveDraftRecordButton({
     <DraftSaveActionView
       action={action}
       allies={allies}
+      captureToken={captureToken}
       clearHref={clearHref}
       enemies={enemies}
       missingPicks={missingPicks}
