@@ -484,6 +484,38 @@ muestra el n al lado de cualquier porcentaje, y con pocas partidas dice explíci
 alcanza para concluir, en vez de mostrar un "73 % de acierto" que no significa nada. Un número de
 acierto sin su n es exactamente el tipo de dato sin contexto que ya rechazamos dos veces.
 
+### Fase G — Quién juega cada slot, y cómo le va con ese campeón
+
+Pedido por Juan (2026-09-17): asignar a cada casillero aliado un miembro del grupo y, al elegir
+campeón, ver **cómo le va a esa persona con ese campeón**.
+
+**Decisión tomada: el dato personal NO toca el win rate estimado del draft.** Va al lado, como
+señal propia. El motivo está medido: el backtest del §1.6 muestra que el modelo global —con
+millones de partidas detrás— todavía no le gana a una moneda en la muestra disponible. Meterle un
+término estimado con 3 a 25 partidas lo ensucia en vez de mejorarlo, y además rompe la propiedad
+de que el número mida una sola cosa y se pueda explicar.
+
+**La fuente son las estadísticas de temporada, no las partidas cacheadas.** Medido sobre el perfil
+real de Juan:
+
+| Fuente | Partidas del campeón más jugado |
+|---|---|
+| Las 20 partidas cacheadas (`player_matches`) | **7** |
+| `rankedSeason.champions` del perfil de OP.GG | **25** |
+
+La temporada tiene 112 partidas y devuelve **sólo los 10 campeones más jugados**: 25, 17, 16, 13,
+11, 5, 3, 3, 3, 3. O sea que para la mayoría de los picks **no va a haber dato**, y eso se dice con
+todas las letras en vez de insinuar algo.
+
+**Normalización.** La pregunta no es "¿gana con Malphite?" sino "¿le va mejor o peor con Malphite
+que a él mismo en general?". Se encoge el win rate del campeón hacia el win rate de temporada de
+esa misma persona, con el mismo prior bayesiano que usa todo el resto. Con 3 partidas colapsa a
+cero solo, que es lo correcto.
+
+**Reglas de presentación**, las mismas de siempre y por los mismos motivos: el n siempre al lado
+del porcentaje, nunca un win rate de 3 partidas presentado como un hecho, y "no lo jugó esta
+temporada" cuando no hay dato.
+
 ---
 
 ## 5. Reglas para esta feature
