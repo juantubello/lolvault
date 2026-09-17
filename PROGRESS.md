@@ -280,11 +280,23 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   y DraftGap (MIT). Verificación visual pendiente fuera del sandbox, que no permite abrir puertos.
   Typecheck limpio, 326 tests verdes y build de producción exitoso.
 
+- 2026-09-17 — **Fase G de Draft: jugador por casillero y señal personal.** Los cinco roles aliados
+  aceptan miembros con Riot ID y guardan la asignación tolerante en `?jugadores=`; IDs ajenos,
+  roles inválidos/repetidos y una misma persona duplicada se descartan. La pantalla lee directamente
+  el `SummonerProfile` ya guardado en `player_stats_sync`, usa `rankedSeason.champions` con respaldo
+  a `seasonChampions` y encoge cada campeón hacia el win rate de temporada con el prior del riesgo.
+  La grilla distingue “sin datos” de “no lo jugó esta temporada”, avisa muestras menores a 10 sin
+  publicarles porcentaje y ofrece un orden personal apagable que conserva el ranking global dentro
+  de cada grupo. La señal nunca entra a `analyzeDraft` ni `getSuggestions`; un test fija igualdad
+  exacta del número con y sin personas. UI revisada estáticamente con las reglas de 375 px, targets
+  de 44 px y contraste semántico; la revisión visual queda para fuera del sandbox, sin puerto local.
+  Typecheck limpio, 344 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 3. Ejecutar los syncs de Draft y Scaling con red y verificar tiempos/volumen de la primera pasada.
-4. Revisar D2 + Scaling a mano en 375 px y tablet, en claro/oscuro y con texto grande.
+4. Revisar D2 + Scaling + Fase G a mano en 375 px y tablet, en claro/oscuro y con texto grande.
 5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
 7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.

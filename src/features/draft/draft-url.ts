@@ -10,9 +10,11 @@ export type DraftPanel = 'draft' | 'analisis';
 export type DraftMatchupScope = 'head-to-head' | 'all';
 export type DraftTeam = 'allies' | 'enemies';
 export type DraftSlot = { team: DraftTeam; role: DraftRole };
+export type DraftPlayerAssignment = { role: DraftRole; userId: number };
 export type DraftSearchParams = Record<string, string | string[] | undefined>;
 
 export type DraftUrlState = Draft & {
+  players: readonly DraftPlayerAssignment[];
   risk: DraftRisk;
   panel: DraftPanel;
   matchupScope: DraftMatchupScope;
@@ -62,6 +64,32 @@ function parseSlot(value: string | string[] | undefined): DraftSlot | null {
   };
 }
 
+function parsePlayers(
+  value: string | string[] | undefined,
+  validUserIds: ReadonlySet<number>,
+): DraftPlayerAssignment[] {
+  const players: DraftPlayerAssignment[] = [];
+  const usedRoles = new Set<DraftRole>();
+  const usedUsers = new Set<number>();
+
+  for (const entry of first(value).split(',')) {
+    const match = /^(top|jungle|middle|bottom|support)-(\d+)$/.exec(entry.trim());
+    if (!match) continue;
+    const role = match[1] as DraftRole;
+    const userId = Number(match[2]);
+    if (!Number.isSafeInteger(userId)
+      || !validUserIds.has(userId)
+      || usedRoles.has(role)
+      || usedUsers.has(userId)) continue;
+
+    players.push({ role, userId });
+    usedRoles.add(role);
+    usedUsers.add(userId);
+  }
+
+  return players;
+}
+
 /**
  * Parsea toda entrada como no confiable. El resultado siempre cumple las precondiciones de
  * analyzeDraft: roles únicos por equipo y campeones únicos en todo el draft.
@@ -69,11 +97,13 @@ function parseSlot(value: string | string[] | undefined): DraftSlot | null {
 export function parseDraftUrl(
   searchParams: DraftSearchParams,
   validChampionKeys: ReadonlySet<number> | readonly number[],
+  validUserIds: ReadonlySet<number> | readonly number[] = [],
 ): DraftUrlState {
   const keys = validChampionKeys instanceof Set
     ? validChampionKeys
     : new Set(validChampionKeys);
   const globallyUsed = new Set<number>();
+  const userIds = validUserIds instanceof Set ? validUserIds : new Set(validUserIds);
   const allies = parseTeam(searchParams.aliados, keys, globallyUsed);
   const enemies = parseTeam(searchParams.enemigos, keys, globallyUsed);
   const rawRisk = first(searchParams.riesgo);
@@ -83,6 +113,7 @@ export function parseDraftUrl(
   return {
     allies,
     enemies,
+    players: parsePlayers(searchParams.jugadores, userIds),
     risk: (RISK_SET.has(rawRisk) ? rawRisk : 'medium') as DraftRisk,
     panel: rawPanel === 'analisis' ? 'analisis' : 'draft',
     matchupScope: rawMatchupScope === 'todos' ? 'all' : 'head-to-head',
@@ -107,6 +138,13 @@ function serializeTeam(picks: readonly DraftPick[]): string {
   return sorted(picks).map(({ championKey, role }) => `${championKey}-${role}`).join(',');
 }
 
+function serializePlayers(players: readonly DraftPlayerAssignment[]): string {
+  return [...players]
+    .sort((a, b) => (ROLE_INDEX.get(a.role) ?? 0) - (ROLE_INDEX.get(b.role) ?? 0))
+    .map(({ role, userId }) => `${role}-${userId}`)
+    .join(',');
+}
+
 function slotValue(slot: DraftSlot): string {
   return `${slot.team === 'allies' ? 'aliado' : 'enemigo'}-${slot.role}`;
 }
@@ -118,6 +156,8 @@ function stateHref(searchParams: DraftSearchParams, state: DraftUrlState): strin
   const enemies = serializeTeam(state.enemies);
   if (allies) query.set('aliados', allies); else query.delete('aliados');
   if (enemies) query.set('enemigos', enemies); else query.delete('enemigos');
+  const players = serializePlayers(state.players);
+  if (players) query.set('jugadores', players); else query.delete('jugadores');
   if (state.risk === 'medium') query.delete('riesgo'); else query.set('riesgo', state.risk);
   if (state.panel === 'draft') query.delete('panel'); else query.set('panel', state.panel);
   if (state.matchupScope === 'head-to-head') query.delete('cruces');
@@ -171,6 +211,21 @@ export function draftRiskHref(
   risk: DraftRisk,
 ): string {
   return stateHref(searchParams, { ...state, risk });
+}
+
+export function draftPlayerHref(
+  searchParams: DraftSearchParams,
+  state: DraftUrlState,
+  role: DraftRole,
+  userId: number | null,
+): string {
+  const players = state.players.filter((player) => (
+    player.role !== role && (userId === null || player.userId !== userId)
+  ));
+  return stateHref(searchParams, {
+    ...state,
+    players: userId === null ? players : [...players, { role, userId }],
+  });
 }
 
 export function draftPanelHref(

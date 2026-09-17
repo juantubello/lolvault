@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, X } from 'lucide-react';
+import { ListFilter, Search, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -18,6 +18,9 @@ export type DraftChampionGridViewItem = {
   winrateLabel: string | null;
   matchupLabel: string | null;
   synergyLabel: string | null;
+  personalLabel: string | null;
+  personalPlayed: boolean;
+  personalBelowAverage: boolean;
 };
 
 export function DraftChampionGrid({
@@ -26,17 +29,26 @@ export function DraftChampionGrid({
   /** De quién es el win rate que ordena la lista: el número cambia de dueño según el casillero. */
   side,
   occupant,
+  personalPlayerName,
 }: {
   champions: readonly DraftChampionGridViewItem[];
   slotLabel: string;
   side: 'allies' | 'enemies';
   occupant: { name: string; href: string } | null;
+  personalPlayerName: string | null;
 }) {
   const [query, setQuery] = useState('');
+  const [personalFirst, setPersonalFirst] = useState(false);
   const normalized = searchKey(query);
-  const filtered = normalized
+  const matching = normalized
     ? champions.filter((champion) => champion.searchKey.includes(normalized))
     : champions;
+  const filtered = personalFirst
+    ? matching
+      .map((champion, index) => ({ champion, index }))
+      .sort((a, b) => Number(b.champion.personalPlayed) - Number(a.champion.personalPlayed) || a.index - b.index)
+      .map(({ champion }) => champion)
+    : matching;
   const owner = side === 'allies'
     ? { of: 'de tu equipo', for: 'tu equipo' }
     : { of: 'del equipo enemigo', for: 'el enemigo' };
@@ -53,6 +65,11 @@ export function DraftChampionGrid({
           le va en los cruces contra el otro equipo y cuánto aporta la sinergia interna. Son lecturas
           separadas, no las partes de una suma.
         </p>
+        {personalPlayerName ? (
+          <p className="draft-picker-personal-note">
+            El dato de {personalPlayerName} va aparte y no cambia el win rate estimado.
+          </p>
+        ) : null}
       </header>
 
       {occupant ? (
@@ -75,11 +92,29 @@ export function DraftChampionGrid({
         />
       </label>
 
+      {personalPlayerName ? (
+        <div className="draft-personal-order">
+          <button
+            aria-pressed={personalFirst}
+            onClick={() => setPersonalFirst((current) => !current)}
+            type="button"
+          >
+            <ListFilter aria-hidden="true" size={18} strokeWidth={2} />
+            Primero los que juega
+          </button>
+          <small>
+            {personalFirst
+              ? 'Orden personal activo; dentro de cada grupo se conserva la sugerencia.'
+              : 'Apagado: manda la sugerencia global.'}
+          </small>
+        </div>
+      ) : null}
+
       {filtered.length ? (
         <div className="draft-champion-grid">
           {filtered.map((champion) => (
             <Link
-              aria-label={`Elegir a ${champion.name} para ${slotLabel}`}
+              aria-label={`Elegir a ${champion.name} para ${slotLabel}${champion.personalLabel ? `. ${champion.personalLabel}` : ''}`}
               className="draft-champion-option"
               data-kind={champion.kind}
               href={champion.href}
@@ -105,6 +140,15 @@ export function DraftChampionGrid({
                 ) : null}
                 {champion.kind === 'off-role' ? (
                   <span className="draft-offrole-note">Casi no se juega en este rol: sin datos para estimar</span>
+                ) : null}
+                {champion.personalLabel ? (
+                  <span
+                    className="draft-personal-stat"
+                    data-below-average={champion.personalBelowAverage || undefined}
+                    data-played={champion.personalPlayed || undefined}
+                  >
+                    {champion.personalLabel}
+                  </span>
                 ) : null}
               </span>
             </Link>

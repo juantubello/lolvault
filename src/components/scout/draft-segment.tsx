@@ -1,11 +1,12 @@
 import { Database } from 'lucide-react';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
 import { getDb } from '@/db/client';
-import { champions } from '@/db/schema';
+import { champions, playerStatsSync, users } from '@/db/schema';
 import {
   analyzeDraft,
   DRAFT_PRIOR_GAMES,
@@ -16,6 +17,7 @@ import {
   clearDraftHref,
   draftPanelHref,
   draftPickHref,
+  draftPlayerHref,
   draftRiskHref,
   draftSlotHref,
   parseDraftUrl,
@@ -35,13 +37,19 @@ import {
   buildDraftChampionGrid,
   type DraftChampionCatalogItem,
 } from '@/features/draft/suggestion-grid';
+import {
+  getPersonalChampionStat,
+  personalChampionLabel,
+} from '@/features/draft/player-champion';
 import { DRAFT_ROLES, type DraftRole } from '@/features/draft/types';
 import { championImageUrl, ensureChampions } from '@/features/champions/ddragon-sync';
 import { searchKey } from '@/features/champions/search-key';
 import { timeAgo } from '@/features/matches/format';
+import type { SummonerProfile } from '@/features/matches/types';
 import { scoutHref } from '@/features/scout/routes';
 
 import { DraftChampionGrid, type DraftChampionGridViewItem } from './draft-champion-grid';
+import { DraftPlayerSelect } from './draft-player-select';
 import { DraftAnalysisPanel } from './draft-analysis-panel';
 import { SaveDraftRecordButton } from './draft-record-actions';
 import { ScoutSegments } from './scout-segments';
@@ -74,6 +82,12 @@ const points = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 });
 
+type DraftMember = {
+  id: number;
+  displayName: string;
+  profile: SummonerProfile | null;
+};
+
 function formatWindow(patchWindow: string): string {
   return /^\d+$/.test(patchWindow)
     ? `Últimos ${patchWindow} días`
@@ -98,6 +112,7 @@ function TeamSlots({
   state,
   searchParams,
   championsByKey,
+  members,
 }: {
   team: DraftTeam;
   title: string;
@@ -105,16 +120,26 @@ function TeamSlots({
   state: DraftUrlState;
   searchParams: DraftSearchParams;
   championsByKey: ReadonlyMap<number, DraftChampionCatalogItem>;
+  members: readonly DraftMember[];
 }) {
   const byRole = new Map(picks.map((pick) => [pick.role, pick]));
   return (
-    <section aria-labelledby={`draft-${team}-heading`} className="draft-team">
+    <section aria-labelledby={`draft-${team}-heading`} className="draft-team" data-team={team}>
       <h2 id={`draft-${team}-heading`}>{title}</h2>
       <ul className="draft-slot-list">
         {DRAFT_ROLES.map((role) => {
           const slot: DraftSlot = { team, role };
           const pick = byRole.get(role);
           const champion = pick ? championsByKey.get(pick.championKey) : null;
+          const assignment = team === 'allies'
+            ? state.players.find((player) => player.role === role)
+            : undefined;
+          const member = assignment
+            ? members.find((candidate) => candidate.id === assignment.userId)
+            : undefined;
+          const personalStat = member && champion
+            ? getPersonalChampionStat(member.profile, champion.key, state.risk)
+            : null;
           const selected = state.slot?.team === team && state.slot.role === role;
           return (
             <li className="draft-slot" data-filled={Boolean(champion)} key={role}>
@@ -141,6 +166,19 @@ function TeamSlots({
                 )}
                 <span className="draft-slot-name">{champion ? champion.name : 'Elegir'}</span>
               </Link>
+              {team === 'allies' ? (
+                <DraftPlayerSelect
+                  belowAverage={personalStat?.status === 'played' && personalStat.isBelowAverage}
+                  currentUserId={member?.id ?? null}
+                  emptyHref={draftPlayerHref(searchParams, state, role, null)}
+                  options={members.map((candidate) => ({
+                    id: candidate.id,
+                    name: candidate.displayName,
+                    href: draftPlayerHref(searchParams, state, role, candidate.id),
+                  }))}
+                  roleLabel={ROLE_LABELS[role].full}
+                />
+              ) : null}
             </li>
           );
         })}
@@ -213,7 +251,30 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
     searchKey: searchKey(champion.name),
   }]);
   const championsByKey = new Map(catalog.map((champion) => [champion.key, champion]));
-  const state = parseDraftUrl(searchParams, new Set(catalog.map((champion) => champion.key)));
+  const members = db.select({
+    id: users.id,
+    displayName: users.displayName,
+    profile: playerStatsSync.profile,
+  })
+    .from(users)
+    .leftJoin(playerStatsSync, eq(playerStatsSync.userId, users.id))
+    .where(and(
+      isNotNull(users.displayName),
+      isNotNull(users.riotGameName),
+      isNotNull(users.riotTagLine),
+    ))
+    .all()
+    .flatMap((member) => member.displayName ? [{
+      id: member.id,
+      displayName: member.displayName,
+      profile: member.profile,
+    }] : [])
+    .sort((a, b) => a.displayName.localeCompare(b.displayName, 'es-AR'));
+  const state = parseDraftUrl(
+    searchParams,
+    new Set(catalog.map((champion) => champion.key)),
+    new Set(members.map((member) => member.id)),
+  );
   const analysis = analyzeDraft(matrix, state, state.risk);
   const scalingMatrix = getDraftScalingMatrix(db);
   const scaling = scalingMatrix && scalingMatrix.size > 0
@@ -224,6 +285,12 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
   const complete = state.allies.length === 5 && state.enemies.length === 5;
 
   let grid: DraftChampionGridViewItem[] = [];
+  const selectedAssignment = state.slot?.team === 'allies'
+    ? state.players.find((player) => player.role === state.slot?.role)
+    : undefined;
+  const selectedMember = selectedAssignment
+    ? members.find((member) => member.id === selectedAssignment.userId)
+    : undefined;
   if (state.slot) {
     grid = buildDraftChampionGrid({
       matrix,
@@ -231,13 +298,23 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
       slot: state.slot,
       risk: state.risk,
       champions: catalog,
-    }).map((champion) => ({
-      ...champion,
-      href: draftPickHref(searchParams, state, state.slot as DraftSlot, champion.key),
-      winrateLabel: champion.winrate === null ? null : percent.format(champion.winrate),
-      matchupLabel: champion.matchupPoints === null ? null : `${points.format(champion.matchupPoints)} pp`,
-      synergyLabel: champion.synergyPoints === null ? null : `${points.format(champion.synergyPoints)} pp`,
-    }));
+    }).map((champion) => {
+      const personalStat = selectedMember
+        ? getPersonalChampionStat(selectedMember.profile, champion.key, state.risk)
+        : null;
+      return {
+        ...champion,
+        href: draftPickHref(searchParams, state, state.slot as DraftSlot, champion.key),
+        winrateLabel: champion.winrate === null ? null : percent.format(champion.winrate),
+        matchupLabel: champion.matchupPoints === null ? null : `${points.format(champion.matchupPoints)} pp`,
+        synergyLabel: champion.synergyPoints === null ? null : `${points.format(champion.synergyPoints)} pp`,
+        personalLabel: selectedMember && personalStat
+          ? personalChampionLabel(selectedMember.displayName, personalStat)
+          : null,
+        personalPlayed: personalStat?.status === 'played',
+        personalBelowAverage: personalStat?.status === 'played' && personalStat.isBelowAverage,
+      };
+    });
   }
 
   const selectedPick = state.slot
@@ -294,6 +371,7 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
           <div className="draft-teams">
             <TeamSlots
               championsByKey={championsByKey}
+              members={members}
               picks={state.allies}
               searchParams={searchParams}
               state={state}
@@ -302,6 +380,7 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
             />
             <TeamSlots
               championsByKey={championsByKey}
+              members={members}
               picks={state.enemies}
               searchParams={searchParams}
               state={state}
@@ -331,6 +410,7 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
             <DraftChampionGrid
               champions={grid}
               occupant={occupant}
+              personalPlayerName={selectedMember?.displayName ?? null}
               side={state.slot.team}
               slotLabel={slotLabel(state.slot)}
             />
