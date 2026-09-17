@@ -516,6 +516,43 @@ cero solo, que es lo correcto.
 del porcentaje, nunca un win rate de 3 partidas presentado como un hecho, y "no lo jugó esta
 temporada" cuando no hay dato.
 
+### Fase H — Contar los casilleros que el enemigo todavía no llenó
+
+Pedido por Juan (2026-09-17). Hoy la sugerencia ignora los slots enemigos vacíos: los trata como
+si no existieran. Pero vos pickeás sabiendo que a ellos les faltan picks, y eso cambia qué
+conviene.
+
+**Por qué esto no es redundante, que es la pregunta obvia.** Un enemigo desconocido aporta rating
+0, o sea neutral, y neutral **es** el promedio sobre *todos* los campeones: por construcción, el
+rating de matchup promediado sobre el universo entero da cero. Si rellenáramos con ese promedio no
+cambiaría nada.
+
+Lo que lo hace valer es que **no se piquea el universo entero**. El promedio sobre los campeones
+*populares* de un rol no es cero: es un subconjunto sesgado. Un campeón puede tener matchups
+neutros contra los 170 y ser malo contra los seis que la gente realmente juega en ese carril. Esa
+diferencia es la que queremos ver, y es la misma idea que ya nos obligó a filtrar por rol en
+§1.5.3.
+
+**Cómo se calcula.** Para cada rol enemigo vacío R, con los campeones elegibles de R (§1.5.3)
+pesados por sus partidas en R:
+
+- Matchup esperado de un campeón C contra R = Σ (peso del enemigo E) × (rating del cruce C vs E).
+- Fuerza base esperada del enemigo en R = Σ (peso de E) × (rating de E).
+- **Las duplas del enemigo con un campeón desconocido se saltean**, no se estiman: son de segundo
+  orden y estimarlas agregaría ruido sin agregar señal. Que el código lo diga.
+
+**Qué se muestra.** Con slots enemigos vacíos, el número de la grilla pasa a contar los picks que
+faltan y **la pantalla lo dice**: es otra cosa que "el win rate de lo que ya está en el tablero",
+no el mismo número mejorado. Sin slots vacíos, es exactamente lo de hoy.
+
+**Y el riesgo de contrapick**, que para una persona drafteando es lo más útil: además del valor
+esperado, cuánto puede empeorar si el rival contrapickea bien. O sea el peor cruce que te pueden
+hacer entre los más jugados de ese rol. Un pick de valor esperado alto pero con un piso muy malo
+es una apuesta distinta a uno parejo, y eso hoy no se ve.
+
+`analyzeDraft` **no se toca**: está verificado contra cálculo a mano y es el número explicable de
+"lo que ya está en el tablero". Esto es una capa aparte encima.
+
 ---
 
 ## 5. Reglas para esta feature
