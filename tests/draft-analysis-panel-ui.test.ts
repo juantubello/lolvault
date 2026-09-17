@@ -3,9 +3,30 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { DraftAnalysisPanel } from '@/components/scout/draft-analysis-panel';
-import { winrateToRating, type DraftAnalysis } from '@/features/draft/analysis';
+import {
+  ratingToWinrate,
+  winrateToRating,
+  type ChampionAnalysis,
+  type DraftAnalysis,
+} from '@/features/draft/analysis';
 import type { DraftUrlState } from '@/features/draft/draft-url';
 import type { DraftScalingCurves } from '@/features/draft/scaling';
+
+function champion(
+  championKey: number,
+  role: ChampionAnalysis['role'],
+  rating: number,
+): ChampionAnalysis {
+  return {
+    championKey,
+    role,
+    games: 2_000,
+    wins: 1_000,
+    rating,
+    winrate: ratingToWinrate(rating),
+    hasData: true,
+  };
+}
 
 const analysis: DraftAnalysis = {
   allyChampionRating: winrateToRating(0.55),
@@ -15,8 +36,8 @@ const analysis: DraftAnalysis = {
   matchupRating: winrateToRating(0.2628),
   totalRating: winrateToRating(0.6128),
   winrate: 0.6128,
-  allyChampions: [],
-  enemyChampions: [],
+  allyChampions: [champion(1, 'top', 100), champion(2, 'jungle', -100)],
+  enemyChampions: [champion(3, 'middle', 100), champion(4, 'bottom', -100)],
   allyDuos: [],
   enemyDuos: [],
   matchups: [],
@@ -41,7 +62,7 @@ function renderPanel(curves: DraftScalingCurves | null): string {
   return renderToStaticMarkup(createElement(DraftAnalysisPanel, {
     analysis,
     championImages: new Map(),
-    championNames: new Map(),
+    championNames: new Map([[1, 'Olaf'], [2, 'Ashe'], [3, 'Garen'], [4, 'Lux']]),
     scaling: curves,
     searchParams: {},
     state,
@@ -63,7 +84,7 @@ describe('secciones plegables del análisis de Draft', () => {
 
     expect(html.match(/<summary>/g)).toHaveLength(4);
     expect(text).toContain('Resumen por lado · tu equipo 61,28 %');
-    expect(text).toContain('Resumen por campeón · tu equipo 61,28 %');
+    expect(text).toContain('Resumen por campeón · mejor Olaf y Garen · peor Ashe y Lux');
     expect(text).toContain('Cruces · tu equipo 26,28 %');
     expect(text).toContain('Duplas · tu equipo 36,12 %');
   });

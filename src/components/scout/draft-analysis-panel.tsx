@@ -494,12 +494,17 @@ function AnalysisDisclosure({
       <summary>
         <h2 id={headingId}>
           <span>{title}</span>{' '}
-          <strong>· tu equipo {headline}</strong>
+          <strong>· {headline}</strong>
         </h2>
       </summary>
       {children}
     </details>
   );
+}
+
+function formatNames(names: readonly string[]): string {
+  if (names.length < 2) return names[0] ?? 'sin picks';
+  return `${names.slice(0, -1).join(', ')} y ${names.at(-1)}`;
 }
 
 function scalingPath(
@@ -660,6 +665,9 @@ export function DraftAnalysisPanel({
   });
   const empty = state.allies.length === 0 && state.enemies.length === 0;
   const priorGames = DRAFT_PRIOR_GAMES[state.risk];
+  const championHeadline = view.championExtremes
+    ? `mejor ${formatNames(view.championExtremes.best)} · peor ${formatNames(view.championExtremes.worst)}`
+    : 'sin picks';
 
   return (
     <div className="draft-analysis">
@@ -675,7 +683,7 @@ export function DraftAnalysisPanel({
       <AnalysisDisclosure
         defaultOpen={!scaling}
         headingId="draft-analysis-summary-heading"
-        headline={percent.format(view.summaries.allies.total.winrate)}
+        headline={`tu equipo ${percent.format(view.summaries.allies.total.winrate)}`}
         title="Resumen por lado"
       >
         <section aria-labelledby="draft-analysis-summary-heading" className="draft-analysis-section draft-analysis-disclosure-content">
@@ -691,7 +699,7 @@ export function DraftAnalysisPanel({
 
       <AnalysisDisclosure
         headingId="draft-analysis-champions-heading"
-        headline={percent.format(view.champions.allies.totals.total.winrate)}
+        headline={championHeadline}
         title="Resumen por campeón"
       >
         <section aria-labelledby="draft-analysis-champions-heading" className="draft-analysis-section draft-analysis-disclosure-content">
@@ -712,7 +720,7 @@ export function DraftAnalysisPanel({
 
       <AnalysisDisclosure
         headingId="draft-analysis-matchups-heading"
-        headline={percent.format(view.summaries.allies.matchups.winrate)}
+        headline={`tu equipo ${percent.format(view.summaries.allies.matchups.winrate)}`}
         title="Cruces"
       >
         <section aria-labelledby="draft-analysis-matchups-heading" className="draft-analysis-section draft-analysis-disclosure-content">
@@ -754,7 +762,7 @@ export function DraftAnalysisPanel({
 
       <AnalysisDisclosure
         headingId="draft-analysis-duos-heading"
-        headline={percent.format(view.summaries.allies.duos.winrate)}
+        headline={`tu equipo ${percent.format(view.summaries.allies.duos.winrate)}`}
         title="Duplas"
       >
         <section aria-labelledby="draft-analysis-duos-heading" className="draft-analysis-section draft-analysis-disclosure-content">

@@ -1,5 +1,4 @@
 import {
-  analyzeChampion,
   getSuggestions,
   ratingToWinrate,
   type Draft,
@@ -7,7 +6,12 @@ import {
   type DraftRisk,
 } from '@/features/draft/analysis';
 import type { DraftSlot } from '@/features/draft/draft-url';
-import { DRAFT_ROLES, type DraftRole } from '@/features/draft/types';
+import { estimateMissingEnemyPicks } from '@/features/draft/expected-enemy';
+import {
+  DRAFT_ROLE_MIN_GAMES,
+  DRAFT_ROLE_MIN_SHARE,
+  playsRole,
+} from '@/features/draft/role-eligibility';
 
 export type DraftChampionCatalogItem = {
   key: number;
@@ -25,45 +29,19 @@ export type DraftChampionGridKind = 'suggestion' | 'off-role';
 export type DraftChampionGridItem = DraftChampionCatalogItem & {
   kind: DraftChampionGridKind;
   winrate: number | null;
+  boardWinrate: number | null;
+  counterpickWinrate: number | null;
+  counterpickDrop: number | null;
+  notablyBadFloor: boolean;
+  missingEnemyRoles: number;
   matchupPoints: number | null;
   synergyPoints: number | null;
 };
 
-/** Mínimos para considerar que un campeón juega un rol. Medidos sobre la matriz: §1.5.3 del plan. */
-export const DRAFT_ROLE_MIN_GAMES = 1_000;
-export const DRAFT_ROLE_MIN_SHARE = 0.02;
+export { DRAFT_ROLE_MIN_GAMES, DRAFT_ROLE_MIN_SHARE, playsRole };
 
 function ratingPoints(rating: number): number {
   return (ratingToWinrate(rating) - 0.5) * 100;
-}
-
-function gamesInRole(
-  matrix: DraftMatrix,
-  championKey: number,
-  role: DraftRole,
-  risk: DraftRisk,
-): number {
-  return analyzeChampion(matrix, { championKey, role }, risk).games;
-}
-
-/**
- * Un campeón sin partidas en el rol recibe rating 0, o sea exactamente neutral, y eso le gana a
- * cualquier pick real con matchups malos: sin este filtro la lista recomienda Sivir support por
- * encima de Thresh. Pedimos volumen absoluto y que el rol sea una parte real de su juego.
- */
-export function playsRole(
-  matrix: DraftMatrix,
-  championKey: number,
-  role: DraftRole,
-  risk: DraftRisk,
-): boolean {
-  const roleGames = gamesInRole(matrix, championKey, role, risk);
-  if (roleGames < DRAFT_ROLE_MIN_GAMES) return false;
-  const totalGames = DRAFT_ROLES.reduce(
-    (total, each) => total + gamesInRole(matrix, championKey, each, risk),
-    0,
-  );
-  return roleGames >= totalGames * DRAFT_ROLE_MIN_SHARE;
 }
 
 /**
@@ -106,24 +84,42 @@ export function buildDraftChampionGrid({
     championKeys: eligible.map((champion) => champion.key),
   }, perspective, { risk, topN: eligible.length })
     .find((group) => group.role === slot.role)?.suggestions ?? [];
+  const missingEnemies = estimateMissingEnemyPicks(matrix, perspective, suggestions, risk);
+  const estimatesByKey = new Map(
+    missingEnemies.suggestions.map((estimate) => [estimate.championKey, estimate]),
+  );
   const byKey = new Map(eligible.map((champion) => [champion.key, champion]));
   const ranked = suggestions.flatMap((suggestion) => {
     const champion = byKey.get(suggestion.championKey);
     if (!champion) return [];
+    const estimate = estimatesByKey.get(suggestion.championKey);
+    const countsMissingEnemies = missingEnemies.missingRoles.length > 0;
     return [{
       ...champion,
       kind: 'suggestion' as const,
-      winrate: suggestion.winrate,
+      winrate: countsMissingEnemies ? estimate?.expectedWinrate ?? suggestion.winrate : suggestion.winrate,
+      boardWinrate: countsMissingEnemies ? suggestion.winrate : null,
+      counterpickWinrate: countsMissingEnemies ? estimate?.counterpickWinrate ?? null : null,
+      counterpickDrop: countsMissingEnemies ? estimate?.counterpickDrop ?? null : null,
+      notablyBadFloor: countsMissingEnemies && Boolean(estimate?.notablyBadFloor),
+      missingEnemyRoles: missingEnemies.missingRoles.length,
       matchupPoints: ratingPoints(suggestion.analysis.matchupRating),
       synergyPoints: ratingPoints(suggestion.analysis.allyDuoRating),
     }];
-  });
+  }).sort((first, second) => (
+    (second.winrate ?? 0) - (first.winrate ?? 0) || first.key - second.key
+  ));
   const offRole = available
     .filter((champion) => !byKey.has(champion.key))
     .map((champion) => ({
       ...champion,
       kind: 'off-role' as const,
       winrate: null,
+      boardWinrate: null,
+      counterpickWinrate: null,
+      counterpickDrop: null,
+      notablyBadFloor: false,
+      missingEnemyRoles: missingEnemies.missingRoles.length,
       matchupPoints: null,
       synergyPoints: null,
     }))

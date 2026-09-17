@@ -307,6 +307,17 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
         ...champion,
         href: draftPickHref(searchParams, state, state.slot as DraftSlot, champion.key),
         winrateLabel: champion.winrate === null ? null : percent.format(champion.winrate),
+        boardWinrateLabel: champion.boardWinrate === null
+          ? null
+          : percent.format(champion.boardWinrate),
+        counterpickWinrateLabel: champion.counterpickWinrate === null
+          ? null
+          : percent.format(champion.counterpickWinrate),
+        counterpickDropLabel: champion.counterpickDrop === null
+          ? null
+          : champion.counterpickDrop * 100 < 0.005
+            ? '0,00 pp'
+            : `${points.format(-champion.counterpickDrop * 100)} pp`,
         matchupLabel: champion.matchupPoints === null ? null : `${points.format(champion.matchupPoints)} pp`,
         synergyLabel: champion.synergyPoints === null ? null : `${points.format(champion.synergyPoints)} pp`,
         personalLabel: selectedMember && personalStat

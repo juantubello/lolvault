@@ -91,6 +91,10 @@ export type DraftAnalysisViewOptions = {
 export type DraftAnalysisView = {
   summaries: Record<DraftTeam, DraftSideSummary>;
   champions: Record<DraftTeam, DraftChampionBreakdown>;
+  championExtremes: {
+    best: readonly string[];
+    worst: readonly string[];
+  } | null;
   matchups: DraftMatchupViewRow[];
   matchupTotal: DraftMatchupTotal;
   duos: Record<DraftTeam, DraftDuoViewRow[]>;
@@ -215,6 +219,20 @@ function buildChampionBreakdown(
   };
 }
 
+function championExtremes(
+  allies: DraftChampionBreakdown,
+  enemies: DraftChampionBreakdown,
+): DraftAnalysisView['championExtremes'] {
+  const rows = [...allies.rows, ...enemies.rows];
+  if (rows.length === 0) return null;
+  const bestRating = Math.max(...rows.map((row) => row.total.rating));
+  const worstRating = Math.min(...rows.map((row) => row.total.rating));
+  return {
+    best: rows.filter((row) => row.total.rating === bestRating).map((row) => row.championName),
+    worst: rows.filter((row) => row.total.rating === worstRating).map((row) => row.championName),
+  };
+}
+
 export function buildDraftMatchupRows(
   analysis: DraftAnalysis,
   scope: DraftMatchupScope,
@@ -287,6 +305,8 @@ export function buildDraftAnalysisView(
   const matchups = buildDraftMatchupRows(analysis, scope, names, options);
   const matchupRating = matchups.reduce((total, matchup) => total + matchup.rating, 0);
   const matchupWinrate = ratingToWinrate(matchupRating);
+  const allyChampions = buildChampionBreakdown(analysis, 'allies', names, options.imageUrls);
+  const enemyChampions = buildChampionBreakdown(analysis, 'enemies', names, options.imageUrls);
   return {
     summaries: {
       allies: {
@@ -303,9 +323,10 @@ export function buildDraftAnalysisView(
       },
     },
     champions: {
-      allies: buildChampionBreakdown(analysis, 'allies', names, options.imageUrls),
-      enemies: buildChampionBreakdown(analysis, 'enemies', names, options.imageUrls),
+      allies: allyChampions,
+      enemies: enemyChampions,
     },
+    championExtremes: championExtremes(allyChampions, enemyChampions),
     matchups,
     matchupTotal: {
       rating: matchupRating,

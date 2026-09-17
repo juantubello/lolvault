@@ -302,11 +302,23 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   local de `ui-ux-pro-max`; verificación visual pendiente del lado de Juan porque el sandbox no
   permite abrir puertos. Typecheck limpio, 349 tests verdes y build de producción exitoso.
 
+- 2026-09-17 — **Fase H de Draft: completar mentalmente los picks rivales.** Una capa nueva sobre
+  `analyzeDraft` estima cada rol enemigo vacío sólo con campeones que pasan `playsRole`, excluye los
+  usados y pondera fuerza base y cruces por partidas del rol; las duplas desconocidas se omiten a
+  propósito. La grilla ordena por ese valor esperado, conserva aparte el número del tablero y muestra
+  piso + caída de contrapick contra los 10 picks más jugados; marca como notable un piso ≤47 %. Sin
+  roles rivales vacíos conserva por igualdad exacta el resultado anterior, y el dato personal de Fase
+  G sigue fuera del cálculo. En la matriz local de 173 campeones, una grilla completa de 52 candidatos
+  tardó 16,47 ms de mediana con 2 roles vacíos y 39,07 ms con 5 (12 pasadas calientes; máximos 33,91 y
+  42,17 ms). “Resumen por campeón” ahora titula el mejor y el peor pick, incluidos empates. Se siguió
+  el design system y la copia local de `ui-ux-pro-max`; la verificación visual queda para Juan porque
+  el sandbox no permite abrir puertos. Typecheck limpio, 355 tests verdes y build exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 3. Ejecutar los syncs de Draft y Scaling con red y verificar tiempos/volumen de la primera pasada.
-4. Revisar D2 + Scaling + Fase G a mano en 375 px y tablet, en claro/oscuro y con texto grande.
+4. Revisar D2 + Scaling + Fases G/H a mano en 375 px y tablet, en claro/oscuro y con texto grande.
 5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
 7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
