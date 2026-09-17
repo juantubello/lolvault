@@ -553,6 +553,45 @@ es una apuesta distinta a uno parejo, y eso hoy no se ve.
 `analyzeDraft` **no se toca**: está verificado contra cálculo a mano y es el número explicable de
 "lo que ya está en el tablero". Esto es una capa aparte encima.
 
+### Fase I — Traer el draft desde la partida en vivo
+
+Pedido por Juan (2026-09-17). Las dos vías conviven: se sigue cargando a mano como hasta ahora, y
+además hay un atajo que llena los diez casilleros desde la partida en curso.
+
+**No hay fuente alternativa.** La página de OP.GG dice textualmente que el dato sale de la API
+oficial de Riot, y lo sirve por Server Actions de Next.js — un POST a la propia URL, con un id de
+acción que es un hash del build. No es consumible. El único camino es **Spectator-v5**, que
+necesita key.
+
+**Lo que Spectator-v5 NO da, y hay que resolver:**
+
+1. **No existe endpoint de champ select.** Sólo devuelve partidas ya arrancadas, así que esto no
+   sirve para decidir el pick. Para eso hace falta el cliente local de League, que es lo que hace
+   DraftGap con su botón "Sync with League Client" — y a eso una PWA en el teléfono no llega.
+   Sirve para ver el análisis de la partida que ya empezó, y para el registro automático.
+2. **No trae los roles.** Devuelve campeones y equipos, nada de carriles. Se infieren con los datos
+   que ya tenemos: para cada una de las 120 permutaciones de cinco campeones en cinco roles, sumar
+   las partidas de cada campeón en el rol asignado (`draft_champion_stats`) y quedarse con la
+   combinación de mayor suma. Es un problema de asignación chico y la fuerza bruta alcanza de
+   sobra. **La inferencia puede errar, así que los casilleros quedan editables a mano después.**
+
+**La colisión con la regla del Registro, y cómo se resuelve.** Hoy un draft guardado después del
+inicio de la partida se marca "no cuenta". Una captura en vivo ocurre necesariamente después de que
+arrancó, así que con esa regla **todas** las capturas automáticas quedarían descartadas, que es
+exactamente al revés de lo que se busca.
+
+La regla está bien pensada pero mide lo que puede, no lo que importa. Lo que importa es que **el
+resultado todavía no exista**, y Spectator-v5 lo garantiza por construcción: sólo devuelve partidas
+en curso. Un registro capturado en vivo se marca como tal y **sí cuenta**, con una garantía más
+fuerte que la del reloj.
+
+Eso convierte al Registro en algo que se llena solo, que es la única forma realista de juntar la
+muestra que hoy no tenemos (§1.6: 41 partidas no alcanzan para nada).
+
+**Reglas duras:** la key va del lado servidor y nunca al cliente; se llama a Riot sólo cuando el
+usuario lo pide, nunca en cada render; y sin key configurada la app sigue andando igual que hoy,
+con el atajo apagado y diciendo por qué.
+
 ---
 
 ## 5. Reglas para esta feature
