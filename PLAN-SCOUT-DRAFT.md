@@ -450,6 +450,42 @@ partida, con su resolver de punteros Qwik aislado y probado contra las cuatro fi
 
 ---
 
+### Fase F — Registro de drafts: qué predijimos contra qué pasó
+
+Pedido por los amigos de Juan (2026-09-17). Se guarda un draft y después se le adjunta la
+partida que salió de ahí, igual que hoy se le adjunta una partida a una propuesta de vault.
+
+Además de ser lo que pidieron, es **lo único que puede decirnos si el análisis sirve**. Todo lo
+anterior es el modelo hablando de sí mismo; esto lo contrasta con la realidad.
+
+**Reglas que hacen que el registro signifique algo:**
+
+1. **La predicción se congela al guardar.** Se guardan el win rate estimado, el nivel de riesgo,
+   la ventana de parche y el id de la corrida de sync. La matriz cambia todas las noches:
+   recalcular después daría otro número, y ese no sería el que predijimos. Sin esto el registro
+   no vale nada.
+2. **La partida tiene que ser la del draft.** Al adjuntar se exige que los diez campeones de la
+   partida coincidan con los diez del draft, cinco por lado. Si no coinciden, se rechaza con un
+   mensaje claro. Así no se puede pegar una partida cualquiera para inflar el registro.
+3. **De qué lado jugamos sale de los datos, no de un campo.** Se compara el equipo aliado del
+   draft contra los `teams` del `MatchDetail`; el `win` de ese equipo es el resultado.
+4. **Un draft guardado después de que terminó la partida no es una predicción.** Se guarda
+   `savedAt` y se compara contra el `playedAt` de la partida: si el draft se guardó después,
+   la fila queda marcada y **no cuenta** para la calibración. El registro es tan honesto como el
+   flujo, y esto es lo único que podemos verificar del flujo.
+5. La identidad sale del JWT de Access, nunca del cliente (§8.1 del plan técnico).
+
+**La vista.** Primero el registro en sí: la lista de drafts con lo que predijimos y lo que pasó.
+Después, un resumen de calibración por bandas de predicción (predijimos 60-70 % → ganamos X de Y).
+
+**Y acá hay que ser honestos con el tamaño de la muestra.** Son 5-6 amigos: van a pasar meses
+antes de que haya suficientes partidas para decir nada sobre la calibración. La vista **siempre**
+muestra el n al lado de cualquier porcentaje, y con pocas partidas dice explícitamente que no
+alcanza para concluir, en vez de mostrar un "73 % de acierto" que no significa nada. Un número de
+acierto sin su n es exactamente el tipo de dato sin contexto que ya rechazamos dos veces.
+
+---
+
 ## 5. Reglas para esta feature
 
 Además de las del §8 del plan técnico:
