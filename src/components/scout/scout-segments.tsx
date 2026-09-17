@@ -5,6 +5,7 @@ import { scoutHref, type ScoutSearchParams, type ScoutType } from '@/features/sc
 const SEGMENTS: { value: ScoutType; label: string }[] = [
   { value: 'jugador', label: 'Jugador' },
   { value: 'draft', label: 'Draft' },
+  { value: 'registro', label: 'Registro' },
 ];
 
 export function ScoutSegments({

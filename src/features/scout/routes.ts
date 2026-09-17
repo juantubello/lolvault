@@ -1,10 +1,10 @@
-export type ScoutType = 'jugador' | 'draft';
+export type ScoutType = 'jugador' | 'draft' | 'registro';
 
 export type ScoutSearchParams = Record<string, string | string[] | undefined>;
 
 export function parseScoutType(value: string | string[] | undefined): ScoutType | null {
   const first = Array.isArray(value) ? value[0] : value;
-  return first === 'jugador' || first === 'draft' ? first : null;
+  return first === 'jugador' || first === 'draft' || first === 'registro' ? first : null;
 }
 
 /** Conserva la query vigente y fuerza el segmento canónico al principio. */

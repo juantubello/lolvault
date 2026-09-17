@@ -408,6 +408,86 @@ export const draftScalingSyncRuns = sqliteTable('draft_scaling_sync_runs', {
   check('draft_scaling_sync_runs_cursor_check', sql`${table.nextRequestIndex} >= 0 AND ${table.nextRequestIndex} <= ${table.totalRequests}`),
 ]);
 
+/**
+ * Foto inmutable de lo que el modelo predijo al guardar un draft. Los componentes se persisten
+ * separados para poder auditar el número sin recalcularlo con una matriz posterior.
+ */
+export const draftRecords = sqliteTable(
+  'draft_records',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    savedByUserId: integer('saved_by_user_id')
+      .notNull()
+      .references(() => users.id),
+    savedAt: integer('saved_at', { mode: 'timestamp_ms' }).notNull(),
+    predictedAllyWinrate: real('predicted_ally_winrate').notNull(),
+    risk: text('risk', { enum: ['very-low', 'low', 'medium', 'high', 'very-high'] }).notNull(),
+    patchWindow: text('patch_window').notNull(),
+    syncRunId: integer('sync_run_id')
+      .notNull()
+      .references(() => draftSyncRuns.id),
+    allyChampionRating: real('ally_champion_rating').notNull(),
+    enemyChampionRating: real('enemy_champion_rating').notNull(),
+    allyDuoRating: real('ally_duo_rating').notNull(),
+    enemyDuoRating: real('enemy_duo_rating').notNull(),
+    matchupRating: real('matchup_rating').notNull(),
+    totalRating: real('total_rating').notNull(),
+    /** Snapshot y valores derivados exclusivamente del MatchDetail cacheado. */
+    matchProvider: text('match_provider'),
+    matchId: text('match_id'),
+    matchSnapshot: text('match_snapshot', { mode: 'json' }).$type<MatchDetail>(),
+    matchPlayedAt: integer('match_played_at', { mode: 'timestamp_ms' }),
+    allyTeamKey: text('ally_team_key'),
+    result: text('result', { enum: ['win', 'lose', 'other'] }),
+    savedAfterMatch: integer('saved_after_match', { mode: 'boolean' }),
+    attachedAt: integer('attached_at', { mode: 'timestamp_ms' }),
+  },
+  (table) => [
+    check(
+      'draft_records_winrate_check',
+      sql`${table.predictedAllyWinrate} >= 0 AND ${table.predictedAllyWinrate} <= 1`,
+    ),
+    check(
+      'draft_records_risk_check',
+      sql`${table.risk} IN ('very-low', 'low', 'medium', 'high', 'very-high')`,
+    ),
+    check(
+      'draft_records_result_check',
+      sql`${table.result} IS NULL OR ${table.result} IN ('win', 'lose', 'other')`,
+    ),
+    check(
+      'draft_records_attachment_shape_check',
+      sql`(${table.matchProvider} IS NULL AND ${table.matchId} IS NULL AND ${table.matchSnapshot} IS NULL AND ${table.matchPlayedAt} IS NULL AND ${table.allyTeamKey} IS NULL AND ${table.result} IS NULL AND ${table.savedAfterMatch} IS NULL AND ${table.attachedAt} IS NULL) OR (${table.matchProvider} IS NOT NULL AND ${table.matchId} IS NOT NULL AND ${table.matchSnapshot} IS NOT NULL AND ${table.matchPlayedAt} IS NOT NULL AND ${table.allyTeamKey} IS NOT NULL AND ${table.result} IS NOT NULL AND ${table.savedAfterMatch} IS NOT NULL AND ${table.attachedAt} IS NOT NULL)`,
+    ),
+    index('draft_records_saved_at_idx').on(table.savedAt),
+    index('draft_records_saved_by_idx').on(table.savedByUserId),
+  ],
+);
+
+/** Picks consultables del registro: exactamente un campeón por lado y rol. */
+export const draftRecordPicks = sqliteTable(
+  'draft_record_picks',
+  {
+    draftRecordId: integer('draft_record_id')
+      .notNull()
+      .references(() => draftRecords.id, { onDelete: 'cascade' }),
+    side: text('side', { enum: ['allies', 'enemies'] }).notNull(),
+    role: text('role', { enum: ['top', 'jungle', 'middle', 'bottom', 'support'] }).notNull(),
+    championKey: integer('champion_key')
+      .notNull()
+      .references(() => champions.key),
+  },
+  (table) => [
+    primaryKey({ columns: [table.draftRecordId, table.side, table.role] }),
+    uniqueIndex('draft_record_picks_champion_unique').on(table.draftRecordId, table.championKey),
+    check('draft_record_picks_side_check', sql`${table.side} IN ('allies', 'enemies')`),
+    check(
+      'draft_record_picks_role_check',
+      sql`${table.role} IN ('top', 'jungle', 'middle', 'bottom', 'support')`,
+    ),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Champion = typeof champions.$inferSelect;
@@ -416,3 +496,5 @@ export type VaultVote = typeof vaultVotes.$inferSelect;
 export type BlacklistProposal = typeof blacklistProposals.$inferSelect;
 export type BlacklistVote = typeof blacklistVotes.$inferSelect;
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type DraftRecord = typeof draftRecords.$inferSelect;
+export type DraftRecordPick = typeof draftRecordPicks.$inferSelect;

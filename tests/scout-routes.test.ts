@@ -12,6 +12,7 @@ vi.mock('@/auth/current-user', () => ({
 }));
 vi.mock('@/components/scout/player-segment', () => ({ ScoutPlayerSegment: () => null }));
 vi.mock('@/components/scout/draft-segment', () => ({ DraftSegment: () => null }));
+vi.mock('@/components/scout/draft-record-segment', () => ({ DraftRecordSegment: () => null }));
 
 import ScoutPage from '@/app/(app)/scout/page';
 import { parseScoutType, scoutHref } from '@/features/scout/routes';
@@ -21,10 +22,32 @@ describe('rutas de Scout', () => {
     redirectMock.mockClear();
   });
 
-  it('reconoce solamente los dos segmentos válidos', () => {
+  it('reconoce solamente los tres segmentos válidos', () => {
     expect(parseScoutType('jugador')).toBe('jugador');
     expect(parseScoutType(['draft', 'jugador'])).toBe('draft');
+    expect(parseScoutType('registro')).toBe('registro');
     expect(parseScoutType('otro')).toBeNull();
+  });
+
+  it('lleva el draft completo al Registro y de vuelta', () => {
+    const query = {
+      tipo: 'draft',
+      aliados: '86-top,64-jungle,103-middle,222-bottom,412-support',
+      enemigos: '1-top,2-jungle,3-middle,4-bottom,5-support',
+      riesgo: 'high',
+      panel: 'analisis',
+    };
+    const recordHref = scoutHref('registro', query);
+    const recordParams = Object.fromEntries(new URL(recordHref, 'https://local').searchParams);
+
+    expect(recordParams).toMatchObject({
+      tipo: 'registro',
+      aliados: query.aliados,
+      enemigos: query.enemigos,
+      riesgo: 'high',
+      panel: 'analisis',
+    });
+    expect(scoutHref('draft', recordParams)).toContain(`aliados=${encodeURIComponent(query.aliados)}`);
   });
 
   it('conserva los demás parámetros al cambiar de segmento', () => {

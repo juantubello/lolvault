@@ -39,9 +39,11 @@ import { DRAFT_ROLES, type DraftRole } from '@/features/draft/types';
 import { championImageUrl, ensureChampions } from '@/features/champions/ddragon-sync';
 import { searchKey } from '@/features/champions/search-key';
 import { timeAgo } from '@/features/matches/format';
+import { scoutHref } from '@/features/scout/routes';
 
 import { DraftChampionGrid, type DraftChampionGridViewItem } from './draft-champion-grid';
 import { DraftAnalysisPanel } from './draft-analysis-panel';
+import { SaveDraftRecordButton } from './draft-record-actions';
 import { ScoutSegments } from './scout-segments';
 
 const ROLE_LABELS: Record<DraftRole, { short: string; full: string }> = {
@@ -80,6 +82,13 @@ function formatWindow(patchWindow: string): string {
 
 function slotLabel(slot: DraftSlot): string {
   return `${ROLE_LABELS[slot.role].full} ${slot.team === 'allies' ? 'aliado' : 'enemigo'}`;
+}
+
+function serializePicks(picks: readonly DraftPick[]): string {
+  return DRAFT_ROLES.flatMap((role) => {
+    const pick = picks.find((candidate) => candidate.role === role);
+    return pick ? [`${pick.championKey}-${pick.role}`] : [];
+  }).join(',');
 }
 
 function TeamSlots({
@@ -211,6 +220,8 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
     ? calculateDraftScalingCurves(scalingMatrix, state, state.risk)
     : null;
   const enemyWinrate = 1 - analysis.winrate;
+  const recordHref = scoutHref('registro', searchParams);
+  const complete = state.allies.length === 5 && state.enemies.length === 5;
 
   let grid: DraftChampionGridViewItem[] = [];
   if (state.slot) {
@@ -247,8 +258,8 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
       {state.panel === 'analisis' ? (
         <div className="draft-screen">
           <header className="draft-data-header">
-            <strong>{formatWindow(run.patchWindow)}</strong>
-            <span>Actualizado {timeAgo(run.finishedAt, new Date())}</span>
+            <span><strong>{formatWindow(run.patchWindow)}</strong> · Actualizado {timeAgo(run.finishedAt, new Date())}</span>
+            <Link className="text-button" href={recordHref}>Ir al Registro</Link>
           </header>
           <DraftAnalysisPanel
             analysis={analysis}
@@ -332,6 +343,15 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
               Vaciar draft
             </Link>
           ) : null}
+
+
+          <SaveDraftRecordButton
+            allies={serializePicks(state.allies)}
+            complete={complete}
+            enemies={serializePicks(state.enemies)}
+            recordHref={recordHref}
+            risk={state.risk}
+          />
         </div>
       )}
     </Screen>
