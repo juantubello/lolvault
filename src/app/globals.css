@@ -3262,10 +3262,6 @@ button {
   background: var(--bg-cell);
 }
 
-/* El record (2V · 3D) no compite en tamaño con un porcentaje: dice menos y tiene que verse asi. */
-.stat-value-small {
-  font-size: 1.25rem;
-}
 
 .side-share-title {
   margin-top: 0.75rem;

@@ -186,6 +186,10 @@ export function PlayerPerformanceReport({
   const activeDays = metrics.weekdays.filter((day) => day.games > 0);
   // La diferencia entre lados solo tiene sentido si LOS DOS tienen muestra: comparar un 40 % de 5
   // partidas contra un 62 % de 13 daria un titular de 22 puntos sostenido por casi nada.
+  // Las dos tarjetas tienen que hablar la misma unidad: un "2V · 3D" al lado de un "62% WR" no
+  // se puede comparar de un vistazo, que es justo para lo que sirve ponerlas juntas. Si a
+  // cualquiera de los dos lados le falta muestra, ambos muestran el record.
+  const sidesShowWinRate = metrics.sides.every((side) => side.games >= SIDE_WINRATE_MIN_GAMES);
   const sideWinRateDelta = (() => {
     const comparables = metrics.sides.filter((side) => side.games >= SIDE_WINRATE_MIN_GAMES);
     if (comparables.length < 2) return null;
@@ -357,12 +361,10 @@ export function PlayerPerformanceReport({
                 {metrics.sides.map((side) => (
                   <article key={side.key} data-side={side.key.toLocaleLowerCase('en-US')}>
                     <p className="stat-label">{side.label}</p>
-                    {/* Con muestra chica el porcentaje engaña: 5 partidas se mueven 20 puntos con
-                        una sola distinta. Ahi se muestra el record, que no finge precision. */}
-                    {side.games >= SIDE_WINRATE_MIN_GAMES ? (
+                    {sidesShowWinRate ? (
                       <p className="stat-value">{formatPercent(side.winRate)} WR</p>
                     ) : (
-                      <p className="stat-value stat-value-small">
+                      <p className="stat-value">
                         {side.games ? `${side.wins}V · ${side.losses}D` : '—'}
                       </p>
                     )}
