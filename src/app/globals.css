@@ -3235,12 +3235,84 @@ button {
   border-left: 0.5px solid var(--separator);
 }
 
-.side-grid > article[data-side="blue"] {
+.side-grid > article[data-side="blue"],
+.side-winrate > article[data-side="blue"] {
   border-top: 3px solid var(--tint);
 }
 
-.side-grid > article[data-side="red"] {
+.side-grid > article[data-side="red"],
+.side-winrate > article[data-side="red"] {
   border-top: 3px solid var(--danger);
+}
+
+.side-winrate {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.side-winrate > article {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell);
+}
+
+/* El record (2V · 3D) no compite en tamaño con un porcentaje: dice menos y tiene que verse asi. */
+.stat-value-small {
+  font-size: 1.25rem;
+}
+
+.side-share-title {
+  margin-top: 0.75rem;
+}
+
+.side-share {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.side-share > li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 3rem;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--label);
+  font-size: 0.875rem;
+}
+
+.side-share-track {
+  overflow: hidden;
+  min-width: 0;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-cell-2);
+}
+
+.side-share-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tint);
+}
+
+.side-share > li[data-side="red"] .side-share-fill {
+  background: var(--danger);
+}
+
+.side-share-value {
+  justify-self: end;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .season-champion-list {

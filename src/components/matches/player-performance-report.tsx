@@ -26,6 +26,9 @@ import { ChampionIcon } from './champion-icon';
 import { MatchRow } from './match-row';
 import { PlayerAnalystPanel } from './player-analyst-panel';
 
+/** Debajo de esto el win rate por lado es ruido: se muestra el record en vez del porcentaje. */
+const SIDE_WINRATE_MIN_GAMES = 10;
+
 type LoadedStats = Extract<PlayerStats, { status: 'ok' }>;
 
 function recordLabel(games: number, wins: number): string {
@@ -181,6 +184,16 @@ export function PlayerPerformanceReport({
   const seasonChampions = profile?.rankedSeason?.champions ?? [];
   const activeHours = metrics.hours.filter((hour) => hour.games > 0);
   const activeDays = metrics.weekdays.filter((day) => day.games > 0);
+  // La diferencia entre lados solo tiene sentido si LOS DOS tienen muestra: comparar un 40 % de 5
+  // partidas contra un 62 % de 13 daria un titular de 22 puntos sostenido por casi nada.
+  const sideWinRateDelta = (() => {
+    const comparables = metrics.sides.filter((side) => side.games >= SIDE_WINRATE_MIN_GAMES);
+    if (comparables.length < 2) return null;
+    const [mejor, peor] = [...comparables].sort((a, b) => b.winRate - a.winRate);
+    if (!mejor || !peor) return null;
+    const points = Math.round((mejor.winRate - peor.winRate) * 100);
+    return points > 0 ? { label: mejor.label.toLocaleLowerCase('es-AR'), points } : null;
+  })();
 
   return (
     <div className="player-performance-report">
@@ -338,17 +351,48 @@ export function PlayerPerformanceReport({
               </ul>
 
               <h3>Lado azul / rojo</h3>
-              <div className="side-grid">
+              {/* Dos bloques separados, como hace OP.GG: win rate por un lado y reparto por otro.
+                  Mezclarlos en una tarjeta confundia dos porcentajes que miden cosas distintas. */}
+              <div className="side-winrate">
                 {metrics.sides.map((side) => (
                   <article key={side.key} data-side={side.key.toLocaleLowerCase('en-US')}>
                     <p className="stat-label">{side.label}</p>
-                    <p className="stat-value">{side.games ? `${formatPercent(side.winRate)} WR` : '—'}</p>
-                    <p className="stat-detail">
-                      {side.games} partidas ({formatPercent(side.share)} de su historial)
-                    </p>
+                    {/* Con muestra chica el porcentaje engaña: 5 partidas se mueven 20 puntos con
+                        una sola distinta. Ahi se muestra el record, que no finge precision. */}
+                    {side.games >= SIDE_WINRATE_MIN_GAMES ? (
+                      <p className="stat-value">{formatPercent(side.winRate)} WR</p>
+                    ) : (
+                      <p className="stat-value stat-value-small">
+                        {side.games ? `${side.wins}V · ${side.losses}D` : '—'}
+                      </p>
+                    )}
+                    <p className="stat-detail">{side.games} partidas</p>
                   </article>
                 ))}
               </div>
+              {sideWinRateDelta ? (
+                <p className="comparison-delta" data-tone="neutral">
+                  Le va mejor de {sideWinRateDelta.label}: {sideWinRateDelta.points} puntos de diferencia
+                </p>
+              ) : (
+                <p className="stat-detail">
+                  Hacen falta {SIDE_WINRATE_MIN_GAMES} partidas de cada lado para comparar el win rate.
+                </p>
+              )}
+
+              <h4 className="side-share-title">Cuánto juega de cada lado</h4>
+              <ul className="side-share">
+                {metrics.sides.map((side) => (
+                  <li key={side.key} data-side={side.key.toLocaleLowerCase('en-US')}>
+                    <span className="side-share-label">{side.label}</span>
+                    {/* La barra dibuja la proporcion real; antes era una linea decorativa fija. */}
+                    <span aria-hidden="true" className="side-share-track">
+                      <span className="side-share-fill" style={{ inlineSize: `${Math.round(side.share * 100)}%` }} />
+                    </span>
+                    <span className="side-share-value">{formatPercent(side.share)}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </details>
 
