@@ -71,6 +71,10 @@ RUN chmod +x docker/entrypoint.sh \
  && chown -R node:node /data /app/.next \
  && chmod 0777 /app/.next/cache
 
+# Etiqueta para que el `docker image prune` del deploy pueda apuntar SOLO a las
+# imagenes huerfanas de LolVault y no a las de los otros stacks del homelab.
+LABEL app="lolvault"
+
 USER node
 EXPOSE 3000
 

@@ -323,11 +323,58 @@ docker compose up -d
 docker compose logs --tail 50 lolvault
 docker compose ps
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3025/acceso-requerido
+docker image prune -f --filter label=app=lolvault   # ver 3.1
 ```
 
 El contenedor, al arrancar, hace **backup pre-migrate de la base → migrations →
 server**, en ese orden. Si las migrations fallan, el server no levanta. Las fotos no
 se modifican durante las migrations y quedan en el mismo volumen persistente.
+
+### 3.1 La limpieza del final
+
+Cada `docker compose build` deja atrás la imagen anterior **sin tag**. Son ~130 MB
+propios cada una (los otros 227 MB son la base `node:22-bookworm-slim`, compartida).
+Medido el 2026-09-17: diez huérfanas acumuladas en 37 horas de trabajo, ~1,3 GB.
+
+La última línea las borra. Es segura por dos motivos, y conviene entender los dos:
+
+1. **`prune` sin `-a` sólo toca imágenes sin tag.** `lolvault:latest` y
+   `lolvault:previous` tienen tag, así que el rollback de §4.1 sobrevive intacto.
+2. **`--filter label=app=lolvault` la acota a esta app.** La etiqueta la pone el
+   Dockerfile. Sin ese filtro, el comando limpiaría también las huérfanas de finance,
+   camireads y series tracker — que probablemente convenga limpiar, pero es una
+   decisión aparte y no la tiene que tomar un deploy de LolVault.
+
+El orden importa: la limpieza va **después** de `up -d`, cuando la imagen nueva ya está
+tagueada como `latest` y la vieja como `previous`. Corrido ahí, siempre queda
+exactamente un rollback disponible.
+
+> Las imágenes construidas **antes** del 2026-09-17 no tienen la etiqueta, así que el
+> filtro no las alcanza. Para barrer esas, una única vez: `docker image prune -f` sin
+> filtro (sigue sin tocar nada tagueado).
+
+### 3.2 La caché de build (aparte, y más gorda)
+
+La caché de BuildKit no la toca `image prune` y crece más rápido que las imágenes: el
+2026-09-17 eran **6,1 GB**, con entradas de hasta 12 meses de antigüedad de proyectos
+que no se rebuildean hace meses.
+
+No conviene vaciarla entera: es lo que hace que un build incremental tarde minutos en
+vez de arrancar de cero. Esto tira lo que no se usó en una semana, que en la práctica
+es de los otros stacks:
+
+```bash
+docker builder prune -f --filter until=168h
+```
+
+Va cuando se acuerde, no en cada deploy. Para ver cuánto hay antes de decidir:
+`docker system df` — la columna RECLAIMABLE.
+
+> **Nunca `docker system prune -a`**: se lleva imágenes *con* tag que no tengan un
+> contenedor corriendo, o sea `lolvault:previous` y las de cualquier stack apagado.
+> **Y nunca `docker volume prune`**: en el homelab hay volúmenes con 0 LINKS que son
+> bases de datos de otros proyectos (`app_db_data`, `finance_db_data`). El espacio que
+> se recupera no compensa.
 
 ---
 
