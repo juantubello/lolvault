@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, TriangleAlert } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { DRAFT_PRIOR_GAMES, type DraftAnalysis } from '@/features/draft/analysis';
 import {
@@ -475,6 +476,32 @@ function DuoList({ side, rows }: { side: DraftTeam; rows: readonly DraftDuoViewR
   );
 }
 
+function AnalysisDisclosure({
+  children,
+  defaultOpen = false,
+  headingId,
+  headline,
+  title,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+  headingId: string;
+  headline: string;
+  title: string;
+}) {
+  return (
+    <details className="draft-analysis-disclosure" open={defaultOpen}>
+      <summary>
+        <h2 id={headingId}>
+          <span>{title}</span>{' '}
+          <strong>· tu equipo {headline}</strong>
+        </h2>
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 function scalingPath(
   points: readonly DraftScalingPoint[],
   x: (index: number) => number,
@@ -636,6 +663,8 @@ export function DraftAnalysisPanel({
 
   return (
     <div className="draft-analysis">
+      {scaling ? <ScalingChart curves={scaling} /> : null}
+
       {empty ? (
         <p className="draft-analysis-empty-note">
           Draft vacío: todos los indicadores parten de 50,00 %. Es el valor neutral correcto;
@@ -643,85 +672,104 @@ export function DraftAnalysisPanel({
         </p>
       ) : null}
 
-      <section aria-labelledby="draft-analysis-summary-heading" className="draft-analysis-section">
-        <header className="draft-analysis-section-header">
-          <h2 id="draft-analysis-summary-heading">Resumen por lado</h2>
-          <p>Qué aporta cada parte del cálculo, siempre desde la perspectiva del lado indicado.</p>
-        </header>
-        <div className="draft-analysis-sides">
-          <SideSummary side="allies" summary={view.summaries.allies} />
-          <SideSummary side="enemies" summary={view.summaries.enemies} />
-        </div>
-      </section>
-
-      <section aria-labelledby="draft-analysis-champions-heading" className="draft-analysis-section">
-        <header className="draft-analysis-section-header">
-          <h2 id="draft-analysis-champions-heading">Resumen por campeón</h2>
-          <p>El Total de cada fila suma ratings de Base, Cruces y Duplas; nunca porcentajes.</p>
-        </header>
-        <div className="draft-analysis-overviews">
-          <ChampionBreakdownTable table={view.champions.allies} />
-          <ChampionBreakdownTable table={view.champions.enemies} />
-        </div>
-        <p className="draft-analysis-footnote">
-          En las filas, una dupla aparece una vez por cada integrante. Por eso esa columna no suma
-          el total del pie: el pie usa cada dupla una sola vez. El Total del pie es el resultado
-          completo del draft y también incorpora el otro equipo.
-        </p>
-      </section>
-
-      <section aria-labelledby="draft-analysis-matchups-heading" className="draft-analysis-section">
-        <header className="draft-analysis-section-header draft-analysis-matchup-header">
-          <div>
-            <h2 id="draft-analysis-matchups-heading">Cruces</h2>
-            <p>
-              Win rates normalizados: 50,00 % significa que el cruce rindió exactamente como se
-              esperaba después de descontar la fuerza base de ambos campeones.
-            </p>
+      <AnalysisDisclosure
+        defaultOpen={!scaling}
+        headingId="draft-analysis-summary-heading"
+        headline={percent.format(view.summaries.allies.total.winrate)}
+        title="Resumen por lado"
+      >
+        <section aria-labelledby="draft-analysis-summary-heading" className="draft-analysis-section draft-analysis-disclosure-content">
+          <header className="draft-analysis-section-header">
+            <p>Qué aporta cada parte del cálculo, siempre desde la perspectiva del lado indicado.</p>
+          </header>
+          <div className="draft-analysis-sides">
+            <SideSummary side="allies" summary={view.summaries.allies} />
+            <SideSummary side="enemies" summary={view.summaries.enemies} />
           </div>
-          <nav aria-label="Cruces visibles" className="segmented draft-matchup-segmented">
-            <Link
-              aria-current={state.matchupScope === 'head-to-head' ? 'true' : undefined}
-              className="segmented-item"
-              href={draftMatchupScopeHref(searchParams, state, 'head-to-head')}
-            >
-              Cabeza a cabeza
-            </Link>
-            <Link
-              aria-current={state.matchupScope === 'all' ? 'true' : undefined}
-              className="segmented-item"
-              href={draftMatchupScopeHref(searchParams, state, 'all')}
-            >
-              Todos
-            </Link>
-          </nav>
-        </header>
-        <p className="draft-matchup-sample-note">
-          <TriangleAlert aria-hidden="true" size={16} strokeWidth={2} />
-          <span>
-            <strong>Muestra chica:</strong> menos de {integer.format(priorGames)} partidas para el
-            riesgo elegido. Con esa cantidad, el número se apoya más en el promedio general que en
-            el cruce en sí.
-          </span>
-        </p>
-        <MatchupTable priorGames={priorGames} rows={view.matchups} total={view.matchupTotal} />
-      </section>
+        </section>
+      </AnalysisDisclosure>
 
-      <section aria-labelledby="draft-analysis-duos-heading" className="draft-analysis-section">
-        <header className="draft-analysis-section-header">
-          <h2 id="draft-analysis-duos-heading">Duplas</h2>
-          <p>
-            Win rates normalizados, ordenados de mejor a peor: 50,00 % es rendir tal como se
-            esperaba después de descontar la fuerza base de los dos campeones.
+      <AnalysisDisclosure
+        headingId="draft-analysis-champions-heading"
+        headline={percent.format(view.champions.allies.totals.total.winrate)}
+        title="Resumen por campeón"
+      >
+        <section aria-labelledby="draft-analysis-champions-heading" className="draft-analysis-section draft-analysis-disclosure-content">
+          <header className="draft-analysis-section-header">
+            <p>El Total de cada fila suma ratings de Base, Cruces y Duplas; nunca porcentajes.</p>
+          </header>
+          <div className="draft-analysis-overviews">
+            <ChampionBreakdownTable table={view.champions.allies} />
+            <ChampionBreakdownTable table={view.champions.enemies} />
+          </div>
+          <p className="draft-analysis-footnote">
+            En las filas, una dupla aparece una vez por cada integrante. Por eso esa columna no suma
+            el total del pie: el pie usa cada dupla una sola vez. El Total del pie es el resultado
+            completo del draft y también incorpora el otro equipo.
           </p>
-        </header>
-        <div className="draft-duo-sides">
-          <DuoList rows={view.duos.allies} side="allies" />
-          <DuoList rows={view.duos.enemies} side="enemies" />
-        </div>
-      </section>
+        </section>
+      </AnalysisDisclosure>
 
-      {scaling ? <ScalingChart curves={scaling} /> : null}
+      <AnalysisDisclosure
+        headingId="draft-analysis-matchups-heading"
+        headline={percent.format(view.summaries.allies.matchups.winrate)}
+        title="Cruces"
+      >
+        <section aria-labelledby="draft-analysis-matchups-heading" className="draft-analysis-section draft-analysis-disclosure-content">
+          <header className="draft-analysis-section-header draft-analysis-matchup-header">
+            <div>
+              <p>
+                Win rates normalizados: 50,00 % significa que el cruce rindió exactamente como se
+                esperaba después de descontar la fuerza base de ambos campeones.
+              </p>
+            </div>
+            <nav aria-label="Cruces visibles" className="segmented draft-matchup-segmented">
+              <Link
+                aria-current={state.matchupScope === 'head-to-head' ? 'true' : undefined}
+                className="segmented-item"
+                href={draftMatchupScopeHref(searchParams, state, 'head-to-head')}
+              >
+                Cabeza a cabeza
+              </Link>
+              <Link
+                aria-current={state.matchupScope === 'all' ? 'true' : undefined}
+                className="segmented-item"
+                href={draftMatchupScopeHref(searchParams, state, 'all')}
+              >
+                Todos
+              </Link>
+            </nav>
+          </header>
+          <p className="draft-matchup-sample-note">
+            <TriangleAlert aria-hidden="true" size={16} strokeWidth={2} />
+            <span>
+              <strong>Muestra chica:</strong> menos de {integer.format(priorGames)} partidas para el
+              riesgo elegido. Con esa cantidad, el número se apoya más en el promedio general que en
+              el cruce en sí.
+            </span>
+          </p>
+          <MatchupTable priorGames={priorGames} rows={view.matchups} total={view.matchupTotal} />
+        </section>
+      </AnalysisDisclosure>
+
+      <AnalysisDisclosure
+        headingId="draft-analysis-duos-heading"
+        headline={percent.format(view.summaries.allies.duos.winrate)}
+        title="Duplas"
+      >
+        <section aria-labelledby="draft-analysis-duos-heading" className="draft-analysis-section draft-analysis-disclosure-content">
+          <header className="draft-analysis-section-header">
+            <p>
+              Win rates normalizados, ordenados de mejor a peor: 50,00 % es rendir tal como se
+              esperaba después de descontar la fuerza base de los dos campeones.
+            </p>
+          </header>
+          <div className="draft-duo-sides">
+            <DuoList rows={view.duos.allies} side="allies" />
+            <DuoList rows={view.duos.enemies} side="enemies" />
+          </div>
+        </section>
+      </AnalysisDisclosure>
     </div>
   );
 }

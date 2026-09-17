@@ -848,9 +848,15 @@ button {
 /* ---- Votaciones y vaults ---- */
 .screen-title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.screen-action {
+  min-width: 0;
+  margin-left: auto;
 }
 
 .screen-text-action {
@@ -3924,7 +3930,8 @@ button {
 .draft-slot-select:active,
 .draft-champion-option:active,
 .draft-slot-clear:active,
-.draft-clear:active {
+.draft-header-clear:active,
+.draft-save-success a:active {
   background: var(--fill-pressed);
 }
 
@@ -4181,16 +4188,75 @@ button {
   padding: 1.5rem 0.5rem;
 }
 
-.draft-clear {
+.draft-screen-actions {
   display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.draft-header-clear {
+  display: inline-flex;
   min-height: 2.75rem;
+  flex: none;
   align-items: center;
-  justify-content: center;
+  padding: 0 0.5rem;
   border-radius: 0.625rem;
   color: var(--danger);
+  font-size: 0.9375rem;
   font-weight: 600;
   text-decoration: none;
   transition: background-color var(--motion-press);
+}
+
+.draft-save-form {
+  display: grid;
+  min-width: 0;
+  justify-items: end;
+  gap: 0.25rem;
+}
+
+.draft-save-button {
+  min-width: 0;
+  padding-inline: 0.625rem;
+  white-space: nowrap;
+}
+
+.draft-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.draft-save-form .field-error {
+  max-width: 14rem;
+  text-align: right;
+}
+
+.draft-save-success {
+  display: flex;
+  min-height: 2.75rem;
+  min-width: 0;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--label);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+}
+
+.draft-save-success > svg {
+  flex: none;
+  color: var(--success);
+}
+
+.draft-save-success a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  border-radius: 0.5rem;
+  color: var(--tint);
+  text-decoration: none;
 }
 
 /* Análisis de Draft: listas apiladas en teléfono, tablas semánticas desde tablet. */
@@ -4201,7 +4267,8 @@ button {
 }
 
 .draft-analysis-empty-note,
-.draft-analysis-section {
+.draft-analysis-section,
+.draft-analysis-disclosure {
   margin: 0;
   padding: 1rem;
   border-radius: 0.625rem;
@@ -4221,6 +4288,53 @@ button {
   display: grid;
   min-width: 0;
   gap: 1rem;
+}
+
+.draft-analysis-disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+
+.draft-analysis-disclosure > summary {
+  min-height: 3.25rem;
+  padding: 0.875rem 1rem;
+  color: var(--label);
+  cursor: pointer;
+  transition: background-color var(--motion-press);
+}
+
+.draft-analysis-disclosure > summary::marker {
+  color: var(--tint);
+}
+
+.draft-analysis-disclosure > summary h2 {
+  display: inline;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+}
+
+.draft-analysis-disclosure > summary strong {
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-analysis-disclosure[open] > summary {
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.draft-analysis-disclosure > summary:active {
+  background: var(--fill-pressed);
+}
+
+.draft-analysis-disclosure > .draft-analysis-disclosure-content {
+  padding: 1rem;
+  border-radius: 0;
+  background: transparent;
 }
 
 .draft-analysis-section-header {
@@ -4884,7 +4998,9 @@ button {
   .draft-slot-remove:hover,
   .draft-champion-option:hover,
   .draft-personal-order button:hover,
-  .draft-clear:hover {
+  .draft-header-clear:hover,
+  .draft-save-success a:hover,
+  .draft-analysis-disclosure > summary:hover {
     background: var(--fill-pressed);
   }
 }
@@ -5526,8 +5642,7 @@ button {
   margin: 0;
 }
 
-.draft-record-attach .primary-button,
-.draft-save-form .primary-button {
+.draft-record-attach .primary-button {
   width: 100%;
   min-height: 2.75rem;
 }
@@ -5545,33 +5660,6 @@ button {
   min-height: 2.75rem;
   align-items: center;
   gap: 0.375rem;
-}
-
-.draft-save-form,
-.draft-save-success {
-  display: grid;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-radius: 0.625rem;
-  background: var(--bg-cell);
-}
-
-.draft-save-success {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-.draft-save-success > svg {
-  color: var(--success);
-}
-
-.draft-save-success a {
-  min-height: 2.75rem;
-  display: inline-flex;
-  align-items: center;
-  color: var(--tint);
-  font-weight: 600;
-  text-decoration: none;
 }
 
 .draft-calibration {

@@ -292,6 +292,16 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   de 44 px y contraste semántico; la revisión visual queda para fuera del sandbox, sin puerto local.
   Typecheck limpio, 344 tests verdes y build de producción exitoso.
 
+- 2026-09-17 — **UX de guardado y análisis compacto de Draft.** Guardar pasó al slot `action` de
+  `Screen`, visible antes de scrollear: el botón incompleto queda deshabilitado y dice cuántos
+  campeones faltan, “Vaciar” lo acompaña y el éxito muestra confirmación con acceso directo al
+  Registro. En Análisis, Scaling aparece primero cuando el draft completo tiene todas las curvas;
+  Resumen por lado, Resumen por campeón, Cruces y Duplas usan `details`/`summary` nativos, cerrados
+  por defecto y con el win rate aliado titular en el encabezado. Sin Scaling, el primer resumen
+  queda abierto. No se tocaron cálculos, sync ni Jugador. Se siguieron el design system y la copia
+  local de `ui-ux-pro-max`; verificación visual pendiente del lado de Juan porque el sandbox no
+  permite abrir puertos. Typecheck limpio, 349 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).

@@ -276,13 +276,14 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
     new Set(members.map((member) => member.id)),
   );
   const analysis = analyzeDraft(matrix, state, state.risk);
+  const missingPicks = 10 - state.allies.length - state.enemies.length;
+  const complete = missingPicks === 0;
   const scalingMatrix = getDraftScalingMatrix(db);
-  const scaling = scalingMatrix && scalingMatrix.size > 0
+  const scaling = complete && scalingMatrix && scalingMatrix.size > 0
     ? calculateDraftScalingCurves(scalingMatrix, state, state.risk)
     : null;
   const enemyWinrate = 1 - analysis.winrate;
   const recordHref = scoutHref('registro', searchParams);
-  const complete = state.allies.length === 5 && state.enemies.length === 5;
 
   let grid: DraftChampionGridViewItem[] = [];
   const selectedAssignment = state.slot?.team === 'allies'
@@ -328,7 +329,21 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
     : null;
 
   return (
-    <Screen title="Scout">
+    <Screen
+      action={state.panel === 'draft' ? (
+        <SaveDraftRecordButton
+          allies={serializePicks(state.allies)}
+          clearHref={(state.allies.length || state.enemies.length)
+            ? clearDraftHref(searchParams, state)
+            : null}
+          enemies={serializePicks(state.enemies)}
+          missingPicks={missingPicks}
+          recordHref={recordHref}
+          risk={state.risk}
+        />
+      ) : undefined}
+      title="Scout"
+    >
       <ScoutSegments searchParams={searchParams} selected="draft" />
       <DraftPanelSegments searchParams={searchParams} state={state} />
 
@@ -418,20 +433,6 @@ export async function DraftSegment({ searchParams }: { searchParams: DraftSearch
             <p className="draft-slot-prompt">Tocá un casillero para elegir un campeón.</p>
           )}
 
-          {(state.allies.length || state.enemies.length) ? (
-            <Link className="draft-clear" href={clearDraftHref(searchParams, state)}>
-              Vaciar draft
-            </Link>
-          ) : null}
-
-
-          <SaveDraftRecordButton
-            allies={serializePicks(state.allies)}
-            complete={complete}
-            enemies={serializePicks(state.enemies)}
-            recordHref={recordHref}
-            risk={state.risk}
-          />
         </div>
       )}
     </Screen>

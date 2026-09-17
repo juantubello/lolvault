@@ -28,7 +28,7 @@ export function Screen({
       <header className="screen-header">
         <div className="screen-title-row">
           <h1>{title}</h1>
-          {action}
+          {action ? <div className="screen-action">{action}</div> : null}
         </div>
       </header>
       {children}
