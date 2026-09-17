@@ -1,4 +1,4 @@
-import { LockKeyhole } from 'lucide-react';
+import { ChevronRight, LockKeyhole } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -55,6 +55,18 @@ export function VaultCardView({ card, grouped = false, now }: { card: VaultCard;
       </div>
 
       {card.reason ? <p className="proposal-reason">“{card.reason}”</p> : null}
+
+      {/* La partida se adjunta al proponer, pero se veía solo mientras estaba en votación: al
+          aprobarse el vault desaparecía, que es justo cuando uno quiere mirarla. */}
+      {card.matchId ? (
+        <Link
+          className="match-attachment"
+          href={`/partidas/${encodeURIComponent(card.matchId)}?jugador=${card.target.id}&desde=vaults`}
+        >
+          <span className="match-attachment-label">Partida adjunta</span>
+          <ChevronRight aria-hidden="true" size={18} strokeWidth={2} />
+        </Link>
+      ) : null}
 
       {inForce ? (
         card.liftVoteOpen ? (

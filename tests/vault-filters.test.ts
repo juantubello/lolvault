@@ -41,6 +41,7 @@ function card(
     endsAt: addDays(today, daysUntilEnd),
     liftedAt: null,
     reason: null,
+    matchId: null,
     liftVoteOpen: false,
   };
 }

@@ -119,8 +119,8 @@ export default async function MatchDetailPage({
   );
   const backLabel = source === 'votaciones'
     ? 'Votaciones'
-    : source === 'black-list'
-      ? 'Black list'
+    : source === 'black-list' || source === 'vaults'
+      ? 'Ripeados'
       : source === 'scout'
         ? 'Scout'
         : player.id === currentUser.id

@@ -65,6 +65,7 @@ export function matchBackHref(
 ): string {
   if (source === 'votaciones') return '/';
   if (source === 'black-list') return '/ripeados?tipo=black-list';
+  if (source === 'vaults') return '/ripeados?tipo=vaults';
   if (source === 'scout' && focusRiotId) {
     const player = encodeURIComponent(`${focusRiotId.gameName}#${focusRiotId.tagLine}`);
     return `/scout?jugador=${player}${scoutRegion ? `&region=${scoutRegion}` : ''}`;

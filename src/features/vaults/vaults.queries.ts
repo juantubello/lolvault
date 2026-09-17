@@ -436,6 +436,8 @@ export type VaultCard = {
   endsAt: Date;
   liftedAt: Date | null;
   reason: string | null;
+  /** Id de la partida adjunta al proponerlo, si hubo. Solo el id: el listado no carga el snapshot. */
+  matchId: string | null;
   /** Hay una votación abierta para levantarlo. */
   liftVoteOpen: boolean;
 };
@@ -486,6 +488,7 @@ export function listVaults(db: Db, now: Date): { inForce: VaultCard[]; past: Vau
       endsAt: vault.endsAt,
       liftedAt: vault.liftedAt,
       reason: vault.reason,
+      matchId: vault.matchId,
       liftVoteOpen: lifts.some(
         (lift) => lift.vaultId === vault.id && votingStatus(lift, now) === 'open',
       ),
