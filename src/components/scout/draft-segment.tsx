@@ -31,7 +31,7 @@ import {
   type DraftChampionCatalogItem,
 } from '@/features/draft/suggestion-grid';
 import { DRAFT_ROLES, type DraftRole } from '@/features/draft/types';
-import { championImageUrl } from '@/features/champions/ddragon-sync';
+import { championImageUrl, ensureChampions } from '@/features/champions/ddragon-sync';
 import { searchKey } from '@/features/champions/search-key';
 import { timeAgo } from '@/features/matches/format';
 
@@ -162,8 +162,15 @@ function DraftPanelSegments({
   );
 }
 
-export function DraftSegment({ searchParams }: { searchParams: DraftSearchParams }) {
+export async function DraftSegment({ searchParams }: { searchParams: DraftSearchParams }) {
   const db = getDb();
+
+  try {
+    await ensureChampions(db);
+  } catch (error) {
+    console.error('[champions] No se pudieron cargar desde Data Dragon:', error);
+  }
+
   const run = getLatestCompletedDraftRun(db);
   const matrix = getDraftMatrix(db);
 
@@ -236,6 +243,7 @@ export function DraftSegment({ searchParams }: { searchParams: DraftSearchParams
           </header>
           <DraftAnalysisPanel
             analysis={analysis}
+            championImages={new Map(catalog.map((champion) => [champion.key, champion.imageUrl]))}
             championNames={new Map(catalog.map((champion) => [champion.key, champion.name]))}
             searchParams={searchParams}
             state={state}

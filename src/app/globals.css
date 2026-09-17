@@ -4183,7 +4183,7 @@ button {
 .draft-analysis-card-list header {
   display: flex;
   min-width: 0;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.625rem;
 }
@@ -4198,9 +4198,33 @@ button {
 
 .draft-analysis-card-list header strong {
   min-width: 0;
+  flex: 1;
   overflow-wrap: anywhere;
   font-size: 0.9375rem;
   line-height: 1.25rem;
+}
+
+.draft-analysis-champion {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+}
+
+.draft-analysis-champion-image {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  border-radius: 0.375rem;
+  background: var(--fill-control);
+  object-fit: cover;
+}
+
+.draft-analysis-champion-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .draft-analysis-metrics {
@@ -4283,10 +4307,16 @@ button {
 .draft-matchup-versus > span {
   display: grid;
   min-width: 0;
+  gap: 0.25rem;
 }
 
 .draft-matchup-versus > span:last-child {
   text-align: right;
+}
+
+.draft-matchup-versus > span:last-child .draft-analysis-champion {
+  flex-direction: row-reverse;
+  justify-self: end;
 }
 
 .draft-matchup-versus small {
@@ -4311,37 +4341,104 @@ button {
 
 .draft-matchup-result {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin: 0.75rem 0 0;
   padding-top: 0.625rem;
   border-top: 0.5px solid var(--separator);
 }
 
+.draft-matchup-result > div:nth-child(2) {
+  text-align: center;
+}
+
 .draft-matchup-result > div:last-child {
+  text-align: right;
+}
+
+.draft-matchup-rate,
+.draft-matchup-winner,
+.draft-matchup-small-sample {
+  display: inline-flex;
+  align-items: center;
+}
+
+.draft-matchup-rate {
+  gap: 0.25rem;
+}
+
+.draft-matchup-rate[data-leading="true"],
+.draft-matchup-winner[data-winner] {
+  color: var(--tint);
+  font-weight: 700;
+}
+
+.draft-matchup-winner {
+  justify-content: center;
+}
+
+.draft-matchup-small-sample {
+  flex: none;
+  color: var(--warning);
+}
+
+.draft-matchup-sample-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--warning) 8%, var(--bg-cell-2));
+  color: var(--label-2);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.draft-matchup-sample-note > svg {
+  flex: none;
+  margin-top: 0.0625rem;
+  color: var(--warning);
+}
+
+.draft-matchup-sample-note strong {
+  color: var(--label);
+}
+
+.draft-matchup-total-card {
+  background: var(--bg-cell);
+}
+
+.draft-matchup-total-card .draft-matchup-result {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.draft-matchup-total-card .draft-matchup-result > div:nth-child(2) {
   text-align: right;
 }
 
 .draft-duo-list > li {
   display: grid;
   min-height: 3.75rem;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 0.5rem;
 }
 
-.draft-duo-list span {
+.draft-duo-list > li > span {
   display: grid;
   min-width: 0;
+  gap: 0.25rem;
 }
 
-.draft-duo-list span strong {
+.draft-duo-list .draft-analysis-champion-name {
   overflow-wrap: anywhere;
   font-size: 0.8125rem;
+  font-weight: 700;
   line-height: 1.125rem;
 }
 
-.draft-duo-list span small {
+.draft-duo-list > li > span small {
   color: var(--label-2);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -4354,7 +4451,9 @@ button {
 }
 
 .draft-duo-list data {
-  min-width: 4.75rem;
+  grid-column: 1 / -1;
+  padding-top: 0.5rem;
+  border-top: 0.5px solid var(--separator);
   text-align: right;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -4461,12 +4560,29 @@ button {
   }
 
   .draft-matchup-table table {
-    min-width: 43rem;
+    min-width: 56rem;
   }
 
   .draft-matchup-table th:nth-child(2),
   .draft-matchup-table td:nth-child(2) {
-    min-width: 7rem;
+    min-width: 9rem;
+  }
+
+  .draft-matchup-table th:nth-child(3),
+  .draft-matchup-table td:nth-child(3),
+  .draft-matchup-table th:nth-child(7),
+  .draft-matchup-table td:nth-child(7) {
+    min-width: 8.75rem;
+  }
+
+  .draft-matchup-table th:nth-child(6),
+  .draft-matchup-table td:nth-child(6) {
+    min-width: 9rem;
+    text-align: left;
+  }
+
+  .draft-matchup-table .draft-matchup-winner {
+    width: 100%;
   }
 
   .draft-analysis-matchup-header {

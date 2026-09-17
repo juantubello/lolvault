@@ -1,7 +1,9 @@
 import {
+  DRAFT_PRIOR_GAMES,
   ratingToWinrate,
   type ChampionAnalysis,
   type DraftAnalysis,
+  type DraftRisk,
   type PairAnalysis,
 } from '@/features/draft/analysis';
 import type { DraftMatchupScope, DraftTeam } from '@/features/draft/draft-url';
@@ -25,6 +27,7 @@ export type DraftSideSummary = {
 export type DraftChampionBreakdownRow = {
   championKey: number;
   championName: string;
+  championImageUrl: string | null;
   role: DraftRole;
   base: DraftAnalysisValue;
   matchups: DraftAnalysisValue;
@@ -48,28 +51,48 @@ export type DraftMatchupWinner = DraftTeam | 'even' | 'no-data';
 export type DraftMatchupViewRow = {
   allyChampionKey: number;
   allyChampionName: string;
+  allyChampionImageUrl: string | null;
   allyRole: DraftRole;
   enemyChampionKey: number;
   enemyChampionName: string;
+  enemyChampionImageUrl: string | null;
   enemyRole: DraftRole;
   winrate: number | null;
+  opponentWinrate: number | null;
+  games: number;
+  smallSample: boolean;
+  rating: number;
   winner: DraftMatchupWinner;
 };
 
 export type DraftDuoViewRow = {
   firstChampionKey: number;
   firstChampionName: string;
+  firstChampionImageUrl: string | null;
   firstRole: DraftRole;
   secondChampionKey: number;
   secondChampionName: string;
+  secondChampionImageUrl: string | null;
   secondRole: DraftRole;
   winrate: number | null;
+};
+
+export type DraftMatchupTotal = {
+  rating: number;
+  allyWinrate: number;
+  opponentWinrate: number;
+};
+
+export type DraftAnalysisViewOptions = {
+  imageUrls?: ReadonlyMap<number, string>;
+  risk?: DraftRisk;
 };
 
 export type DraftAnalysisView = {
   summaries: Record<DraftTeam, DraftSideSummary>;
   champions: Record<DraftTeam, DraftChampionBreakdown>;
   matchups: DraftMatchupViewRow[];
+  matchupTotal: DraftMatchupTotal;
   duos: Record<DraftTeam, DraftDuoViewRow[]>;
 };
 
@@ -104,6 +127,13 @@ function championName(names: ReadonlyMap<number, string>, championKey: number): 
   return names.get(championKey) ?? `Campeón ${championKey}`;
 }
 
+function championImageUrl(
+  imageUrls: ReadonlyMap<number, string> | undefined,
+  championKey: number,
+): string | null {
+  return imageUrls?.get(championKey) ?? null;
+}
+
 function pairsForChampion(
   pairs: readonly PairAnalysis[],
   championKey: number,
@@ -119,6 +149,7 @@ function buildChampionRows(
   duos: readonly PairAnalysis[],
   side: DraftTeam,
   names: ReadonlyMap<number, string>,
+  imageUrls: ReadonlyMap<number, string> | undefined,
 ): DraftChampionBreakdownRow[] {
   const perspective = side === 'allies' ? 1 : -1;
   return champions.map((champion) => {
@@ -139,6 +170,7 @@ function buildChampionRows(
     return {
       championKey: champion.championKey,
       championName: championName(names, champion.championKey),
+      championImageUrl: championImageUrl(imageUrls, champion.championKey),
       role: champion.role,
       base,
       matchups: matchupValue,
@@ -154,6 +186,7 @@ function buildChampionBreakdown(
   analysis: DraftAnalysis,
   side: DraftTeam,
   names: ReadonlyMap<number, string>,
+  imageUrls: ReadonlyMap<number, string> | undefined,
 ): DraftChampionBreakdown {
   const allies = side === 'allies';
   const championRating = allies
@@ -171,6 +204,7 @@ function buildChampionBreakdown(
       allies ? analysis.allyDuos : analysis.enemyDuos,
       side,
       names,
+      imageUrls,
     ),
     totals: {
       base: value(championRating),
@@ -185,25 +219,36 @@ export function buildDraftMatchupRows(
   analysis: DraftAnalysis,
   scope: DraftMatchupScope,
   names: ReadonlyMap<number, string>,
+  options: DraftAnalysisViewOptions = {},
 ): DraftMatchupViewRow[] {
+  const risk = options.risk ?? 'medium';
   return analysis.matchups
     .filter((pair) => scope === 'all' || pair.first.role === pair.second.role)
-    .map((pair) => ({
-      allyChampionKey: pair.first.championKey,
-      allyChampionName: championName(names, pair.first.championKey),
-      allyRole: pair.first.role,
-      enemyChampionKey: pair.second.championKey,
-      enemyChampionName: championName(names, pair.second.championKey),
-      enemyRole: pair.second.role,
-      winrate: pair.hasData ? pair.winrate : null,
-      winner: !pair.hasData
-        ? 'no-data' as const
-        : pair.rating > 1e-10
-          ? 'allies' as const
-          : pair.rating < -1e-10
-            ? 'enemies' as const
-            : 'even' as const,
-    }))
+    .map((pair) => {
+      const winrate = pair.hasData ? pair.winrate : null;
+      return {
+        allyChampionKey: pair.first.championKey,
+        allyChampionName: championName(names, pair.first.championKey),
+        allyChampionImageUrl: championImageUrl(options.imageUrls, pair.first.championKey),
+        allyRole: pair.first.role,
+        enemyChampionKey: pair.second.championKey,
+        enemyChampionName: championName(names, pair.second.championKey),
+        enemyChampionImageUrl: championImageUrl(options.imageUrls, pair.second.championKey),
+        enemyRole: pair.second.role,
+        winrate,
+        opponentWinrate: winrate === null ? null : 1 - winrate,
+        games: pair.games,
+        smallSample: pair.hasData && pair.games < DRAFT_PRIOR_GAMES[risk],
+        rating: pair.rating,
+        winner: !pair.hasData
+          ? 'no-data' as const
+          : pair.rating > 0
+            ? 'allies' as const
+            : pair.rating < 0
+              ? 'enemies' as const
+              : 'even' as const,
+      };
+    })
     .sort((first, second) => (
       (ROLE_INDEX.get(first.allyRole) ?? 0) - (ROLE_INDEX.get(second.allyRole) ?? 0)
       || (ROLE_INDEX.get(first.enemyRole) ?? 0) - (ROLE_INDEX.get(second.enemyRole) ?? 0)
@@ -213,13 +258,16 @@ export function buildDraftMatchupRows(
 function buildDuoRows(
   pairs: readonly PairAnalysis[],
   names: ReadonlyMap<number, string>,
+  imageUrls: ReadonlyMap<number, string> | undefined,
 ): DraftDuoViewRow[] {
   return pairs.map((pair) => ({
     firstChampionKey: pair.first.championKey,
     firstChampionName: championName(names, pair.first.championKey),
+    firstChampionImageUrl: championImageUrl(imageUrls, pair.first.championKey),
     firstRole: pair.first.role,
     secondChampionKey: pair.second.championKey,
     secondChampionName: championName(names, pair.second.championKey),
+    secondChampionImageUrl: championImageUrl(imageUrls, pair.second.championKey),
     secondRole: pair.second.role,
     winrate: pair.hasData ? pair.winrate : null,
   })).sort((first, second) => {
@@ -233,8 +281,12 @@ export function buildDraftAnalysisView(
   analysis: DraftAnalysis,
   scope: DraftMatchupScope,
   names: ReadonlyMap<number, string>,
+  options: DraftAnalysisViewOptions = {},
 ): DraftAnalysisView {
   const allyMatchups = value(analysis.matchupRating);
+  const matchups = buildDraftMatchupRows(analysis, scope, names, options);
+  const matchupRating = matchups.reduce((total, matchup) => total + matchup.rating, 0);
+  const matchupWinrate = ratingToWinrate(matchupRating);
   return {
     summaries: {
       allies: {
@@ -251,13 +303,18 @@ export function buildDraftAnalysisView(
       },
     },
     champions: {
-      allies: buildChampionBreakdown(analysis, 'allies', names),
-      enemies: buildChampionBreakdown(analysis, 'enemies', names),
+      allies: buildChampionBreakdown(analysis, 'allies', names, options.imageUrls),
+      enemies: buildChampionBreakdown(analysis, 'enemies', names, options.imageUrls),
     },
-    matchups: buildDraftMatchupRows(analysis, scope, names),
+    matchups,
+    matchupTotal: {
+      rating: matchupRating,
+      allyWinrate: matchupWinrate,
+      opponentWinrate: 1 - matchupWinrate,
+    },
     duos: {
-      allies: buildDuoRows(analysis.allyDuos, names),
-      enemies: buildDuoRows(analysis.enemyDuos, names),
+      allies: buildDuoRows(analysis.allyDuos, names, options.imageUrls),
+      enemies: buildDuoRows(analysis.enemyDuos, names, options.imageUrls),
     },
   };
 }

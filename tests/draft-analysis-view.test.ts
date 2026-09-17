@@ -125,6 +125,79 @@ describe('presentación del análisis de Draft', () => {
     expect(buildDraftMatchupRows(analysis, 'all', names)).toHaveLength(25);
   });
 
+  it('deriva el win rate oponente como complemento exacto del aliado', () => {
+    const analysis = analyzeDraft(buildDraftMatrix(matrixRows()), { allies, enemies });
+    const [matchup] = buildDraftMatchupRows(analysis, 'head-to-head', names);
+
+    expect(matchup).toBeDefined();
+    expect(matchup?.winrate).not.toBeNull();
+    expect(matchup?.opponentWinrate).toBe(1 - (matchup?.winrate ?? 0));
+  });
+
+  it('decide el ganador por el signo y distingue parejo de sin datos', () => {
+    const analysis = analyzeDraft(buildDraftMatrix(matrixRows()), { allies, enemies });
+    const [pair] = analysis.matchups;
+    expect(pair).toBeDefined();
+    if (!pair) return;
+
+    const matchups = [
+      { ...pair, first: allies[0]!, second: enemies[0]!, rating: Number.EPSILON, hasData: true },
+      { ...pair, first: allies[1]!, second: enemies[1]!, rating: -Number.EPSILON, hasData: true },
+      { ...pair, first: allies[2]!, second: enemies[2]!, rating: 0, hasData: true },
+      { ...pair, first: allies[3]!, second: enemies[3]!, rating: 0, hasData: false },
+    ];
+    const rows = buildDraftMatchupRows({ ...analysis, matchups }, 'all', names);
+
+    expect(rows.map(({ winner }) => winner)).toEqual([
+      'allies',
+      'enemies',
+      'even',
+      'no-data',
+    ]);
+  });
+
+  it('marca la muestra chica según el prior del riesgo elegido', () => {
+    const analysis = analyzeDraft(buildDraftMatrix(matrixRows()), { allies, enemies });
+    const [pair] = analysis.matchups;
+    expect(pair).toBeDefined();
+    if (!pair) return;
+    const withFiveHundredGames = { ...analysis, matchups: [{ ...pair, games: 500 }] };
+
+    expect(buildDraftMatchupRows(
+      withFiveHundredGames,
+      'all',
+      names,
+      { risk: 'very-high' },
+    )[0]?.smallSample).toBe(false);
+    expect(buildDraftMatchupRows(
+      withFiveHundredGames,
+      'all',
+      names,
+      { risk: 'very-low' },
+    )[0]?.smallSample).toBe(true);
+  });
+
+  it('recalcula el total con los cruces visibles al cambiar el alcance', () => {
+    const analysis = analyzeDraft(buildDraftMatrix(matrixRows()), { allies, enemies });
+    const headToHead = buildDraftAnalysisView(analysis, 'head-to-head', names);
+    const all = buildDraftAnalysisView(analysis, 'all', names);
+    const headToHeadRating = headToHead.matchups.reduce((sum, matchup) => sum + matchup.rating, 0);
+    const allRating = all.matchups.reduce((sum, matchup) => sum + matchup.rating, 0);
+
+    expect(headToHead.matchupTotal.rating).toBeCloseTo(headToHeadRating, 12);
+    expect(headToHead.matchupTotal.allyWinrate).toBeCloseTo(
+      ratingToWinrate(headToHeadRating),
+      12,
+    );
+    expect(all.matchupTotal.rating).toBeCloseTo(allRating, 12);
+    expect(all.matchupTotal.allyWinrate).toBeCloseTo(ratingToWinrate(allRating), 12);
+    expect(headToHead.matchupTotal.allyWinrate).not.toBeCloseTo(
+      all.matchupTotal.allyWinrate,
+      12,
+    );
+    expect(all.matchupTotal.opponentWinrate).toBe(1 - all.matchupTotal.allyWinrate);
+  });
+
   it('conserva como sin datos un cruce y una dupla sin las dos direcciones', () => {
     const rows = matrixRows();
     const missingAlly = allies[0];

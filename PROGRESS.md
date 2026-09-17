@@ -258,6 +258,16 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   queda para fuera del sandbox, que no permite abrir puertos. Typecheck limpio, 300 tests verdes y
   build de producción exitoso.
 
+- 2026-09-17 — **Pulido del panel de análisis de Draft.** Resumen por campeón, cruces y duplas
+  muestran retratos de Data Dragon con espacio reservado. Los cruces presentan las siete columnas,
+  el win rate enemigo como complemento exacto del aliado y flechas de ganador con texto para lector
+  de pantalla; “Parejo” y “Sin datos” son estados distintos. Un triángulo marca muestras por debajo
+  del prior del riesgo activo y la UI explica el peso del promedio general. El pie “Total de los
+  cruces mostrados” suma sólo las filas del alcance elegido y aclara que la tarjeta superior siempre
+  usa los 25 cruces. Draft ahora también llama a `ensureChampions`, con el mismo control de frescura
+  que Vaults. Se siguió la guía local `ui-ux-pro-max`; la verificación visual queda para fuera del
+  sandbox, sin puerto local. Typecheck limpio, 304 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
