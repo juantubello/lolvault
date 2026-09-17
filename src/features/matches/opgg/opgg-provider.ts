@@ -69,6 +69,15 @@ function valueAt(object: JsonObject, key: string, path: string): unknown {
   return object[key];
 }
 
+/**
+ * Los datos de rankeado (ladder_rank, previous_seasons, ranked_most_champions) no existen para
+ * una cuenta sin rango: OP.GG declara el campo en la clase pero no manda el valor. valueAt() lanza
+ * cuando falta la clave, asi que un jugador sin rango rompia el perfil entero.
+ */
+function missingOrNull(object: JsonObject, key: string): boolean {
+  return !Object.hasOwn(object, key) || object[key] === null;
+}
+
 function objectField(object: JsonObject, key: string, path: string): JsonObject {
   return objectAt(valueAt(object, key, path), `${path}.${key}`);
 }
@@ -395,9 +404,8 @@ function mapRankedChampion(value: unknown, index: number): RankedSeasonChampion 
 
 function mapRankedSeason(summoner: JsonObject): RankedSeason | null {
   const path = 'data.summoner.ranked_most_champions';
-  const value = valueAt(summoner, 'ranked_most_champions', 'data.summoner');
-  if (value === null) return null;
-  const season = objectAt(value, path);
+  if (missingOrNull(summoner, 'ranked_most_champions')) return null;
+  const season = objectAt(summoner.ranked_most_champions, path);
   return {
     queue: stringField(season, 'game_type', path),
     seasonId: numberField(season, 'season_id', path),
@@ -411,8 +419,9 @@ function mapRankedSeason(summoner: JsonObject): RankedSeason | null {
 function mapProfile(parsed: unknown): SummonerProfile {
   const summoner = objectField(rootData(parsed), 'summoner', 'data');
   const mostChampions = objectField(summoner, 'most_champions', 'data.summoner');
-  const ladderValue = valueAt(summoner, 'ladder_rank', 'data.summoner');
-  const ladder = ladderValue === null ? null : objectAt(ladderValue, 'data.summoner.ladder_rank');
+  const ladder = missingOrNull(summoner, 'ladder_rank')
+    ? null
+    : objectAt(summoner.ladder_rank, 'data.summoner.ladder_rank');
   return {
     puuid: stringField(summoner, 'puuid', 'data.summoner'),
     gameName: stringField(summoner, 'game_name', 'data.summoner'),
@@ -422,7 +431,9 @@ function mapProfile(parsed: unknown): SummonerProfile {
     ranks: arrayField(summoner, 'league_stats', 'data.summoner').map(mapRank),
     seasonChampions: arrayField(mostChampions, 'champion_stats', 'data.summoner.most_champions')
       .map(mapChampion),
-    previousSeasons: arrayField(summoner, 'previous_seasons', 'data.summoner').map(mapPreviousSeason),
+    previousSeasons: missingOrNull(summoner, 'previous_seasons')
+      ? []
+      : arrayField(summoner, 'previous_seasons', 'data.summoner').map(mapPreviousSeason),
     ladder: ladder ? {
       rank: numberField(ladder, 'rank', 'data.summoner.ladder_rank'),
       total: numberField(ladder, 'total', 'data.summoner.ladder_rank'),

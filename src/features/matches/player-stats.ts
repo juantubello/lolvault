@@ -33,6 +33,8 @@ export type PlayerStats =
       status: 'ok';
       riotId: RiotId;
       matches: PlayerMatchSummary[];
+      /** Snapshots completos cacheados para referencias y comparaciones; nunca dispara red. */
+      details: MatchDetail[];
       profile: SummonerProfile | null;
       /** Última sincronización exitosa del historial. */
       syncedAt: Date | null;
@@ -91,6 +93,16 @@ function readCachedMatches(db: Db, userId: number, puuid: string | null): Player
     .orderBy(desc(playerMatches.playedAt))
     .limit(MATCHES_LIMIT)
     .all();
+}
+
+function readCachedMatchDetails(db: Db, provider: string): MatchDetail[] {
+  return db
+    .select({ data: matchDetails.data })
+    .from(matchDetails)
+    .where(eq(matchDetails.provider, provider))
+    .orderBy(desc(matchDetails.playedAt))
+    .all()
+    .map((row) => row.data);
 }
 
 async function sync(db: Db, provider: MatchProvider, userId: number, riotId: RiotId, now: Date) {
@@ -229,6 +241,7 @@ export async function loadPlayerStats(
     status: 'ok',
     riotId,
     matches: readCachedMatches(db, user.id, state?.puuid ?? null),
+    details: readCachedMatchDetails(db, provider.name),
     profile: state?.profile ?? null,
     syncedAt: state?.matchesSyncedAt ?? null,
     error: kind ? matchProviderErrorMessage(kind) : null,

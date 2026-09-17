@@ -2918,6 +2918,123 @@ button {
   gap: 1rem;
 }
 
+.analyst-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 0.5px solid var(--separator);
+  border-radius: 0.75rem;
+  background: var(--bg-cell);
+}
+
+.analyst-panel > header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.analyst-panel > header > div {
+  min-width: 0;
+}
+
+.analyst-panel > header h2,
+.analyst-group h3,
+.analyst-eyebrow,
+.analyst-empty,
+.analyst-note {
+  margin: 0;
+}
+
+.analyst-eyebrow {
+  color: var(--tint);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+}
+
+.analyst-panel > header h2 {
+  margin-top: 0.125rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.625rem;
+}
+
+.analyst-panel > header > span {
+  flex: none;
+  max-width: 45%;
+  color: var(--label-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-align: right;
+}
+
+.analyst-groups {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.analyst-group {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: var(--bg-cell-2);
+}
+
+.analyst-group h3 {
+  padding: 0.625rem 0.75rem 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.125rem;
+}
+
+.analyst-group ul {
+  margin: 0;
+  padding: 0 0.75rem 0.25rem;
+  list-style: none;
+}
+
+.analyst-group li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.625rem 0;
+  border-top: 0.5px solid var(--separator);
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.analyst-group li svg {
+  margin-top: 0.0625rem;
+}
+
+.analyst-group[data-tone="strength"] li svg {
+  color: var(--success);
+}
+
+.analyst-group[data-tone="weakness"] li svg {
+  color: var(--danger);
+}
+
+.analyst-empty {
+  padding: 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--bg-cell-2);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
+.analyst-note {
+  color: var(--label-2);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
 .quick-read {
   display: grid;
   gap: 0.5rem;
@@ -3458,6 +3575,10 @@ button {
 
   .quick-read-grid {
     grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .analyst-groups {
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   }
 
   .compact-stat-tiles {

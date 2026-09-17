@@ -144,12 +144,30 @@ describe('loadPlayerStats', () => {
     expect(state.status).toBe('ok');
     if (state.status !== 'ok') return;
     expect(state.matches.map((m) => m.matchId).sort()).toEqual(['m1', 'm2']);
+    expect(state.details).toEqual([]);
     expect(state.profile?.ranks[0]?.tier).toBe('PLATINUM');
     expect(state.profile?.previousSeasons?.[0]?.tier).toBe('GOLD');
     expect(state.profile?.ladder).toEqual({ rank: 1234, total: 3_000_000 });
     expect(state.profile?.rankedSeason).toMatchObject({ games: 107, wins: 55, losses: 52 });
     expect(state.syncedAt).toEqual(NOW);
     expect(state.error).toBeNull();
+  });
+
+  it('entrega los detalles cacheados para el análisis sin volver a pedirlos', async () => {
+    const provider = fakeProvider();
+    await loadPlayerStats(db, provider, user, NOW);
+    await loadMatchDetail(
+      db,
+      provider,
+      { matchId: 'm1', playedAt: new Date(detail.playedAt) },
+      { gameName: 'Invocador', tagLine: 'LAS1' },
+      NOW,
+    );
+
+    const state = await loadPlayerStats(db, provider, user, at(1));
+
+    expect(state.status === 'ok' && state.details).toEqual([detail]);
+    expect(provider.getMatchDetail).toHaveBeenCalledTimes(1);
   });
 
   it('dentro de la ventana de refresco usa el caché sin volver a pedir', async () => {

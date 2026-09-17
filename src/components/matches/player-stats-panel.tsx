@@ -60,6 +60,7 @@ export function PlayerStatsPanel({
       </div>
 
       <PlayerPerformanceReport
+        analysisMode={isSelf ? 'self' : 'opponent'}
         championImages={championImages}
         now={now}
         stats={stats}

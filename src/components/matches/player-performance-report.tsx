@@ -24,6 +24,7 @@ import {
 
 import { ChampionIcon } from './champion-icon';
 import { MatchRow } from './match-row';
+import { PlayerAnalystPanel } from './player-analyst-panel';
 
 type LoadedStats = Extract<PlayerStats, { status: 'ok' }>;
 
@@ -154,6 +155,7 @@ function RankedChampionDetails({ champion }: { champion: RankedSeasonChampion })
  * disclosures. Perfil propio y Amigos reutilizan exactamente este mismo cuerpo estadistico.
  */
 export function PlayerPerformanceReport({
+  analysisMode,
   championImages,
   matchSource,
   now,
@@ -161,6 +163,7 @@ export function PlayerPerformanceReport({
   userId,
   vaultsByChampion = new Map(),
 }: {
+  analysisMode: 'opponent' | 'self';
   championImages: Map<number, string>;
   matchSource?: 'scout';
   now: Date;
@@ -192,6 +195,8 @@ export function PlayerPerformanceReport({
         <p className="stats-empty">No encontramos partidas ni datos de temporada.</p>
       ) : (
         <>
+          <PlayerAnalystPanel mode={analysisMode} stats={stats} userId={userId} />
+
           <section aria-labelledby="quick-read-heading" className="quick-read">
             <div className="scout-section-heading">
               <h2 id="quick-read-heading">Lectura rápida</h2>
@@ -337,8 +342,10 @@ export function PlayerPerformanceReport({
                 {metrics.sides.map((side) => (
                   <article key={side.key} data-side={side.key.toLocaleLowerCase('en-US')}>
                     <p className="stat-label">{side.label}</p>
-                    <p className="stat-value">{side.games ? formatPercent(side.winRate) : '—'}</p>
-                    <p className="stat-detail">{side.games} partidas · {formatPercent(side.share)} del historial</p>
+                    <p className="stat-value">{side.games ? `${formatPercent(side.winRate)} WR` : '—'}</p>
+                    <p className="stat-detail">
+                      {side.games} partidas ({formatPercent(side.share)} de su historial)
+                    </p>
                   </article>
                 ))}
               </div>

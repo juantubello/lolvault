@@ -64,6 +64,7 @@ export function ScoutPlayerReport({
       ) : null}
 
       <PlayerPerformanceReport
+        analysisMode="opponent"
         championImages={championImages}
         matchSource="scout"
         now={now}

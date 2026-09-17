@@ -180,6 +180,22 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   fixtures completas; typecheck, 255 tests y build de producción verificados por Codex. La revisión
   visual local no pudo ejecutarse en este sandbox porque no permite abrir un puerto localhost.
 
+- 2026-09-16 — **Vista de analista en Scout y Perfil propio.** Un motor puro arma referencias por
+  rol + cola sobre `match_details.data`, excluye remakes y participantes sin posición (los 54 de
+  Arena), y usa mediana con mínimo configurable de 20 participantes. La base local fue verificada:
+  38 detalles, 404 participantes, 70 por rol; al separar por cola quedan 24 por rol en Solo/Duo y
+  46 en Flex, suficientes para una comparación gruesa pero no para percentiles. Scout contrasta
+  CS/min, daño/min, KDA, participación en kills, oro/min y muertes/partida; además prioriza la
+  mediana de CS contra el rival directo y cuántas veces quedó arriba/abajo en las últimas 6 (mínimo
+  3 cruces). Solo publica diferencias claras y como máximo 3 fortalezas + 3 debilidades, siempre
+  con el valor y su referencia numérica. Perfil reutiliza el mismo panel con el marco invertido:
+  últimas 5 vs. anteriores, forma vs. temporada, mejor/peor campeón (mínimo 2 partidas) y peor
+  franja horaria (mínimo 3). Se descartaron temprano/tarde porque el detalle no trae stats al minuto
+  10, visión porque los snapshots viejos tienen esos campos opcionales, solo kills porque no existe
+  por partida y consistencia porque el volumen actual no banca una varianza estable. Sin migración
+  ni llamadas nuevas a OP.GG desde render; tests offline incluyen la fixture real anonimizada y
+  SQLite en memoria. Typecheck limpio, 263 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
