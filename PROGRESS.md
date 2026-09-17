@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, ripeados, Scout profundo, ingesta de Draft, perfiles, historial y Web Push implementados
+## Estado: votaciones, ripeados, Scout profundo, ingesta y motor de Draft, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -215,16 +215,27 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   respaldo solo cuando no hay otra debilidad. Cubierto sin red con fixtures de OP.GG, tests con
   SQLite en memoria y lectura de la base local; typecheck, 278 tests y build verificados.
 
+- 2026-09-16 — **Fase C de Draft: motor puro de análisis y sugerencias.** La matemática Elo
+  separa explícitamente matchups (resta de fuerza base y dirección rival invertida) de duplas
+  (suma de fuerza base y promedio directo), con prior bayesiano configurable en los cinco niveles
+  de riesgo. Una carga aislada materializa las 173 fichas y las matrices de SQLite una sola vez;
+  `analyzeDraft` y `getSuggestions` no conocen la base ni la red. Las sugerencias recorren la
+  lista de campeones una sola vez y mantienen el top N acotado por cada rol libre. Tests con
+  números a mano cubren el sesgo bidireccional, 12 partidas ruidosas, suma contra resta, datos
+  faltantes y una composición espejo exacta en 50 %. En la matriz real, la carga completa tardó
+  686,63 ms y una sugerencia de 5 roles × top 10 tuvo mediana de 20,13 ms (20 corridas). Typecheck
+  limpio, 284 tests verdes y build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 3. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
-4. Fase C del plan Scout/Draft: motor puro de análisis (simetrización, prior y sugerencias).
+4. Fase D del plan Scout/Draft: pantalla de draft y panel completo de análisis.
 5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
 6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
 7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
 8. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-9. Aviso legal de Riot/OP.GG en Perfil → Acerca de.
+9. Aviso legal de Riot/OP.GG/Lolalytics/DraftGap en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).
