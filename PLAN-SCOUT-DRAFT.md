@@ -202,6 +202,37 @@ enfrentamiento) de lo que se esperaría por la fuerza individual de cada campeó
 Las duplas recorren **pares no ordenados** (i < j) de los roles ya elegidos: con cinco campeones
 son diez parejas por equipo.
 
+### 1.5.2 La simetrización no es opcional: el sesgo está medido
+
+Con la matriz ya ingestada (173 campeones, 140.266 matchups, 237.480 sinergias) medí si las dos
+direcciones de un matchup son complementarias. **No lo son**, y el desvío es sistemático.
+
+Sobre **6.828 pares** de mismo carril con al menos 500 partidas en ambas direcciones, sumando el
+win rate de A-contra-B con el de B-contra-A (el ideal sería 100 %):
+
+| | Suma de winrates |
+|---|---|
+| Mínimo | 99,6 % |
+| Percentil 25 | 102,7 % |
+| **Mediana** | **103,4 %** |
+| Percentil 75 | 104,2 % |
+| Máximo | 109,9 % |
+| Fuera del rango 95-110 | **0 pares** |
+
+La cantidad de partidas entre direcciones también coincide: 1,21 % de diferencia mediana, con el
+peor caso en 11,8 %.
+
+**Qué significa.** El desvío es parejo, no errático: si hubiera un error de mapeo entre `wins` y
+`games` se verían pares disparatados (sumas de 150 %, de 40 %) mezclados con otros correctos, y no
+hay ninguno. Lolalytics reporta cada dirección con un sesgo positivo de ~3,4 puntos, casi seguro
+porque `vsWr` ya viene ajustado por su cuenta y no es un win rate crudo cabeza a cabeza.
+
+Las sinergias tienen el **mismo sesgo**: con 200+ partidas el promedio es 51,3 % en vez de 50 %.
+
+**Consecuencia para la Fase C:** promediar A-vs-B con el inverso de B-vs-A **no es un refinamiento,
+es lo que cancela este sesgo**. Sin simetrizar, cada matchup entra inflado ~1,7 puntos, y una comp
+de cinco contra cinco acumula eso en veinticinco cruces.
+
 `getSuggestions` prueba cada campeón libre en cada rol libre, corre `analyzeDraft` y ordena por
 win rate.
 
