@@ -11,6 +11,7 @@ import type {
 export const DEFAULT_ROLE_REFERENCE_MIN_SAMPLE = 20;
 export const MIN_PLAYER_COMPARISON_GAMES = 3;
 export const MIN_LANE_COMPARISON_GAMES = 3;
+export const MIN_EARLY_LANE_GAMES = 10;
 
 export type AnalystMetrics = {
   csPerMinute: number;
@@ -65,6 +66,30 @@ type MetricSample = AnalystMetrics & {
 };
 
 const KNOWN_POSITIONS = new Set(['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']);
+const LANE_POSITIONS = new Set(['TOP', 'MID', 'ADC', 'SUPPORT']);
+
+const SELF_SIGNAL_PRIORITY: Record<string, number> = {
+  deaths: 1_000,
+  'self-deaths': 990,
+  cs: 900,
+  'self-cs': 890,
+  'self-early-lane': 800,
+  kp: 700,
+  'self-kp': 690,
+  damage: 600,
+  'self-damage': 590,
+  gold: 550,
+  kda: 500,
+  'self-kda': 490,
+  'self-form': 300,
+  'self-best-champion': 200,
+  'self-worst-champion': 200,
+  'self-worst-time': 100,
+};
+
+function selfSignalPriority(id: string): number {
+  return SELF_SIGNAL_PRIORITY[id] ?? 0;
+}
 
 function ratio(part: number, total: number): number {
   return total > 0 ? part / total : 0;
@@ -387,6 +412,70 @@ function summaryMetrics(matches: PlayerMatchSummary[]): Omit<AnalystMetrics, 'go
   return metricsFromSummaries(matches.filter((match) => !isRemake(match)));
 }
 
+function selfMetricSignals(
+  player: AnalystMetrics,
+  typical: AnalystMetrics,
+  position: string,
+  queue: string,
+): { strengths: RankedSignal[]; weaknesses: RankedSignal[] } {
+  const strengths: RankedSignal[] = [];
+  const weaknesses: RankedSignal[] = [];
+  const comparison = `de mediana para ${roleForSentence(position)} en ${queueLabel(queue)}`;
+  const add = (
+    id: string,
+    value: number,
+    baseline: number,
+    threshold: number,
+    positiveText: string,
+    negativeText: string,
+    format: (number: number) => string,
+    lowerIsBetter = false,
+  ) => {
+    if (baseline <= 0) return;
+    const delta = (value - baseline) / baseline;
+    const directed = lowerIsBetter ? -delta : delta;
+    if (Math.abs(directed) < threshold) return;
+    const signal = {
+      id,
+      rank: selfSignalPriority(id) + Math.min(Math.abs(directed), 0.99),
+      text: `${directed > 0 ? positiveText : negativeText}: ${format(value)}, contra ${format(baseline)} ${comparison}.`,
+    };
+    (directed > 0 ? strengths : weaknesses).push(signal);
+  };
+
+  add('deaths', player.deathsPerGame, typical.deathsPerGame, 0.18, 'Morís poco', 'Morís demasiado', (value) => `${decimal(value)} muertes/partida`, true);
+  add('cs', player.csPerMinute, typical.csPerMinute, 0.12, 'Farmeás más', 'Farmeás poco', (value) => `${decimal(value)} CS/min`);
+  add('kp', player.killParticipation, typical.killParticipation, 0.15, 'Participás mucho en las bajas', 'Participás poco en las bajas', percent);
+  add('damage', player.damagePerMinute, typical.damagePerMinute, 0.15, 'Hacés mucho daño', 'Hacés poco daño', (value) => `${whole(value)} daño/min`);
+  add('gold', player.goldPerMinute, typical.goldPerMinute, 0.1, 'Generás más oro', 'Generás poco oro', (value) => `${whole(value)} oro/min`);
+  add('kda', player.kda, typical.kda, 0.2, 'Sostenés un KDA alto', 'Tu KDA queda corto', (value) => `${decimal(value)} KDA`);
+  return { strengths, weaknesses };
+}
+
+function earlyLaneSignal(
+  season: RankedSeason | null | undefined,
+  position: string | undefined,
+): { tone: 'strength' | 'weakness'; signal: RankedSignal } | null {
+  if (!season || !position || !LANE_POSITIONS.has(position)) return null;
+  const games = season.champions.reduce((sum, champion) => sum + champion.games, 0);
+  if (games < MIN_EARLY_LANE_GAMES) return null;
+
+  const total = (metric: 'laneAdvantagesAt7' | 'laneCsAt10' | 'soloKills' | 'soloKillGames' | 'turretPlates') => (
+    season.champions.reduce((sum, champion) => sum + champion.extend[metric], 0)
+  );
+  const advantages = total('laneAdvantagesAt7');
+  const advantageRate = ratio(advantages, games);
+  const delta = advantageRate - 0.5;
+  if (Math.abs(delta) < 0.1) return null;
+
+  const signal = {
+    id: 'self-early-lane',
+    rank: selfSignalPriority('self-early-lane') + Math.min(Math.abs(delta), 0.49),
+    text: `${delta > 0 ? 'Ganás la línea temprano' : 'Lane temprana floja'}: ventaja al 7 en ${percent(advantageRate)} (${whole(advantages)} de ${whole(games)}), contra 50%; promediás ${decimal(ratio(total('laneCsAt10'), games))} CS al 10, ${decimal(ratio(total('soloKills'), games))} solo kills y ${decimal(ratio(total('turretPlates'), games))} placas, con solo kill en ${percent(ratio(total('soloKillGames'), games))}.`,
+  };
+  return { tone: delta > 0 ? 'strength' : 'weakness', signal };
+}
+
 function selfTrendSignals(recent: PlayerMatchSummary[], previous: PlayerMatchSummary[]): {
   strengths: RankedSignal[];
   weaknesses: RankedSignal[];
@@ -411,7 +500,7 @@ function selfTrendSignals(recent: PlayerMatchSummary[], previous: PlayerMatchSum
     if (Math.abs(directed) < threshold) return;
     const signal = {
       id,
-      rank: 100 + Math.abs(directed) / threshold,
+      rank: selfSignalPriority(id) + Math.min(Math.abs(directed), 0.99),
       text: `${directed > 0 ? up : down}: ${format(value)} en tus últimas ${recent.length}, contra ${format(typical)} en las ${previous.length} anteriores.`,
     };
     (directed > 0 ? strengths : weaknesses).push(signal);
@@ -441,15 +530,19 @@ const DAY_PARTS = [
   { key: 'noche', label: 'la noche', start: 18 },
 ] as const;
 
-/** Perfil propio: compara tramos del historial de la persona, nunca contra desconocidos. */
+/** Perfil propio: prioriza referencias del mismo rol y completa con el historial personal. */
 export function buildSelfAnalystReport({
+  details = [],
   matches,
   season,
   timeZone = APP_TIME_ZONE,
+  minimumReferenceSample = DEFAULT_ROLE_REFERENCE_MIN_SAMPLE,
 }: {
+  details?: MatchDetail[];
   matches: PlayerMatchSummary[];
   season?: RankedSeason | null;
   timeZone?: string;
+  minimumReferenceSample?: number;
 }): AnalystReport {
   const counted = matches
     .filter((match) => !isRemake(match))
@@ -458,11 +551,65 @@ export function buildSelfAnalystReport({
   const weaknesses: RankedSignal[] = [];
   const overallWins = counted.filter((match) => match.win).length;
   const overallWinRate = ratio(overallWins, counted.length);
+  const context = dominantContext(counted);
+  let reportContext: AnalystReport['context'] = null;
+  let referenceNote: string | null = null;
+
+  if (context) {
+    const references = buildRoleQueueReferences(details, minimumReferenceSample);
+    const reference = references.find((candidate) => (
+      candidate.queue === context.queue && candidate.position === context.position
+    ));
+    const referenceSample = reference?.sampleSize ?? 0;
+    reportContext = {
+      queue: context.queue,
+      position: context.position,
+      playerGames: context.matches.length,
+      referenceSample,
+    };
+
+    if (!reference?.sufficient || !reference.medians) {
+      referenceNote = `No hay referencia suficiente de ${roleForSentence(context.position)} en ${queueLabel(context.queue)}: ${referenceSample} de ${Math.max(1, Math.trunc(minimumReferenceSample))} participantes necesarios.`;
+    } else if (context.matches.length < MIN_PLAYER_COMPARISON_GAMES) {
+      referenceNote = `Hay ${context.matches.length} ${context.matches.length === 1 ? 'partida comparable' : 'partidas comparables'} en tu rol principal; hacen falta ${MIN_PLAYER_COMPARISON_GAMES} para contrastar tu rendimiento.`;
+    } else {
+      const matchIds = new Set(context.matches.map((match) => match.matchId));
+      const targetPuuid = context.matches[0]?.puuid;
+      const summary = metricsFromSummaries(context.matches);
+      const gold = targetPuuid
+        ? targetGoldPerMinute(details, targetPuuid, matchIds, context.queue, context.position)
+        : null;
+      const playerMetrics: AnalystMetrics = {
+        ...summary,
+        goldPerMinute: gold?.value ?? reference.medians.goldPerMinute,
+      };
+      const signals = selfMetricSignals(
+        playerMetrics,
+        reference.medians,
+        context.position,
+        context.queue,
+      );
+      strengths.push(...signals.strengths.filter((signal) => signal.id !== 'gold' || gold));
+      weaknesses.push(...signals.weaknesses.filter((signal) => signal.id !== 'gold' || gold));
+      const hasDeathSignal = [...signals.strengths, ...signals.weaknesses]
+        .some((signal) => signal.id === 'deaths');
+      const neutralDeaths = hasDeathSignal
+        ? ''
+        : ` Tus muertes están cerca de la mediana: ${decimal(playerMetrics.deathsPerGame)} por partida, contra ${decimal(reference.medians.deathsPerGame)} para ${roleForSentence(context.position)} en ${queueLabel(context.queue)}.`;
+      referenceNote = `Comparación por medianas: tus ${context.matches.length} partidas de ${roleForSentence(context.position)} contra ${reference.sampleSize} participantes de la misma cola y rol.${neutralDeaths}`;
+    }
+  }
+
+  const earlyLane = earlyLaneSignal(season, context?.position);
+  if (earlyLane) {
+    (earlyLane.tone === 'strength' ? strengths : weaknesses).push(earlyLane.signal);
+  }
 
   if (counted.length >= 10) {
     const trends = selfTrendSignals(counted.slice(0, 5), counted.slice(5));
-    strengths.push(...trends.strengths);
-    weaknesses.push(...trends.weaknesses);
+    const roleMetricIds = new Set([...strengths, ...weaknesses].map((signal) => signal.id));
+    strengths.push(...trends.strengths.filter((signal) => !roleMetricIds.has(signal.id.replace('self-', ''))));
+    weaknesses.push(...trends.weaknesses.filter((signal) => !roleMetricIds.has(signal.id.replace('self-', ''))));
   }
 
   if (season && season.games >= 20 && counted.length >= 5) {
@@ -471,7 +618,7 @@ export function buildSelfAnalystReport({
     if (Math.abs(delta) >= 0.1) {
       const signal = {
         id: 'self-form',
-        rank: 280 + Math.abs(delta),
+        rank: selfSignalPriority('self-form') + Math.min(Math.abs(delta), 0.99),
         text: `Tu forma reciente está ${delta > 0 ? 'mejor' : 'peor'}: ${percent(overallWinRate)} en ${counted.length} partidas, contra ${percent(seasonWinRate)} en ${season.games} de temporada.`,
       };
       (delta > 0 ? strengths : weaknesses).push(signal);
@@ -488,14 +635,14 @@ export function buildSelfAnalystReport({
     if (best.winRate - overallWinRate >= 0.15) {
       strengths.push({
         id: 'self-best-champion',
-        rank: 300 + best.games / 100,
+        rank: selfSignalPriority('self-best-champion') + Math.min(best.games / 100, 0.99),
         text: `Tu mejor campeón reciente es ${best.championName}: ${percent(best.winRate)} en ${best.games} partidas, contra tu ${percent(overallWinRate)} general.`,
       });
     }
     if (overallWinRate - worst.winRate >= 0.15) {
       weaknesses.push({
         id: 'self-worst-champion',
-        rank: 300 + worst.games / 100,
+        rank: selfSignalPriority('self-worst-champion') + Math.min(worst.games / 100, 0.99),
         text: `Tu peor campeón reciente es ${worst.championName}: ${percent(worst.winRate)} en ${worst.games} partidas, contra tu ${percent(overallWinRate)} general.`,
       });
     }
@@ -516,20 +663,22 @@ export function buildSelfAnalystReport({
   if (worstTime && overallWinRate - worstTime.winRate >= 0.15) {
     weaknesses.push({
       id: 'self-worst-time',
-      rank: 290 + worstTime.games / 100,
+      rank: selfSignalPriority('self-worst-time') + Math.min(worstTime.games / 100, 0.99),
       text: `Tu peor horario es ${worstTime.label}: ${percent(worstTime.winRate)} en ${worstTime.games} partidas, contra tu ${percent(overallWinRate)} general.`,
     });
   }
 
   const hasSignals = strengths.length > 0 || weaknesses.length > 0;
+  const historyNote = hasSignals
+    ? `También usa tus ${counted.length} partidas recientes y solo marca diferencias claras.`
+    : counted.length < 10
+      ? `Hay ${counted.length} partidas completas; hacen falta 10 para comparar tu forma reciente contra tu propio historial.`
+      : 'Tus tramos recientes están cerca de tu propio promedio; no hay una diferencia sólida para marcar.';
+  const deathTimingNote = 'La fuente no informa el minuto de cada muerte, así que no se puede medir si morís rápido.';
   return {
     strengths: strengths.sort((a, b) => b.rank - a.rank).slice(0, 3).map(({ id, text }) => ({ id, text })),
-    weaknesses: weaknesses.sort((a, b) => b.rank - a.rank).slice(0, 3).map(({ id, text }) => ({ id, text })),
-    context: null,
-    note: hasSignals
-      ? `La comparación usa tus ${counted.length} partidas recientes y solo marca diferencias claras.`
-      : counted.length < 10
-        ? `Hay ${counted.length} partidas completas; hacen falta 10 para comparar tu forma reciente contra tu propio historial.`
-        : 'Tus tramos recientes están cerca de tu propio promedio; no hay una diferencia sólida para marcar.',
+    weaknesses: weaknesses.sort((a, b) => b.rank - a.rank).slice(0, 5).map(({ id, text }) => ({ id, text })),
+    context: reportContext,
+    note: [referenceNote, historyNote, deathTimingNote].filter(Boolean).join(' '),
   };
 }

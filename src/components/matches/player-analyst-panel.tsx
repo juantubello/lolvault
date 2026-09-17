@@ -45,7 +45,7 @@ export function PlayerAnalystPanel({
   userId: number;
 }) {
   const report = mode === 'self'
-    ? buildSelfAnalystReport({ matches: stats.matches, season: stats.profile?.rankedSeason })
+    ? buildSelfAnalystReport({ details: stats.details, matches: stats.matches, season: stats.profile?.rankedSeason })
     : buildOpponentAnalystReport({ details: stats.details, matches: stats.matches });
   const headingId = `analyst-heading-${mode}-${userId}`;
   const context = report.context

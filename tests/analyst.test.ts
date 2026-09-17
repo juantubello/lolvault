@@ -13,7 +13,17 @@ import type {
   MatchDetail,
   MatchParticipant,
   PlayerMatchSummary,
+  RankedSeason,
+  RankedSeasonChampion,
 } from '@/features/matches/types';
+
+const completeProfileFixture = (): string => readFileSync(
+  new URL('./fixtures/opgg/profile-campos-completos.txt', import.meta.url),
+  'utf8',
+).replace(
+  'Player(null,null,null,null,null,null,null,null,null)","https://esports.op.gg/players/1836"',
+  'Player(null,null,null,null,null,null,"https://esports.op.gg/players/1836"',
+);
 
 let nextId = 0;
 
@@ -99,6 +109,58 @@ function summary(overrides: Partial<PlayerMatchSummary> = {}): PlayerMatchSummar
     opScore: 5,
     opScoreRank: 5,
     ...overrides,
+  };
+}
+
+function seasonChampion(
+  overrides: Partial<RankedSeasonChampion> = {},
+  extendOverrides: Partial<RankedSeasonChampion['extend']> = {},
+): RankedSeasonChampion {
+  return {
+    championId: 1,
+    championName: 'Annie',
+    games: 10,
+    wins: 5,
+    losses: 5,
+    durationSeconds: 18_000,
+    basic: {
+      kills: 50, deaths: 50, assists: 50, killParticipation: 5,
+      damageToChampion: 200_000, damageParticipation: 2.5, damageDistribution: 1.5,
+      cs: 2_000, gold: 120_000, visionScore: 200, controlWards: 20,
+      wardsPlaced: 100, wardsKilled: 30, opScore: 60, opScoreRank: 40,
+      mvp: 2, ace: 2, laneScore: 500, laneScoreCount: 10, laneLead: 5,
+      doubleKills: 4, doubleKillGames: 3, tripleKills: 1, tripleKillGames: 1,
+      quadraKills: 0, quadraKillGames: 0, pentaKills: 0, pentaKillGames: 0,
+    },
+    extend: {
+      damageTaken: 150_000, damageSelfMitigated: 80_000, heal: 20_000,
+      healToTeam: 2_000, shieldToTeam: 4_000, physicalDamageToChampion: 30_000,
+      magicDamageToChampion: 160_000, totalDamageToChampion: 200_000,
+      damageToObjective: 40_000, damageToTurret: 25_000, damageToBuildingDuplicate: 25_000,
+      turretKills: 5, inhibitorKills: 1, objectiveSteals: 0, ccScore: 300,
+      soloKills: 2, soloKillGames: 2, invadeKills: 0, invadeKillGames: 0, invadeGames: 0,
+      neutralCs: 0, buffSteals: 0, enemyJungleMonsterKills: 0,
+      epicMonsterKillsNearEnemyJungler: 0, epicMonsterStealsWithoutSmite: 0,
+      initialCrabKills: 0, jungleCsAt10: 0, laneAdvantagesAt7: 3, laneCsAt10: 650,
+      turretPlates: 8, crowdControls: 20, crowdControlKills: 8, alliesSaved: 1,
+      wardsGuarded: 2, fasterSupportQuests: 0, evolutionNone: 0, evolutionFirst: 0,
+      evolutionSecond: 0,
+      ...extendOverrides,
+    },
+    ...overrides,
+  };
+}
+
+function rankedSeason(champions = [seasonChampion()]): RankedSeason {
+  const games = champions.reduce((sum, champion) => sum + champion.games, 0);
+  const wins = champions.reduce((sum, champion) => sum + champion.wins, 0);
+  return {
+    queue: 'RANKED',
+    seasonId: 31,
+    games,
+    wins,
+    losses: games - wins,
+    champions,
   };
 }
 
@@ -261,6 +323,122 @@ describe('generador de fortalezas y debilidades', () => {
     expect(report.strengths[0]?.text).toMatch(/100%.*contra tu \d+% general/);
     expect(report.weaknesses.every((signal) => /\d/.test(signal.text) && signal.text.includes('contra'))).toBe(true);
     expect(report.strengths.length).toBeLessThanOrEqual(3);
-    expect(report.weaknesses.length).toBeLessThanOrEqual(3);
+    expect(report.weaknesses.length).toBeLessThanOrEqual(5);
+  });
+
+  it('en perfil propio compara muertes, farmeo y participación contra la mediana del rol', () => {
+    const referenceDetails = Array.from({ length: 20 }, (_, index) => detail({
+      matchId: `referencia-propia-${index}`,
+      target: participant(),
+    }));
+    const playerDetails = Array.from({ length: 6 }, (_, index) => detail({
+      matchId: `jugador-propio-${index}`,
+      target: participant({
+        puuid: 'puuid-objetivo-falso',
+        cs: 120,
+        damageDealt: 9_000,
+        goldEarned: 6_000,
+        kills: 1,
+        deaths: 10,
+        assists: 2,
+      }),
+    }));
+    const matches = playerDetails.map((match) => summary({
+      matchId: match.matchId,
+      playedAt: new Date(match.playedAt),
+      cs: 120,
+      damageDealt: 9_000,
+      kills: 1,
+      deaths: 10,
+      assists: 2,
+    }));
+
+    const report = buildSelfAnalystReport({
+      details: [...referenceDetails, ...playerDetails],
+      matches,
+      season: rankedSeason(),
+    });
+
+    expect(report.weaknesses.map((signal) => signal.id)).toEqual([
+      'deaths',
+      'cs',
+      'self-early-lane',
+      'kp',
+      'damage',
+    ]);
+    expect(report.weaknesses[0]?.text).toBe(
+      'Morís demasiado: 10,0 muertes/partida, contra 5,0 muertes/partida de mediana para mid en Solo/Duo.',
+    );
+    expect(report.context).toEqual({
+      queue: 'SOLORANKED',
+      position: 'MID',
+      playerGames: 6,
+      referenceSample: 26,
+    });
+    expect(report.note).toContain('no se puede medir si morís rápido');
+  });
+
+  it('contesta por las muertes aunque estén cerca de la mediana y no sean una señal', () => {
+    const details = Array.from({ length: 20 }, (_, index) => detail({
+      matchId: `referencia-muertes-${index}`,
+      target: participant(),
+    }));
+    const matches = Array.from({ length: 5 }, (_, index) => summary({
+      matchId: `muertes-parejas-${index}`,
+      deaths: 5,
+    }));
+
+    const report = buildSelfAnalystReport({ details, matches });
+
+    expect([...report.strengths, ...report.weaknesses].some((signal) => signal.id === 'deaths'))
+      .toBe(false);
+    expect(report.note).toContain(
+      'Tus muertes están cerca de la mediana: 5,0 por partida, contra 5,0 para mid en Solo/Duo.',
+    );
+  });
+
+  it('divide los acumulados de temporada para describir la lane temprana', () => {
+    const matches = Array.from({ length: 10 }, (_, index) => summary({
+      matchId: `lane-temprana-${index}`,
+      playedAt: new Date(`2026-09-${String(15 - index).padStart(2, '0')}T21:00:00.000Z`),
+    }));
+
+    const report = buildSelfAnalystReport({ matches, season: rankedSeason() });
+
+    expect(report.weaknesses).toEqual(expect.arrayContaining([{
+      id: 'self-early-lane',
+      text: 'Lane temprana floja: ventaja al 7 en 30% (3 de 10), contra 50%; promediás 65,0 CS al 10, 0,2 solo kills y 0,8 placas, con solo kill en 20%.',
+    }]));
+  });
+
+  it('usa los acumulados tempranos parseados de la fixture real anonimizada', async () => {
+    const provider = createOpggProvider({
+      client: { callTool: vi.fn(async () => completeProfileFixture()) },
+    });
+    const profile = await provider.getProfile({ gameName: 'Invocador', tagLine: 'LAS1' });
+    const matches = Array.from({ length: 10 }, (_, index) => summary({
+      matchId: `fixture-lane-${index}`,
+    }));
+
+    const report = buildSelfAnalystReport({ matches, season: profile.rankedSeason });
+
+    expect(report.weaknesses.find((signal) => signal.id === 'self-early-lane')?.text).toBe(
+      'Lane temprana floja: ventaja al 7 en 14% (53 de 374), contra 50%; promediás 87,6 CS al 10, 1,6 solo kills y 9,4 placas, con solo kill en 68%.',
+    );
+  });
+
+  it('omite comparaciones por rol y lane cuando las muestras no alcanzan', () => {
+    const matches = Array.from({ length: 2 }, (_, index) => summary({
+      matchId: `muestra-propia-${index}`,
+    }));
+    const report = buildSelfAnalystReport({
+      details: [detail({ matchId: 'detalle-propio', target: participant() })],
+      matches,
+      season: rankedSeason([seasonChampion({ games: 9, wins: 5, losses: 4 })]),
+    });
+
+    expect(report.strengths).toEqual([]);
+    expect(report.weaknesses).toEqual([]);
+    expect(report.note).toContain('1 de 20 participantes necesarios');
   });
 });
