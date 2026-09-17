@@ -111,6 +111,49 @@ array `_objs`), así que hace falta un resolver de punteros. Es la parte frágil
 **Por eso Scaling va en una fase aparte (Fase E) y opcional.** Las fases A a D no dependen de
 este parser: si Lolalytics cambia la serialización de Qwik, se cae Scaling y nada más.
 
+**Medido de nuevo el 2026-09-17, antes de arrancar la fase.** La fuente sigue viva y sale más
+barata de lo previsto, porque se puede reusar el filtro de rol de §1.5.3 y pedir sólo los pares
+(campeón, rol) que se juegan de verdad:
+
+| | Estimado en el plan | Medido |
+|---|---|---|
+| Requests por sync | 855 | **389** |
+| Tráfico | 153 MB | **76 MB** |
+| Por request | — | 200 KB · 0,39 s |
+
+**La regla del formato, que era "la parte frágil", quedó especificada y no adivinada:** todo
+string que aparece adentro de un contenedor de `_objs` es un puntero en base 36, y **un solo
+salto** llega al literal. No hay prefijos: los literales viven como entradas directas de `_objs`.
+Verificado con un caso que no deja dudas: `{"annie": "1"}` → `_objs[1] === "Annie"`. La serie
+está en el **único** objeto con `time` y `timeWin` a la vez (uno solo en los tres campeones
+probados), así que se encuentra buscándola, sin depender de un índice fijo.
+
+**Validación de que el dato significa lo que creemos.** Tres campeones, tres formas de curva, y
+cada una es la que se espera:
+
+| Campeón | Tramo 3 (~20-25 min) | Tramo 6 (~35-40 min) | Lectura |
+|---|---|---|---|
+| Kayle top | 40,89 % | **61,25 %** | escalado de manual |
+| Ahri mid | 52,44 % | 52,57 % | pico de media partida |
+| Thresh support | 54,15 % | 52,89 % | campeón de early |
+
+Y los 7 tramos de Ahri suman 52,78 %, contra el 52,79 % que ya teníamos guardado para ahri/mid:
+la serie cubre **todas** las partidas, no un subconjunto.
+
+**Los tramos no vienen rotulados** — son 1..7 y el JSON no dice la duración. La inferencia es
+**<15, 15-20, 20-25, 25-30, 30-35, 35-40 y 40+**, apoyada en dos cosas: el primer tramo es apenas
+el 0,95 % de las partidas de Ahri y el 0,97 % de las de Kayle, que es lo que se espera de los
+remakes dado que no se puede rendir antes de los 15 minutos (si el primer tramo fuera "<20" sería
+~8-10 %); y los 7 tramos se pliegan exactamente en los 5 que muestra DraftGap (1+2 → 0-20,
+6+7 → 35+). Es una inferencia, no un dato de la fuente, y hay que tratarla como tal.
+
+**Casos borde medidos:**
+
+- Un combo raro (sivir/support) devuelve **200 con serie real pero inservible**: 157 partidas en
+  tramos de 8 a 50. No alcanza con que haya datos; hay que exigir volumen.
+- Un campeón inexistente devuelve **404 con un cuerpo que igual parsea como JSON**. O sea que
+  "parseó bien" **no** es validación: hay que mirar el status y que el contenedor exista.
+
 ### 1.3.2 Casos borde verificados (el parser tiene que aguantarlos)
 
 Probados contra el endpoint real, con las respuestas guardadas para usar de fixtures:

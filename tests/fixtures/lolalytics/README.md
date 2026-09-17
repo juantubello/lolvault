@@ -38,3 +38,34 @@ Host `https://a1.lolalytics.com/mega/`, params comunes:
 
 **Regla:** el status HTTP no alcanza para saber si la respuesta sirve. Validar siempre la forma
 del cuerpo, como hace `opgg-provider.ts` con su `ResponseShapeError`, y envolver todo `JSON.parse`.
+
+## `qdata-*.json` — la serie por duración (Fase E)
+
+De `https://lolalytics.com/lol/<champ>/build/q-data.json?tier=emerald_plus&region=all&patch=30&lane=<rol>`,
+capturadas el 2026-09-17. Son datos públicos de campeones: no hay nada personal.
+
+El formato es el de Qwik, con *string interning*. La regla, verificada sobre las tres
+capturas: **todo string que aparece adentro de un contenedor de `_objs` es un puntero en
+base 36, y un solo salto llega al valor literal**. No hay prefijos ni marcas: los literales
+viven como entradas directas de `_objs` y los contenedores sólo guardan índices. Ejemplo
+real: `{"annie": "1"}` → `_objs[1] === "Annie"`.
+
+La serie vive en el único objeto de `_objs` que tiene `time` y `timeWin` a la vez — uno solo
+en cada una de las tres capturas. `time` son las partidas por tramo de duración y `timeWin`
+las victorias, ambos indexados 1..7.
+
+| Archivo | Qué aporta |
+|---|---|
+| `qdata-ahri-middle.min.json` | Curva que sube y se estabiliza (campeón de media partida). |
+| `qdata-kayle-top.min.json` | Escalado fuerte: 40,89 % a los 20-25 min → 61,25 % pasados los 35. |
+| `qdata-thresh-support.min.json` | Curva que decae (campeón de early). |
+| `qdata-ahri-middle.full.json` | La captura **sin recortar**, 9.466 entradas en `_objs`. |
+
+Las `.min` se armaron reindexando `_objs` para conservar sólo lo alcanzable desde la serie:
+195 KB → 299 bytes, resolviendo a valores idénticos al original. Son datos reales en formato
+real, pero **demasiado limpias**: un parser ingenuo que asuma un índice fijo pasaría igual.
+Por eso está también la captura completa, que es la que prueba que el buscador encuentra la
+serie entre los 9.466 objetos de verdad.
+
+**Los 7 tramos no vienen rotulados.** Están numerados 1..7 y el JSON no dice a qué duración
+corresponde cada uno. Ver la inferencia y su evidencia en PLAN-SCOUT-DRAFT.md §1.3.1.
