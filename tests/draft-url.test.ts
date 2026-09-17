@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  draftMatchupScopeHref,
   draftPanelHref,
   draftPickHref,
   draftRiskHref,
@@ -30,6 +31,7 @@ describe('estado de Draft en la URL', () => {
       enemigos: '222-bottom,412-support',
       riesgo: 'high',
       panel: 'analisis',
+      cruces: 'todos',
       slot: 'aliado-middle',
     };
     const state = parseDraftUrl(params, VALID_KEYS);
@@ -55,6 +57,7 @@ describe('estado de Draft en la URL', () => {
       ],
       risk: 'medium',
       panel: 'draft',
+      matchupScope: 'head-to-head',
       slot: null,
     });
   });
@@ -85,10 +88,27 @@ describe('estado de Draft en la URL', () => {
       removeDraftPickHref(paramsFromHref(picked), nextState, slot),
       draftRiskHref(params, state, 'very-high'),
       draftPanelHref(params, state, 'analisis'),
+      draftMatchupScopeHref(params, state, 'all'),
     ]) {
       const result = new URL(href, 'https://lolvault.local').searchParams;
       expect(result.get('q')).toBe('queda');
       expect(result.getAll('extra')).toEqual(['uno', 'dos']);
     }
+  });
+
+  it('parsea el alcance de cruces y serializa sólo el valor no predeterminado', () => {
+    const all = parseDraftUrl({ tipo: 'draft', panel: 'analisis', cruces: 'todos' }, VALID_KEYS);
+    const invalid = parseDraftUrl({ cruces: 'cualquiera' }, VALID_KEYS);
+
+    expect(all.matchupScope).toBe('all');
+    expect(invalid.matchupScope).toBe('head-to-head');
+    expect(new URL(
+      draftMatchupScopeHref({}, invalid, 'all'),
+      'https://lolvault.local',
+    ).searchParams.get('cruces')).toBe('todos');
+    expect(new URL(
+      draftMatchupScopeHref({ cruces: 'todos' }, all, 'head-to-head'),
+      'https://lolvault.local',
+    ).searchParams.has('cruces')).toBe(false);
   });
 });

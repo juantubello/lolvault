@@ -36,6 +36,7 @@ import { searchKey } from '@/features/champions/search-key';
 import { timeAgo } from '@/features/matches/format';
 
 import { DraftChampionGrid, type DraftChampionGridViewItem } from './draft-champion-grid';
+import { DraftAnalysisPanel } from './draft-analysis-panel';
 import { ScoutSegments } from './scout-segments';
 
 const ROLE_LABELS: Record<DraftRole, { short: string; full: string }> = {
@@ -228,7 +229,18 @@ export function DraftSegment({ searchParams }: { searchParams: DraftSearchParams
       <DraftPanelSegments searchParams={searchParams} state={state} />
 
       {state.panel === 'analisis' ? (
-        <p className="draft-analysis-placeholder">El análisis detallado llega en la Fase D2.</p>
+        <div className="draft-screen">
+          <header className="draft-data-header">
+            <strong>{formatWindow(run.patchWindow)}</strong>
+            <span>Actualizado {timeAgo(run.finishedAt, new Date())}</span>
+          </header>
+          <DraftAnalysisPanel
+            analysis={analysis}
+            championNames={new Map(catalog.map((champion) => [champion.key, champion.name]))}
+            searchParams={searchParams}
+            state={state}
+          />
+        </div>
       ) : (
         <div className="draft-screen">
           <header className="draft-data-header">

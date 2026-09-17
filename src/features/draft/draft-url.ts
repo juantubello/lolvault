@@ -7,6 +7,7 @@ import {
 import { DRAFT_ROLES, type DraftRole } from '@/features/draft/types';
 
 export type DraftPanel = 'draft' | 'analisis';
+export type DraftMatchupScope = 'head-to-head' | 'all';
 export type DraftTeam = 'allies' | 'enemies';
 export type DraftSlot = { team: DraftTeam; role: DraftRole };
 export type DraftSearchParams = Record<string, string | string[] | undefined>;
@@ -14,6 +15,7 @@ export type DraftSearchParams = Record<string, string | string[] | undefined>;
 export type DraftUrlState = Draft & {
   risk: DraftRisk;
   panel: DraftPanel;
+  matchupScope: DraftMatchupScope;
   slot: DraftSlot | null;
 };
 
@@ -76,12 +78,14 @@ export function parseDraftUrl(
   const enemies = parseTeam(searchParams.enemigos, keys, globallyUsed);
   const rawRisk = first(searchParams.riesgo);
   const rawPanel = first(searchParams.panel);
+  const rawMatchupScope = first(searchParams.cruces);
 
   return {
     allies,
     enemies,
     risk: (RISK_SET.has(rawRisk) ? rawRisk : 'medium') as DraftRisk,
     panel: rawPanel === 'analisis' ? 'analisis' : 'draft',
+    matchupScope: rawMatchupScope === 'todos' ? 'all' : 'head-to-head',
     slot: parseSlot(searchParams.slot),
   };
 }
@@ -116,6 +120,8 @@ function stateHref(searchParams: DraftSearchParams, state: DraftUrlState): strin
   if (enemies) query.set('enemigos', enemies); else query.delete('enemigos');
   if (state.risk === 'medium') query.delete('riesgo'); else query.set('riesgo', state.risk);
   if (state.panel === 'draft') query.delete('panel'); else query.set('panel', state.panel);
+  if (state.matchupScope === 'head-to-head') query.delete('cruces');
+  else query.set('cruces', 'todos');
   if (state.slot) query.set('slot', slotValue(state.slot)); else query.delete('slot');
   return `/scout?${query.toString()}`;
 }
@@ -173,6 +179,14 @@ export function draftPanelHref(
   panel: DraftPanel,
 ): string {
   return stateHref(searchParams, { ...state, panel });
+}
+
+export function draftMatchupScopeHref(
+  searchParams: DraftSearchParams,
+  state: DraftUrlState,
+  matchupScope: DraftMatchupScope,
+): string {
+  return stateHref(searchParams, { ...state, matchupScope });
 }
 
 export function clearDraftHref(

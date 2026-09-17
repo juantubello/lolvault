@@ -2,7 +2,7 @@
 
 Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al terminar.
 
-## Estado: votaciones, ripeados, Scout profundo, ingesta y motor de Draft, perfiles, historial y Web Push implementados
+## Estado: votaciones, ripeados, Scout profundo, Draft con análisis, perfiles, historial y Web Push implementados
 
 ### Hecho
 - 2026-09-14 — Carpeta creada. Skills de diseño instaladas en `.claude/skills/`
@@ -247,16 +247,28 @@ Handoff entre sesiones (Claude Code / Codex). Leer al empezar, actualizar al ter
   una fila compacta de cinco (284 px) y tocar un casillero ancla en el selector. Además se ranquea
   la lista entera en vez de un top de 40, para no mezclar dos unidades. 294 tests verdes.
 
+- 2026-09-17 — **Fase D2 de Draft: panel completo de análisis.** La solapa Análisis reutiliza la
+  única llamada existente a `analyzeDraft` y presenta ocho tarjetas de resumen, desglose por
+  campeón y totales reales, cruces cabeza a cabeza o los 25 mediante `?cruces=todos`, y las diez
+  duplas de cada lado ordenadas. Los totales y filas suman ratings antes de volver a win rate; el
+  enemigo invierte los cruces aliados y las tarjetas de Cruces/Win rate son sus complementos.
+  Los pares ausentes dicen “Sin datos”, los parciales se marcan, el draft vacío explica su 50,00 %
+  neutral y no aparece Scaling. A 375 px las tablas se repliegan a listas; desde 768 px usan
+  overflow propio con rol/campeón fijos. Se siguió la guía local `ui-ux-pro-max`; la revisión visual
+  queda para fuera del sandbox, que no permite abrir puertos. Typecheck limpio, 300 tests verdes y
+  build de producción exitoso.
+
 ### Siguiente
 1. Verificar con red que OP.GG acepta el nuevo `desired_output_fields` y comparar una cuenta real.
 2. Revisar Scout a mano en iPhone (375 px, portrait/landscape, light/dark y texto grande).
 3. Ejecutar `npm run draft:sync` con red y verificar tiempos/volumen del primer sync completo.
-4. Fase D2 del plan Scout/Draft: panel completo de análisis (sin Scaling, que sigue en Fase E).
-5. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
-6. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
-7. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
-8. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
-9. Aviso legal de Riot/OP.GG/Lolalytics/DraftGap en Perfil → Acerca de.
+4. Revisar D2 a mano en 375 px y tablet, en claro/oscuro y con texto grande.
+5. Fase E opcional: Scaling con `q-data.json`, aislado del análisis principal.
+6. Revisión de código (`code-reviewer`): `src/auth/`, `features/vaults/`, `features/matches/` y avatares.
+7. `homelab-infra`: puerto, compose, hostname, app de Access con los emails de los amigos.
+8. Verificar Web Push en el hostname HTTPS y en un iPhone 16.4+ con la PWA instalada.
+9. Cambiar `MatchProvider` a la API de Riot cuando aprueben la Personal API Key.
+10. Aviso legal de Riot/OP.GG/Lolalytics/DraftGap en Perfil → Acerca de.
 
 ### Pendiente del lado de Juan
 - Juntar los emails de los amigos (van en la policy de Access, **no** en el repo).
